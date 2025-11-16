@@ -1,0 +1,573 @@
+{
+  "brands": {
+    "Fender": {
+      "models": [
+        "Stratocaster",
+        "Telecaster",
+        "Jazzmaster",
+        "Jaguar",
+        "Mustang",
+        "Duo-Sonic",
+        "American Professional",
+        "American Ultra",
+        "Player Series",
+        "Vintera",
+        "Meteora",
+        "Acoustasonic"
+      ],
+      "specs": {
+        "scaleLength": ["25.5\""],
+        "pickupConfiguration": ["SSS", "HSS", "SS", "HH", "H"],
+        "bodyType": ["Solid Body"],
+        "neckWood": ["Maple"],
+        "fretboardWood": ["Maple", "Rosewood", "Pau Ferro"],
+        "bodyWood": ["Alder", "Ash", "Pine"]
+      }
+    },
+    "Gibson": {
+      "models": [
+        "Les Paul Standard",
+        "Les Paul Custom",
+        "Les Paul Studio",
+        "Les Paul Junior",
+        "Les Paul Special",
+        "SG Standard",
+        "SG Special",
+        "ES-335",
+        "ES-339",
+        "ES-175",
+        "Flying V",
+        "Explorer",
+        "Firebird",
+        "Melody Maker"
+      ],
+      "specs": {
+        "scaleLength": ["24.75\""],
+        "pickupConfiguration": ["HH", "P90-P90", "H"],
+        "bodyType": ["Solid Body", "Semi-Hollow", "Hollow Body"],
+        "neckWood": ["Mahogany", "Maple"],
+        "fretboardWood": ["Rosewood", "Ebony"],
+        "bodyWood": ["Mahogany", "Maple"]
+      }
+    },
+    "PRS": {
+      "models": [
+        "Custom 24",
+        "Custom 22",
+        "McCarty",
+        "Silver Sky",
+        "CE 24",
+        "SE Custom 24",
+        "SE Standard 24",
+        "S2 Standard",
+        "DGT",
+        "Hollowbody",
+        "Studio"
+      ],
+      "specs": {
+        "scaleLength": ["25\"", "25.5\""],
+        "pickupConfiguration": ["HH", "HSH", "HSS", "SSS"],
+        "bodyType": ["Solid Body", "Semi-Hollow", "Hollow Body"],
+        "neckWood": ["Mahogany", "Maple"],
+        "fretboardWood": ["Rosewood", "Ebony", "Maple"],
+        "bodyWood": ["Mahogany", "Maple"]
+      }
+    },
+    "Ibanez": {
+      "models": [
+        "RG Series",
+        "JEM",
+        "Prestige",
+        "Premium",
+        "S Series",
+        "AZ Series",
+        "Artcore",
+        "AS Series",
+        "AM Series",
+        "Talman"
+      ],
+      "specs": {
+        "scaleLength": ["25.5\"", "24.75\""],
+        "pickupConfiguration": ["HH", "HSH", "HSS", "SSS"],
+        "bodyType": ["Solid Body", "Semi-Hollow"],
+        "neckWood": ["Maple", "Roasted Maple"],
+        "fretboardWood": ["Rosewood", "Ebony", "Maple", "Jatoba"],
+        "bodyWood": ["Basswood", "Mahogany", "Ash", "Alder"]
+      }
+    },
+    "ESP": {
+      "models": [
+        "Eclipse",
+        "Horizon",
+        "M-II",
+        "Viper",
+        "Phoenix",
+        "LTD EC-1000",
+        "LTD MH-1000",
+        "LTD M-1000",
+        "Arrow"
+      ],
+      "specs": {
+        "scaleLength": ["24.75\"", "25.5\""],
+        "pickupConfiguration": ["HH", "H"],
+        "bodyType": ["Solid Body"],
+        "neckWood": ["Maple", "Mahogany"],
+        "fretboardWood": ["Rosewood", "Ebony", "Macassar Ebony"],
+        "bodyWood": ["Mahogany", "Alder", "Basswood"]
+      }
+    },
+    "Jackson": {
+      "models": [
+        "Soloist",
+        "Dinky",
+        "King V",
+        "Rhoads",
+        "Warrior",
+        "Kelly",
+        "Monarkh",
+        "Pro Series"
+      ],
+      "specs": {
+        "scaleLength": ["25.5\""],
+        "pickupConfiguration": ["HH", "HSS", "H"],
+        "bodyType": ["Solid Body"],
+        "neckWood": ["Maple"],
+        "fretboardWood": ["Ebony", "Rosewood", "Maple"],
+        "bodyWood": ["Alder", "Basswood", "Mahogany", "Ash"]
+      }
+    },
+    "Gretsch": {
+      "models": [
+        "White Falcon",
+        "Country Gentleman",
+        "6120",
+        "Electromatic",
+        "Streamliner",
+        "Duo Jet",
+        "Jet",
+        "Penguin"
+      ],
+      "specs": {
+        "scaleLength": ["24.6\"", "25.5\""],
+        "pickupConfiguration": ["FilterTron-FilterTron", "HH"],
+        "bodyType": ["Hollow Body", "Semi-Hollow", "Solid Body"],
+        "neckWood": ["Maple"],
+        "fretboardWood": ["Rosewood", "Ebony"],
+        "bodyWood": ["Maple", "Mahogany"]
+      }
+    },
+    "Schecter": {
+      "models": [
+        "Hellraiser",
+        "Omen",
+        "Banshee",
+        "C-1",
+        "Reaper",
+        "SLS Elite",
+        "Synster Gates"
+      ],
+      "specs": {
+        "scaleLength": ["24.75\"", "25.5\"", "26.5\""],
+        "pickupConfiguration": ["HH", "H"],
+        "bodyType": ["Solid Body"],
+        "neckWood": ["Maple", "Mahogany"],
+        "fretboardWood": ["Rosewood", "Ebony"],
+        "bodyWood": ["Mahogany", "Basswood", "Swamp Ash"]
+      }
+    },
+    "Music Man": {
+      "models": [
+        "Silhouette",
+        "Albert Lee",
+        "Axis",
+        "Luke",
+        "St. Vincent",
+        "Cutlass",
+        "Valentine",
+        "Majesty"
+      ],
+      "specs": {
+        "scaleLength": ["25.5\""],
+        "pickupConfiguration": ["HSS", "HH", "SSS"],
+        "bodyType": ["Solid Body"],
+        "neckWood": ["Maple", "Roasted Maple"],
+        "fretboardWood": ["Maple", "Rosewood", "Pau Ferro"],
+        "bodyWood": ["Alder", "Basswood", "Ash"]
+      }
+    },
+    "Rickenbacker": {
+      "models": [
+        "330",
+        "340",
+        "360",
+        "620",
+        "650",
+        "660"
+      ],
+      "specs": {
+        "scaleLength": ["24.75\""],
+        "pickupConfiguration": ["HH"],
+        "bodyType": ["Semi-Hollow"],
+        "neckWood": ["Maple"],
+        "fretboardWood": ["Rosewood"],
+        "bodyWood": ["Maple"]
+      }
+    },
+    "Epiphone": {
+      "models": [
+        "Les Paul Standard",
+        "Les Paul Custom",
+        "SG Standard",
+        "Casino",
+        "Sheraton",
+        "Riviera",
+        "Dot",
+        "ES-335",
+        "Prophecy"
+      ],
+      "specs": {
+        "scaleLength": ["24.75\""],
+        "pickupConfiguration": ["HH", "P90-P90"],
+        "bodyType": ["Solid Body", "Semi-Hollow", "Hollow Body"],
+        "neckWood": ["Mahogany", "Maple"],
+        "fretboardWood": ["Rosewood", "Ebony"],
+        "bodyWood": ["Mahogany", "Maple"]
+      }
+    },
+    "Squier": {
+      "models": [
+        "Stratocaster",
+        "Telecaster",
+        "Jazzmaster",
+        "Jaguar",
+        "Classic Vibe",
+        "Affinity",
+        "Bullet",
+        "Contemporary"
+      ],
+      "specs": {
+        "scaleLength": ["25.5\""],
+        "pickupConfiguration": ["SSS", "HSS", "SS", "HH"],
+        "bodyType": ["Solid Body"],
+        "neckWood": ["Maple"],
+        "fretboardWood": ["Maple", "Rosewood", "Pau Ferro"],
+        "bodyWood": ["Alder", "Poplar", "Nato"]
+      }
+    },
+    "G&L": {
+      "models": [
+        "Legacy",
+        "ASAT",
+        "S-500",
+        "Comanche",
+        "Fallout",
+        "Doheny"
+      ],
+      "specs": {
+        "scaleLength": ["25.5\""],
+        "pickupConfiguration": ["SSS", "HSS", "HH"],
+        "bodyType": ["Solid Body"],
+        "neckWood": ["Maple"],
+        "fretboardWood": ["Maple", "Rosewood"],
+        "bodyWood": ["Alder", "Swamp Ash"]
+      }
+    },
+    "Reverend": {
+      "models": [
+        "Jetstream",
+        "Charger",
+        "Double Agent",
+        "Kingbolt",
+        "Descent",
+        "Contender"
+      ],
+      "specs": {
+        "scaleLength": ["25.5\""],
+        "pickupConfiguration": ["HH", "P90-P90", "H-P90"],
+        "bodyType": ["Solid Body"],
+        "neckWood": ["Maple", "Roasted Maple"],
+        "fretboardWood": ["Rosewood", "Pau Ferro"],
+        "bodyWood": ["Korina"]
+      }
+    },
+    "Suhr": {
+      "models": [
+        "Classic",
+        "Modern",
+        "Classic T",
+        "Standard",
+        "Alt T",
+        "Mateus Asato"
+      ],
+      "specs": {
+        "scaleLength": ["25.5\""],
+        "pickupConfiguration": ["SSS", "HSS", "HSH", "HH", "SS"],
+        "bodyType": ["Solid Body"],
+        "neckWood": ["Maple", "Roasted Maple"],
+        "fretboardWood": ["Maple", "Rosewood", "Pau Ferro"],
+        "bodyWood": ["Alder", "Swamp Ash", "Mahogany"]
+      }
+    },
+    "Charvel": {
+      "models": [
+        "Pro-Mod DK24",
+        "Pro-Mod San Dimas",
+        "Pro-Mod So-Cal",
+        "Guthrie Govan",
+        "Joe Duplantier"
+      ],
+      "specs": {
+        "scaleLength": ["25.5\""],
+        "pickupConfiguration": ["HH", "HSS", "H"],
+        "bodyType": ["Solid Body"],
+        "neckWood": ["Maple", "Caramelized Maple"],
+        "fretboardWood": ["Ebony", "Maple", "Caramelized Maple"],
+        "bodyWood": ["Alder", "Basswood", "Ash"]
+      }
+    },
+    "D'Angelico": {
+      "models": [
+        "Premier DC",
+        "Premier SS",
+        "Deluxe DC",
+        "Excel",
+        "Bedford"
+      ],
+      "specs": {
+        "scaleLength": ["24.75\"", "25\""],
+        "pickupConfiguration": ["HH", "P90-P90"],
+        "bodyType": ["Semi-Hollow", "Hollow Body", "Solid Body"],
+        "neckWood": ["Maple"],
+        "fretboardWood": ["Rosewood", "Ebony"],
+        "bodyWood": ["Maple", "Laminated Maple"]
+      }
+    },
+    "Taylor": {
+      "models": [
+        "T5z",
+        "214ce",
+        "314ce",
+        "414ce",
+        "814ce",
+        "914ce",
+        "GS Mini"
+      ],
+      "specs": {
+        "scaleLength": ["25.5\"", "23.5\""],
+        "pickupConfiguration": ["Acoustic", "Hybrid"],
+        "bodyType": ["Acoustic", "Acoustic-Electric"],
+        "neckWood": ["Sapele", "Mahogany", "Maple"],
+        "fretboardWood": ["Ebony", "Rosewood"],
+        "bodyWood": ["Spruce", "Cedar", "Mahogany", "Koa", "Rosewood"]
+      }
+    },
+    "Martin": {
+      "models": [
+        "D-28",
+        "D-18",
+        "000-28",
+        "OM-28",
+        "D-45",
+        "HD-28",
+        "000-15M",
+        "GPC-16E"
+      ],
+      "specs": {
+        "scaleLength": ["25.4\"", "24.9\""],
+        "pickupConfiguration": ["Acoustic"],
+        "bodyType": ["Acoustic", "Acoustic-Electric"],
+        "neckWood": ["Mahogany", "Genuine Mahogany"],
+        "fretboardWood": ["Ebony", "Richlite"],
+        "bodyWood": ["Spruce", "Mahogany", "Rosewood"]
+      }
+    },
+    "Yamaha": {
+      "models": [
+        "Pacifica",
+        "Revstar",
+        "SG",
+        "FG Series",
+        "LL Series",
+        "APX Series"
+      ],
+      "specs": {
+        "scaleLength": ["25.5\"", "24.75\""],
+        "pickupConfiguration": ["SSS", "HSS", "HH", "P90-P90"],
+        "bodyType": ["Solid Body", "Acoustic"],
+        "neckWood": ["Maple", "Mahogany", "Nato"],
+        "fretboardWood": ["Rosewood", "Maple"],
+        "bodyWood": ["Alder", "Mahogany", "Spruce"]
+      }
+    }
+  },
+  "commonSpecs": {
+    "scaleLength": [
+      "24.75\"",
+      "25\"",
+      "25.5\"",
+      "26.5\"",
+      "27\"",
+      "28\"",
+      "30\""
+    ],
+    "pickupConfiguration": [
+      "SSS",
+      "HSS",
+      "HH",
+      "HSH",
+      "SS",
+      "H",
+      "P90-P90",
+      "FilterTron-FilterTron"
+    ],
+    "bodyType": [
+      "Solid Body",
+      "Semi-Hollow",
+      "Hollow Body",
+      "Chambered",
+      "Acoustic",
+      "Acoustic-Electric"
+    ],
+    "neckWood": [
+      "Maple",
+      "Mahogany",
+      "Roasted Maple",
+      "Caramelized Maple",
+      "Nato",
+      "Sapele"
+    ],
+    "fretboardWood": [
+      "Maple",
+      "Rosewood",
+      "Ebony",
+      "Pau Ferro",
+      "Jatoba",
+      "Macassar Ebony",
+      "Richlite"
+    ],
+    "bodyWood": [
+      "Alder",
+      "Ash",
+      "Swamp Ash",
+      "Mahogany",
+      "Basswood",
+      "Maple",
+      "Korina",
+      "Poplar",
+      "Spruce",
+      "Cedar",
+      "Koa",
+      "Rosewood",
+      "Pine",
+      "Nato"
+    ],
+    "finish": [
+      "Gloss",
+      "Satin",
+      "Matte",
+      "Nitrocellulose",
+      "Polyurethane",
+      "Oil",
+      "Natural",
+      "Sunburst",
+      "Solid Color",
+      "Metallic",
+      "Sparkle",
+      "Flame Top",
+      "Quilt Top"
+    ],
+    "numberOfFrets": [
+      "21",
+      "22",
+      "24"
+    ],
+    "fretSize": [
+      "Narrow Tall",
+      "Medium Jumbo",
+      "Jumbo",
+      "Extra Jumbo"
+    ],
+    "nutWidth": [
+      "1.5\"",
+      "1.625\"",
+      "1.65\"",
+      "1.6875\"",
+      "1.75\""
+    ],
+    "bridge": [
+      "Hardtail",
+      "Tremolo",
+      "Floyd Rose",
+      "Bigsby",
+      "Tune-o-matic",
+      "Wraparound",
+      "Synchronized Tremolo",
+      "Two-Point Tremolo",
+      "Wilkinson",
+      "Hipshot"
+    ],
+    "tuners": [
+      "Vintage Style",
+      "Locking",
+      "Gotoh",
+      "Grover",
+      "Schaller",
+      "Hipshot"
+    ]
+  },
+  "guitarTypes": [
+    "Electric",
+    "Acoustic",
+    "Acoustic-Electric",
+    "Classical",
+    "Bass",
+    "Baritone",
+    "7-String",
+    "8-String",
+    "12-String"
+  ],
+  "colors": [
+    "Sunburst",
+    "3-Tone Sunburst",
+    "2-Tone Sunburst",
+    "Tobacco Sunburst",
+    "Cherry Sunburst",
+    "Black",
+    "White",
+    "Olympic White",
+    "Arctic White",
+    "Vintage White",
+    "Cream",
+    "Natural",
+    "Honey",
+    "Amber",
+    "Red",
+    "Candy Apple Red",
+    "Dakota Red",
+    "Fiesta Red",
+    "Blue",
+    "Lake Placid Blue",
+    "Sonic Blue",
+    "Ice Blue Metallic",
+    "Pelham Blue",
+    "Green",
+    "Surf Green",
+    "Seafoam Green",
+    "Olive Green",
+    "Purple",
+    "Plum",
+    "Violet",
+    "Orange",
+    "Butterscotch",
+    "Gold",
+    "Silver",
+    "Gray",
+    "Charcoal",
+    "Brown",
+    "Trans Black",
+    "Trans Red",
+    "Trans Blue",
+    "Trans Green",
+    "Trans Amber"
+  ]
+}

@@ -1,0 +1,244 @@
+export interface DetailedSpecs {
+  // Body Details
+  bodyShape?: string;
+  bodyBinding?: string;
+  topWood?: string;
+  topCarve?: string;
+
+  // Neck Details
+  neckProfile?: string;
+  neckJoint?: string;
+  neckFinish?: string;
+  fretboardRadius?: string;
+  fretSize?: string;
+  fretboardInlays?: string;
+  nutWidth?: string;
+  nutMaterial?: string;
+  trussRod?: string;
+
+  // Pickup Details
+  neckPickup?: string;
+  bridgePickup?: string;
+  pickupSelector?: string;
+  controls?: string;
+
+  // Hardware Details
+  hardwareFinish?: string;
+  tailpiece?: string;
+  pickguard?: string;
+  controlKnobs?: string;
+  strapButtons?: string;
+  stringTrees?: string;
+
+  // Miscellaneous
+  stringGauge?: string;
+  headstock?: string;
+  weight?: string;
+}
+
+export interface Guitar {
+  id: string;
+  userId: string; // Owner of the guitar - for multi-user data isolation
+  // Basic Information
+  brand: string;
+  model: string;
+  year: number;
+  type: GuitarType;
+
+  // Specifications
+  bodyMaterial: string;
+  neckMaterial: string;
+  fretboardMaterial: string;
+  numberOfFrets: number;
+  scaleLength: string;
+  pickupConfiguration: string;
+  color: string;
+  finish: string;
+
+  // Additional specs
+  tuningMachines?: string;
+  bridge?: string;
+  nut?: string;
+  electronics?: string;
+  caseIncluded?: boolean;
+  countryOfOrigin?: string;
+
+  // Detailed Specifications (optional, for enthusiasts)
+  detailedSpecs?: DetailedSpecs;
+
+  // Images
+  images: GuitarImage[];
+
+  // Documentation (brochures, marketing materials, etc.)
+  documents?: GuitarDocument[]; // Deprecated - use documentIds instead
+  documentIds?: string[]; // IDs of documents in the documents table
+
+  // Private Information
+  privateInfo?: PrivateGuitarInfo;
+
+  // Notes (Journal-style)
+  notes: NoteEntry[];
+
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GuitarImage {
+  id: string;
+  url: string;
+  thumbnailUrl?: string;
+  caption?: string;
+  isPrimary: boolean;
+  order: number;
+}
+
+export interface ProvenanceReportSummary {
+  id: string;
+  version: number;
+  generatedAt: string;
+  guitarId: string;
+  ownerName: string;
+  type?: 'provenance' | 'sales_ad';
+}
+
+export interface ProvenanceReportData {
+  overview: string;
+  specifications: {
+    construction?: Record<string, string>;
+    electronics?: Record<string, string>;
+    hardware?: Record<string, string>;
+    finish?: Record<string, string>;
+    raw?: string;
+  };
+  provenance: string;
+  authentication: {
+    serialNumber: string | null;
+    hasPhotographicDocumentation: boolean;
+    hasReceiptDocumentation: boolean;
+    supportingDocuments: number;
+    documentTypes: Array<{ name: string; type: string }>;
+    authenticationLevel: 'High' | 'Medium' | 'Basic';
+  };
+  valuation: {
+    purchasePrice: number | null;
+    purchaseDate: string | null;
+    currentEstimatedValue: number | null;
+    condition: string;
+    notes: string | null;
+  };
+  metadata: {
+    guitarBrand: string;
+    guitarModel: string;
+    guitarYear: number;
+    serialNumber: string | null;
+  };
+}
+
+export interface ProvenanceReport {
+  userId: string;
+  reportId: string;
+  guitarId: string;
+  version: number;
+  generatedAt: string;
+  ownerName: string;
+  reportData: ProvenanceReportData;
+  reportType?: 'provenance' | 'sales_ad';
+}
+
+export interface SalesAdData {
+  headline: string;
+  description: string;
+  features: string[];
+  specifications: {
+    body?: Record<string, string>;
+    neck?: Record<string, string>;
+    electronics?: Record<string, string>;
+    hardware?: Record<string, string>;
+    other?: Record<string, string>;
+    raw?: string;
+  };
+  condition: string;
+  price: number | null;
+  images: GuitarImage[];
+  metadata: {
+    guitarBrand: string;
+    guitarModel: string;
+    guitarYear: number;
+    serialNumber: string | null;
+  };
+}
+
+export interface SalesAdReport {
+  userId: string;
+  reportId: string;
+  guitarId: string;
+  version: number;
+  generatedAt: string;
+  ownerName: string;
+  reportData: SalesAdData;
+  reportType: 'sales_ad';
+}
+
+export interface GuitarDocument {
+  id: string;
+  url: string;
+  name: string;
+  type: 'pdf' | 'image';
+  contentType: string;
+  uploadedAt: string;
+}
+
+export interface PrivateGuitarInfo {
+  serialNumber?: string;
+  purchaseDate?: string;
+  originalRetailPrice?: number;
+  purchasePrice?: number;
+  purchaseLocation?: string;
+  currentValue?: number;
+  currency?: string; // ISO currency code (USD, EUR, GBP, etc.)
+  receiptUrl?: string;
+  insuranceInfo?: string;
+}
+
+export interface NoteEntry {
+  id: string;
+  content: string;
+  createdAt: string;
+}
+
+export enum GuitarType {
+  ELECTRIC = 'Electric',
+  ACOUSTIC = 'Acoustic',
+  CLASSICAL = 'Classical',
+  BASS = 'Bass',
+  SEMI_HOLLOW = 'Semi-Hollow',
+  HOLLOW_BODY = 'Hollow Body',
+  ELECTRIC_ACOUSTIC = 'Electric-Acoustic',
+  OTHER = 'Other',
+}
+
+// Standalone Document type for the documents management system
+export interface Document {
+  id: string;
+  userId: string;
+  name: string;
+  url: string;
+  type: 'pdf' | 'image';
+  contentType: string;
+  uploadedAt: string;
+  assignedGuitars: string[]; // Guitar IDs that use this document
+  tags?: string[];
+  notes?: string;
+  updatedAt?: string;
+}
+
+export interface GuitarFilters {
+  search?: string;
+  brand?: string;
+  type?: GuitarType;
+  yearMin?: number;
+  yearMax?: number;
+}
+
+export interface GuitarFormData extends Omit<Guitar, 'id' | 'userId' | 'createdAt' | 'updatedAt'> {}

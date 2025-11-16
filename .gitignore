@@ -1,0 +1,52 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.deploy
+.env*.local
+
+# Generated deployment outputs (auto-created by Makefile)
+.env.backend.outputs
+.env.frontend.outputs
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Development notes (not for version control)
+CLAUDE.md
+
+# AWS SAM cache
+.aws-sam/
+
+# Note: Deployment scripts use .env.deploy for configuration
+# All scripts in scripts/ are committed and safe to share
+
+# Backend configuration with sensitive values
+backend/samconfig.toml
+
+# Private production configuration backup
+PRODUCTION_CONFIG.private
+*.private

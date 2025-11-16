@@ -1,0 +1,18 @@
+{
+  "version": "2.0",
+  "routeKey": "GET /guitars",
+  "rawPath": "/guitars",
+  "requestContext": {
+    "http": {
+      "method": "GET",
+      "path": "/guitars"
+    },
+    "authorizer": {
+      "jwt": {
+        "claims": {
+          "sub": "test-user-id-123"
+        }
+      }
+    }
+  }
+}

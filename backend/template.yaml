@@ -1,0 +1,995 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Guitar Collection Backend API
+
+# Global settings for all functions
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 10
+    MemorySize: 512
+    Environment:
+      Variables:
+        NODE_ENV: !Ref Environment
+        COGNITO_USER_POOL_ID: !Ref UserPool
+        COGNITO_CLIENT_ID: !Ref UserPoolClient
+        DYNAMODB_TABLE_GUITARS: !Ref GuitarsTable
+        DYNAMODB_TABLE_USERS: !Ref UsersTable
+        DYNAMODB_TABLE_DOCUMENTS: !Ref DocumentsTable
+        DYNAMODB_TABLE_PROVENANCE_REPORTS: !Ref ProvenanceReportsTable
+        S3_BUCKET_IMAGES: !Ref ImagesBucket
+        CLOUDFRONT_DOMAIN: !If [HasHostedZone, !Ref ImagesDomainName, !GetAtt ImagesDistribution.DomainName]
+        FRONTEND_DOMAIN: !Ref FrontendDomain
+  Api:
+    Cors:
+      AllowOrigin: !Ref AllowedOrigin
+      AllowHeaders: "Content-Type,Authorization"
+      AllowMethods: "GET,POST,PUT,DELETE,OPTIONS"
+
+# Parameters for different environments
+Parameters:
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Environment name
+
+  AllowedOrigin:
+    Type: String
+    Description: CORS allowed origin (e.g., https://your-domain.com)
+    Default: "https://your-domain.com"
+
+  ApiDomainName:
+    Type: String
+    Description: Custom domain name for API (e.g., api.your-domain.com)
+    Default: "api.your-domain.com"
+
+  ImagesDomainName:
+    Type: String
+    Description: Custom domain name for images CDN (e.g., images.your-domain.com)
+    Default: "images.your-domain.com"
+
+  HostedZoneId:
+    Type: String
+    Description: Route53 Hosted Zone ID for your domain (optional, leave empty to skip custom domain)
+    Default: ""
+
+  FrontendDomain:
+    Type: String
+    Description: Frontend domain for CORS validation (e.g., example.org)
+    Default: "your-domain.com"
+
+  BucketPrefix:
+    Type: String
+    Description: Prefix for the S3 images bucket name (e.g., my-app-images)
+    Default: "my-app-images"
+
+# Resources
+Resources:
+  # ==================== API Gateway ====================
+
+  GuitarCollectionApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: !Sub ${AWS::StackName}-api
+      StageName: !Ref Environment
+      # Default throttling for all routes
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 200    # Max concurrent requests
+        ThrottlingRateLimit: 100      # Requests per second
+      # Strict rate limiting for authentication endpoints
+      RouteSettings:
+        "POST /auth/login":
+          ThrottlingBurstLimit: 10
+          ThrottlingRateLimit: 2      # 2 requests/sec = 120/min
+        "POST /auth/register":
+          ThrottlingBurstLimit: 5
+          ThrottlingRateLimit: 1      # 1 request/sec = 60/min
+        "POST /auth/forgot-password":
+          ThrottlingBurstLimit: 3
+          ThrottlingRateLimit: 1
+        "POST /specs/extract":
+          ThrottlingBurstLimit: 10
+          ThrottlingRateLimit: 2      # Limit expensive AI operations
+        "GET /public/guitars/random":
+          ThrottlingBurstLimit: 10
+          ThrottlingRateLimit: 1      # Prevent DoS on public endpoint
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-Requested-With         # CSRF protection header
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        MaxAge: 3600                  # Cache preflight for 1 hour
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              Issuer: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+              Audience:
+                - !Ref UserPoolClient
+
+  # ACM Certificate for custom domains (API and Images)
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: HasHostedZone
+    Properties:
+      DomainName: !Ref ApiDomainName
+      SubjectAlternativeNames:
+        - !Ref ApiDomainName
+        - !Ref ImagesDomainName
+      DomainValidationOptions:
+        - DomainName: !Ref ApiDomainName
+          HostedZoneId: !Ref HostedZoneId
+        - DomainName: !Ref ImagesDomainName
+          HostedZoneId: !Ref HostedZoneId
+      ValidationMethod: DNS
+
+  # Custom Domain for API Gateway
+  ApiCustomDomain:
+    Type: AWS::ApiGatewayV2::DomainName
+    Condition: HasHostedZone
+    Properties:
+      DomainName: !Ref ApiDomainName
+      DomainNameConfigurations:
+        - CertificateArn: !Ref ApiCertificate
+          EndpointType: REGIONAL
+          SecurityPolicy: TLS_1_2
+
+  # API Mapping
+  ApiMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Condition: HasHostedZone
+    DependsOn: GuitarCollectionApiStage
+    Properties:
+      ApiId: !Ref GuitarCollectionApi
+      DomainName: !Ref ApiCustomDomain
+      Stage: !Ref Environment
+
+  # Route53 Record for API
+  ApiDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: HasHostedZone
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref ApiDomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ApiCustomDomain.RegionalDomainName
+        HostedZoneId: !GetAtt ApiCustomDomain.RegionalHostedZoneId
+        EvaluateTargetHealth: false
+
+  # Route53 Record for Images CDN
+  ImagesDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: HasHostedZone
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref ImagesDomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt ImagesDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2  # CloudFront hosted zone ID (constant for all distributions)
+        EvaluateTargetHealth: false
+
+  # ==================== Lambda Functions ====================
+
+  # Auth Handler
+  AuthHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-auth
+      CodeUri: src/
+      Handler: handlers/auth/index.handler
+      Description: Handles user authentication
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminInitiateAuth
+                - cognito-idp:AdminCreateUser
+                - cognito-idp:AdminSetUserPassword
+                - cognito-idp:ForgotPassword
+                - cognito-idp:ConfirmForgotPassword
+                - dynamodb:PutItem
+              Resource:
+                - !GetAtt UserPool.Arn
+                - !GetAtt UsersTable.Arn
+      Events:
+        RegisterPost:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /auth/register
+            Method: POST
+        LoginPost:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /auth/login
+            Method: POST
+        RefreshPost:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /auth/refresh
+            Method: POST
+        ForgotPasswordPost:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /auth/forgot-password
+            Method: POST
+        ResetPasswordPost:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /auth/reset-password
+            Method: POST
+
+  # Guitars Handler
+  GuitarsHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-guitars
+      CodeUri: src/
+      Handler: handlers/guitars/index.handler
+      Description: Handles guitar CRUD operations
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GuitarsTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !Sub ${GuitarsTable.Arn}/index/*
+      Events:
+        ListGuitars:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /guitars
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        CreateGuitar:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /guitars
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetGuitar:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /guitars/{id}
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        UpdateGuitar:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /guitars/{id}
+            Method: PUT
+            Auth:
+              Authorizer: CognitoAuthorizer
+        DeleteGuitar:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /guitars/{id}
+            Method: DELETE
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetBrands:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /guitars/brands
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+  # Public Random Guitar Handler (no authentication)
+  PublicGuitarHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-public-guitar
+      CodeUri: src/
+      Handler: handlers/guitars/random-public.handler
+      Description: Returns a random guitar for public display (no auth)
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Scan
+              Resource: !GetAtt GuitarsTable.Arn
+      Environment:
+        Variables:
+          GUITARS_TABLE_NAME: !Ref GuitarsTable
+          CLOUDFRONT_DOMAIN: !If [HasHostedZone, !Ref ImagesDomainName, !GetAtt ImagesDistribution.DomainName]
+      Events:
+        GetRandomPublicGuitar:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /public/guitars/random
+            Method: GET
+            # Note: No Auth section - this endpoint is public
+
+  # Images Handler
+  ImagesHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-images
+      CodeUri: src/
+      Handler: handlers/images/index.handler
+      Description: Handles image uploads and processing
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            # S3 object operations - restricted to specific prefixes
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:GetObject
+                - s3:DeleteObject
+                - s3:PutObjectAcl
+              Resource:
+                - !Sub ${ImagesBucket.Arn}/uploads/*
+                - !Sub ${ImagesBucket.Arn}/images/*
+            # S3 list operations - restricted to specific prefixes
+            - Effect: Allow
+              Action:
+                - s3:ListBucket
+              Resource: !GetAtt ImagesBucket.Arn
+              Condition:
+                StringLike:
+                  s3:prefix:
+                    - uploads/*
+                    - images/*
+      Events:
+        GetUploadUrl:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /images/upload-url
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        UploadComplete:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /images/upload-complete
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+  # User Handler
+  UserHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-user
+      CodeUri: src/
+      Handler: handlers/user/index.handler
+      Description: Handles user profile operations
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminGetUser
+                - cognito-idp:AdminUpdateUserAttributes
+              Resource: !GetAtt UserPool.Arn
+      Events:
+        GetProfile:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /user/profile
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        UpdateProfile:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /user/profile
+            Method: PUT
+            Auth:
+              Authorizer: CognitoAuthorizer
+        UpdateName:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /user/name
+            Method: PUT
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+  # Specs Extractor Handler
+  SpecsHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-specs
+      CodeUri: src/
+      Handler: handlers/specs/extract.handler
+      Description: Handles guitar specification extraction using Amazon Nova
+      Timeout: 60  # Increased timeout for AI processing
+      MemorySize: 1024  # Increased memory for PDF processing
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+              Resource:
+                - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-micro-v1:0'
+                - !Sub 'arn:aws:bedrock:us-east-1:${AWS::AccountId}:inference-profile/us.amazon.nova-micro-v1:0'
+                - !Sub 'arn:aws:bedrock:us-east-2:${AWS::AccountId}:inference-profile/us.amazon.nova-micro-v1:0'
+                - !Sub 'arn:aws:bedrock:us-west-2:${AWS::AccountId}:inference-profile/us.amazon.nova-micro-v1:0'
+      Events:
+        ExtractSpecs:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /specs/extract
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+  # Documents Handler
+  DocumentsHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-documents
+      CodeUri: src/
+      Handler: handlers/documents/index.handler
+      Description: Handles document CRUD operations
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DocumentsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GuitarsTable
+        - Version: '2012-10-17'
+          Statement:
+            # S3 object operations - restricted to specific prefixes
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:GetObject
+                - s3:DeleteObject
+              Resource:
+                - !Sub ${ImagesBucket.Arn}/uploads/*
+                - !Sub ${ImagesBucket.Arn}/images/*
+            # S3 list operations - restricted to specific prefixes
+            - Effect: Allow
+              Action:
+                - s3:ListBucket
+              Resource: !GetAtt ImagesBucket.Arn
+              Condition:
+                StringLike:
+                  s3:prefix:
+                    - uploads/*
+                    - images/*
+            # DynamoDB Query permission
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+              Resource:
+                - !Sub ${DocumentsTable.Arn}/index/*
+      Events:
+        ListDocuments:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /documents
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        CreateDocument:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /documents
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetDocument:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /documents/{id}
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        UpdateDocument:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /documents/{id}
+            Method: PUT
+            Auth:
+              Authorizer: CognitoAuthorizer
+        DeleteDocument:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /documents/{id}
+            Method: DELETE
+            Auth:
+              Authorizer: CognitoAuthorizer
+        AssignDocumentToGuitar:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /guitars/{guitarId}/documents/{documentId}
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        UnassignDocumentFromGuitar:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /guitars/{guitarId}/documents/{documentId}
+            Method: DELETE
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+  ProvenanceHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-provenance
+      CodeUri: src/
+      Handler: handlers/provenance/index.handler
+      Description: Handles provenance report generation and management
+      Timeout: 60
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref GuitarsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref DocumentsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProvenanceReportsTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+              Resource:
+                - !Sub ${ProvenanceReportsTable.Arn}/index/*
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource:
+                - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-pro-v1:0
+                - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-lite-v1:0
+      Events:
+        GenerateReport:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /guitars/{guitarId}/provenance
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        ListReports:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /guitars/{guitarId}/provenance
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetReport:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /guitars/{guitarId}/provenance/{reportId}
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        DeleteReport:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /guitars/{guitarId}/provenance/{reportId}
+            Method: DELETE
+            Auth:
+              Authorizer: CognitoAuthorizer
+
+  # ==================== DynamoDB Tables ====================
+
+  GuitarsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-guitars
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: guitarId
+          AttributeType: S
+        - AttributeName: brand
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: guitarId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: brand-userId-index
+          KeySchema:
+            - AttributeName: brand
+              KeyType: HASH
+            - AttributeName: userId
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProduction, true, false]
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-users
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProduction, true, false]
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  DocumentsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-documents
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: documentId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: documentId
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProduction, true, false]
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  ProvenanceReportsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-provenance-reports
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: reportId
+          AttributeType: S
+        - AttributeName: guitarId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: reportId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GuitarIdIndex
+          KeySchema:
+            - AttributeName: guitarId
+              KeyType: HASH
+            - AttributeName: reportId
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProduction, true, false]
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ==================== Cognito ====================
+
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub ${AWS::StackName}-users
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Schema:
+        - Name: email
+          Required: true
+          Mutable: true
+        - Name: name
+          Required: true
+          Mutable: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      UserAttributeUpdateSettings:
+        AttributesRequireVerificationBeforeUpdate:
+          - email
+      UserPoolAddOns:
+        AdvancedSecurityMode: AUDIT
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub ${AWS::StackName}-web
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+
+  # ==================== S3 Buckets ====================
+
+  ImagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${BucketPrefix}-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - !Ref AllowedOrigin
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+            AllowedHeaders:
+              - '*'
+            MaxAge: 3000
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldUploads
+            Status: Enabled
+            ExpirationInDays: 1
+            Prefix: uploads/
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  ImagesBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ImagesBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowCloudFrontOAI
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${ImagesOAI}
+            Action: s3:GetObject
+            Resource: !Sub ${ImagesBucket.Arn}/images/*
+
+  ImagesOAI:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub OAI for ${AWS::StackName}-images
+  SecurityHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub ${AWS::StackName}-security-headers
+        Comment: Security headers for images CDN
+        SecurityHeadersConfig:
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 31536000
+            IncludeSubdomains: true
+            Preload: true
+            Override: true
+          ContentTypeOptions:
+            Override: true
+          ContentSecurityPolicy:
+            ContentSecurityPolicy: !Sub "default-src 'none'; img-src 'self' https://${FrontendDomain} https://*.${FrontendDomain} data:; style-src 'self' 'unsafe-inline' https://${FrontendDomain}; script-src 'self' https://${FrontendDomain}; connect-src 'self' https://${ApiDomainName}; font-src 'self' data:; object-src 'none'; media-src 'self'; frame-ancestors 'self' https://${FrontendDomain} https://*.${FrontendDomain}; base-uri 'self'; form-action 'self'"
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: strict-origin-when-cross-origin
+            Override: true
+          XSSProtection:
+            ModeBlock: true
+            Protection: true
+            Override: true
+
+  ImagesDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub Images CDN for ${AWS::StackName}
+        PriceClass: PriceClass_100
+        Aliases:
+          - !If [HasHostedZone, !Ref ImagesDomainName, !Ref AWS::NoValue]
+        ViewerCertificate:
+          !If
+            - HasHostedZone
+            - AcmCertificateArn: !Ref ApiCertificate
+              SslSupportMethod: sni-only
+              MinimumProtocolVersion: TLSv1.2_2021
+            - !Ref AWS::NoValue
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt ImagesBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${ImagesOAI}
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          MinTTL: 0
+          DefaultTTL: 86400
+          MaxTTL: 31536000
+
+# Conditions
+Conditions:
+  IsProduction: !Equals [!Ref Environment, prod]
+  HasHostedZone: !Not [!Equals [!Ref HostedZoneId, ""]]
+
+# Outputs
+Outputs:
+  ApiUrl:
+    Description: API Gateway URL
+    Value: !Sub https://${GuitarCollectionApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+    Export:
+      Name: !Sub ${AWS::StackName}-ApiUrl
+
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool
+    Export:
+      Name: !Sub ${AWS::StackName}-UserPoolId
+
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref UserPoolClient
+    Export:
+      Name: !Sub ${AWS::StackName}-UserPoolClientId
+
+  ImagesBucketName:
+    Description: S3 bucket for images
+    Value: !Ref ImagesBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-ImagesBucketName
+
+  CloudFrontDomain:
+    Description: CloudFront distribution domain
+    Value: !GetAtt ImagesDistribution.DomainName
+    Export:
+      Name: !Sub ${AWS::StackName}-CloudFrontDomain
+
+  ImagesCdnUrl:
+    Description: Images CDN URL (custom domain if configured)
+    Value: !If [HasHostedZone, !Sub "https://${ImagesDomainName}", !Sub "https://${ImagesDistribution.DomainName}"]
+
+  GuitarsTableName:
+    Description: DynamoDB Guitars table name
+    Value: !Ref GuitarsTable
+
+  UsersTableName:
+    Description: DynamoDB Users table name
+    Value: !Ref UsersTable
+
+  DocumentsTableName:
+    Description: DynamoDB Documents table name
+    Value: !Ref DocumentsTable
+
+  CustomDomainName:
+    Description: Custom API domain name (if configured)
+    Value: !If [HasHostedZone, !Ref ApiDomainName, "Not configured - using default API Gateway URL"]
+
+  CustomDomainUrl:
+    Description: Custom API URL (if configured)
+    Value: !If [HasHostedZone, !Sub "https://${ApiDomainName}", "Not configured"]
+
+  CertificateArn:
+    Description: ACM Certificate ARN (if configured)
+    Value: !If [HasHostedZone, !Ref ApiCertificate, "Not configured"]

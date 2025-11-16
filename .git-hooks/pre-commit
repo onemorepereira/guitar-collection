@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# Pre-commit hook for detecting secrets and sensitive information
+# To install: cp .git-hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+echo "🔍 Checking for secrets and sensitive information..."
+
+# Patterns to search for
+PATTERNS=(
+  "aws_access_key_id"
+  "aws_secret_access_key"
+  "AKIA[0-9A-Z]{16}"  # AWS Access Key ID pattern
+  "BEGIN RSA PRIVATE KEY"
+  "BEGIN PRIVATE KEY"
+  "password\s*=\s*['\"][^'\"]{8,}"
+  "secret\s*=\s*['\"][^'\"]{8,}"
+  "token\s*=\s*['\"][^'\"]{20,}"
+  "api[_-]?key\s*=\s*['\"][^'\"]{8,}"
+)
+
+# Files to check (staged files)
+FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -z "$FILES" ]; then
+  echo "✅ No files to check"
+  exit 0
+fi
+
+FOUND_SECRETS=false
+
+# Check each pattern
+for PATTERN in "${PATTERNS[@]}"; do
+  MATCHES=$(echo "$FILES" | xargs grep -iE "$PATTERN" 2>/dev/null)
+  if [ ! -z "$MATCHES" ]; then
+    echo "⚠️  Found potential secret matching pattern: $PATTERN"
+    echo "$MATCHES"
+    FOUND_SECRETS=true
+  fi
+done
+
+# Check for AWS account IDs (12 digits)
+AWS_ACCOUNT_MATCHES=$(echo "$FILES" | xargs grep -E "[0-9]{12}" 2>/dev/null | grep -v "max-age" | grep -v "31536000")
+if [ ! -z "$AWS_ACCOUNT_MATCHES" ]; then
+  echo "⚠️  Found potential AWS Account ID:"
+  echo "$AWS_ACCOUNT_MATCHES"
+  FOUND_SECRETS=true
+fi
+
+# Check for specific sensitive files
+SENSITIVE_FILES=(
+  ".env"
+  ".env.local"
+  ".env.production"
+  "backend/samconfig.toml"
+  "CLAUDE.md"
+)
+
+for FILE in "${SENSITIVE_FILES[@]}"; do
+  if echo "$FILES" | grep -q "^$FILE$"; then
+    echo "❌ ERROR: Attempting to commit sensitive file: $FILE"
+    echo "   This file should be in .gitignore"
+    FOUND_SECRETS=true
+  fi
+done
+
+if [ "$FOUND_SECRETS" = true ]; then
+  echo ""
+  echo "❌ Pre-commit check FAILED: Potential secrets or sensitive files detected"
+  echo "   Please review the files above and remove sensitive information"
+  echo "   To bypass this check (NOT RECOMMENDED): git commit --no-verify"
+  exit 1
+fi
+
+echo "✅ No secrets detected"
+exit 0

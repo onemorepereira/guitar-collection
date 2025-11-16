@@ -1,0 +1,34 @@
+# SAM build artifacts
+.aws-sam/
+samconfig.toml.local
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment files
+env.json
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test coverage
+coverage/
+
+# Build output
+dist/
+build/

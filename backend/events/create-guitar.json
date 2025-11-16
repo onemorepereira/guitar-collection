@@ -1,0 +1,19 @@
+{
+  "version": "2.0",
+  "routeKey": "POST /guitars",
+  "rawPath": "/guitars",
+  "requestContext": {
+    "http": {
+      "method": "POST",
+      "path": "/guitars"
+    },
+    "authorizer": {
+      "jwt": {
+        "claims": {
+          "sub": "test-user-id-123"
+        }
+      }
+    }
+  },
+  "body": "{\"brand\":\"Fender\",\"model\":\"Stratocaster\",\"year\":2020,\"serialNumber\":\"US20123456\",\"color\":\"Sunburst\",\"condition\":\"Excellent\",\"type\":\"Electric\",\"price\":1500,\"notes\":\"Beautiful guitar in great condition\"}"
+}

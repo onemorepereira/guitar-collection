@@ -1,0 +1,43 @@
+version = 0.1
+
+[default]
+[default.global.parameters]
+stack_name = "my-app-backend-prod"
+region = "us-east-1"
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+parameter_overrides = "Environment=prod AllowedOrigin='https://your-domain.com' ApiDomainName='api.your-domain.com' ImagesDomainName='images.your-domain.com' HostedZoneId='YOUR_ROUTE53_HOSTED_ZONE_ID' BucketPrefix='my-app-images' FrontendDomain='your-domain.com'"
+s3_prefix = "my-app-prod"
+tags = "Environment=prod Project=MyApp"
+
+# Development environment
+[dev]
+[dev.deploy.parameters]
+stack_name = "my-app-backend-dev"
+parameter_overrides = "Environment=dev AllowedOrigin='http://localhost:5173'"
+s3_prefix = "my-app-dev"
+tags = "Environment=dev Project=MyApp"
+
+# Staging environment
+[staging]
+[staging.deploy.parameters]
+stack_name = "my-app-backend-staging"
+parameter_overrides = "Environment=staging AllowedOrigin='https://staging.your-domain.com'"
+s3_prefix = "my-app-staging"
+tags = "Environment=staging Project=MyApp"
+
+# Production environment
+[prod]
+[prod.deploy.parameters]
+stack_name = "my-app-backend-prod"
+parameter_overrides = "Environment=prod AllowedOrigin='https://your-domain.com'"
+s3_prefix = "my-app-prod"
+tags = "Environment=prod Project=MyApp"
+confirm_changeset = true  # Require manual confirmation for prod
