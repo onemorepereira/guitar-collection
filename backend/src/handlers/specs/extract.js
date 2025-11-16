@@ -7,7 +7,7 @@ const logger = require('../../lib/logger');
 const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
 const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
-const NOVA_MODEL_ID = 'amazon.nova-micro-v1:0'; // Foundation model for Nova Micro
+const NOVA_MODEL_ID = 'amazon.nova-lite-v1:0'; // Foundation model for Nova Lite (better at structured output)
 
 // Field mapping with categories
 const GUITAR_FIELDS = {
@@ -34,45 +34,87 @@ const createExtractionPrompt = (text) => {
     ...GUITAR_FIELDS.detailed
   ].join(', ');
 
-  return `You are a guitar specification extraction expert. Extract guitar specifications from the following text and return them as a JSON array.
+  return `You are a guitar specification extraction expert. You must extract guitar specifications and return EXACTLY the JSON format shown below.
 
-For each specification found, provide:
-1. field: The exact field name from this list: ${allFields}
-2. value: The extracted value (as appropriate type: string, number, or boolean)
-3. confidence: A confidence score from 0.0 to 1.0
-4. category: One of "basic", "specs", or "detailed"
+MANDATORY JSON STRUCTURE - YOUR RESPONSE MUST START WITH THIS EXACT LINE:
+{
+  "fields": [
 
-Rules:
-- Only extract fields from the provided list
-- Be conservative with confidence scores (0.0-1.0)
-- For "type", valid values are: ELECTRIC, ACOUSTIC, BASS, CLASSICAL
-- For "year", extract only the manufacturing year as a number
-- For "numberOfFrets", extract as a number
-- For "caseIncluded", extract as true or false
-- If you're unsure about a value, lower the confidence score
-- Skip fields you cannot find
-- Return ONLY valid JSON, no markdown or explanation
+MANDATORY JSON STRUCTURE - YOUR RESPONSE MUST END WITH THIS EXACT LINE:
+  ]
+}
 
-Input text:
+FIELD LIST - Only extract these fields:
+${allFields}
+
+CRITICAL RULES - FOLLOW EXACTLY:
+1. Start your response with: { "fields": [
+2. End your response with: ] }
+3. Extract MAXIMUM 30 fields (most important only)
+4. Only include fields with confidence >= 0.7
+5. Each field object must have EXACTLY these properties: field, value, confidence, category
+6. Optional properties: sourceText, reasoning (only if helpful)
+
+STRING VALUE RULES - CRITICAL FOR VALID JSON:
+- Replace ALL quote marks " with the word inch or feet
+- Remove ALL special characters: ® ™ © °
+- Do NOT use apostrophes in contractions - write "cannot" not "can't"
+- Keep strings SHORT - max 25 characters for sourceText, max 15 words for reasoning
+- No newlines, no tabs, no special formatting
+
+VALID VALUES:
+- type: Must be "Electric", "Acoustic", "Bass", or "Classical" (no other values)
+- year: Number only (example: 2004)
+- numberOfFrets: Number only (example: 22)
+- caseIncluded: true or false (boolean, no quotes)
+- confidence: Number between 0.0 and 1.0 (example: 0.95)
+- category: Must be "basic", "specs", or "detailed" (no other values)
+
+INPUT TEXT:
 ${text}
 
-Return format:
+EXAMPLE OUTPUT - YOUR RESPONSE MUST FOLLOW THIS EXACT FORMAT:
 {
   "fields": [
     {
       "field": "brand",
       "value": "Fender",
       "confidence": 0.95,
-      "category": "basic"
+      "category": "basic",
+      "sourceText": "Made by Fender",
+      "reasoning": "Brand name stated"
     },
     {
       "field": "model",
-      "value": "American Professional II Stratocaster",
+      "value": "Stratocaster",
       "confidence": 0.98,
+      "category": "basic",
+      "sourceText": "Model Stratocaster",
+      "reasoning": "Model explicitly listed"
+    },
+    {
+      "field": "year",
+      "value": 2004,
+      "confidence": 0.90,
       "category": "basic"
+    },
+    {
+      "field": "scaleLength",
+      "value": "25.5 inch",
+      "confidence": 0.85,
+      "category": "specs",
+      "sourceText": "Scale length 25.5 inch"
     }
   ]
-}`;
+}
+
+FINAL REMINDERS:
+- Maximum 30 fields
+- Start with { "fields": [
+- End with ] }
+- Replace quotes with inch/feet
+- Remove ® ™ © symbols
+- Keep it simple and SHORT`;
 };
 
 // Parse multipart form data to extract file and text
@@ -185,11 +227,30 @@ const extractSpecsWithNova = async (text) => {
     if (!jsonMatch) {
       logger.warn('No JSON found in Nova response', {
         responseLength: responseText.length,
+        responsePreview: responseText.substring(0, 500),
       });
       throw new Error('Failed to parse Nova response');
     }
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      logger.error('JSON parse error', {
+        errorMessage: parseError.message,
+        errorName: parseError.name,
+        jsonLength: jsonMatch[0].length,
+        jsonPreview: jsonMatch[0].substring(0, 1000),
+        jsonAroundError: parseError.message.match(/position (\d+)/)
+          ? jsonMatch[0].substring(
+              Math.max(0, parseInt(parseError.message.match(/position (\d+)/)[1]) - 100),
+              parseInt(parseError.message.match(/position (\d+)/)[1]) + 100
+            )
+          : 'N/A'
+      });
+      throw parseError;
+    }
+
     return parsed;
   } catch (error) {
     logger.error('Error calling Nova', {
@@ -285,13 +346,19 @@ exports.handler = async (event) => {
     // Extract specs using Nova
     const extractedSpecs = await extractSpecsWithNova(textContent);
 
+    // Include raw text for visual mapping in frontend
+    const response = {
+      ...extractedSpecs,
+      rawText: textContent
+    };
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',
       },
-      body: JSON.stringify(extractedSpecs),
+      body: JSON.stringify(response),
     };
   } catch (error) {
     logger.error('Error in extract handler', {

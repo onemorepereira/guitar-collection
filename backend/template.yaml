@@ -459,10 +459,10 @@ Resources:
                 - bedrock:InvokeModel
                 - bedrock:InvokeModelWithResponseStream
               Resource:
-                - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-micro-v1:0'
-                - !Sub 'arn:aws:bedrock:us-east-1:${AWS::AccountId}:inference-profile/us.amazon.nova-micro-v1:0'
-                - !Sub 'arn:aws:bedrock:us-east-2:${AWS::AccountId}:inference-profile/us.amazon.nova-micro-v1:0'
-                - !Sub 'arn:aws:bedrock:us-west-2:${AWS::AccountId}:inference-profile/us.amazon.nova-micro-v1:0'
+                - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-lite-v1:0'
+                - !Sub 'arn:aws:bedrock:us-east-1:${AWS::AccountId}:inference-profile/us.amazon.nova-lite-v1:0'
+                - !Sub 'arn:aws:bedrock:us-east-2:${AWS::AccountId}:inference-profile/us.amazon.nova-lite-v1:0'
+                - !Sub 'arn:aws:bedrock:us-west-2:${AWS::AccountId}:inference-profile/us.amazon.nova-lite-v1:0'
       Events:
         ExtractSpecs:
           Type: HttpApi

@@ -113,6 +113,101 @@ Array of journal notes. May be empty array, but should not be null:
   - Null coalescing (`guitar.type || 'Not specified'`)
   - Conditional rendering (`{guitar.type && <span>{guitar.type}</span>}`)
 
+### AI-Powered Spec Extraction (POST /specs/extract)
+
+Extract guitar specifications from PDFs or text using Amazon Bedrock Nova Lite.
+
+**Authentication**: Required (JWT token)
+
+**Content Types Supported**:
+- `multipart/form-data` - For file uploads (PDF or TXT)
+- `application/json` - For pasted text content
+
+**Request Format (File Upload)**:
+```
+Content-Type: multipart/form-data; boundary=...
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="receipt.pdf"
+Content-Type: application/pdf
+
+<binary PDF data>
+--boundary--
+```
+
+**Request Format (Text Paste)**:
+```json
+{
+  "text": "Fender American Professional Stratocaster\nBody: Alder\nNeck: Maple\n..."
+}
+```
+
+**Response Format**:
+```json
+{
+  "fields": [
+    {
+      "field": "brand",
+      "value": "Fender",
+      "confidence": 0.95,
+      "category": "basic",
+      "sourceText": "Fender American Professional",
+      "reasoning": "Brand name explicitly stated"
+    },
+    {
+      "field": "scaleLength",
+      "value": "25.5 inch",
+      "confidence": 0.85,
+      "category": "specs",
+      "sourceText": "25.5 inch scale"
+    }
+  ],
+  "rawText": "Fender American Professional Stratocaster\nBody: Alder..."
+}
+```
+
+**Response Fields**:
+- `fields` (array) - Extracted guitar specifications
+  - `field` (string) - Field name matching guitar data model
+  - `value` (string|number|boolean) - Extracted value
+  - `confidence` (number) - AI confidence score (0.0-1.0)
+  - `category` (string) - Field category: "basic", "specs", or "detailed"
+  - `sourceText` (string, optional) - Original text snippet containing this value
+  - `reasoning` (string, optional) - AI explanation for extraction
+- `rawText` (string) - Full source text for visual mapping in UI
+
+**Field Categories**:
+- **basic**: brand, model, year, type (4 fields)
+- **specs**: bodyMaterial, neckMaterial, fretboardMaterial, numberOfFrets, scaleLength, pickupConfiguration, color, finish, tuningMachines, bridge, nut, electronics, caseIncluded, countryOfOrigin (14 fields)
+- **detailed**: All detailedSpecs fields (25+ fields)
+
+**Extraction Limits**:
+- Maximum 30 fields returned (most important only)
+- Only fields with confidence >= 0.7 included
+- Text input limited to 50,000 characters
+- Supported file types: PDF, TXT
+
+**Error Responses**:
+```json
+// No file or text provided
+{ "error": "No file uploaded" }
+{ "error": "No text provided" }
+
+// Invalid file type
+{ "error": "Unsupported file type. Please upload PDF or TXT" }
+
+// Text too large
+{ "error": "Text content too large (max 50,000 characters)" }
+
+// AI extraction failed
+{ "error": "Failed to extract specifications with AI" }
+{ "error": "Failed to parse PDF file" }
+```
+
+**AI Model**: Amazon Bedrock Nova Lite (`amazon.nova-lite-v1:0`)
+
+**Cost**: ~$0.00024 per extraction (typical: 2000 input tokens, 500 output tokens)
+
 ## Examples
 
 ### Minimal Valid Guitar

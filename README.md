@@ -8,7 +8,7 @@ You can test drive it here: https://guitarhelp.click/
 
 - **🎸 Complete Guitar Catalog** - Track brand, model, year, specs, condition, and modifications
 - **📸 Image Management** - Upload multiple photos per guitar with cloud storage via S3 + CloudFront CDN
-- **🤖 AI-Powered Specs Import** - Extract detailed specifications from PDFs and manufacturer websites using Amazon Bedrock Nova
+- **🤖 AI-Powered Specs Import** - Extract detailed specifications from PDFs and manufacturer websites using Amazon Bedrock Nova Lite
 - **🔍 Smart Search & Filters** - Fuzzy search with autocomplete, filter by brand/type/year
 - **📄 Document Storage** - Securely store receipts, manuals, and certificates of authenticity
 - **📝 Notes Journal** - Track repairs, modifications, setup changes, and history
@@ -88,7 +88,7 @@ make help             # See all available commands
     └──────────────────────────────────────────┘
 
     ┌──────────────────────────────────────────┐
-    │         Amazon Bedrock (Nova)            │
+    │      Amazon Bedrock (Nova Lite)          │
     │  • AI spec extraction from PDFs/text     │
     │  • Confidence scoring                    │
     └──────────────────────────────────────────┘
@@ -98,7 +98,7 @@ make help             # See all available commands
 
 **Frontend**: React 18, TypeScript, Tailwind CSS, Vite, Fuse.js, React Router
 
-**Backend**: AWS Lambda (Node.js 20.x), API Gateway, DynamoDB, Cognito, Bedrock Nova
+**Backend**: AWS Lambda (Node.js 20.x), API Gateway, DynamoDB, Cognito, Bedrock Nova Lite
 
 **Storage**: S3, CloudFront CDN, KMS encryption
 
@@ -166,7 +166,7 @@ Monthly cost for personal use (~100 guitars, moderate traffic):
 | S3 Storage | $1-3 |
 | CloudFront | $1-2 |
 | Cognito | $0 (within free tier) |
-| Bedrock Nova | <$0.01 |
+| Bedrock Nova Lite | ~$0.02-0.03 |
 | **Total** | **~$5-10/month** |
 
 ## Prerequisites

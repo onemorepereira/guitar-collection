@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { X, Upload, FileText, Sparkles, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, Upload, FileText, Sparkles, Loader2, AlertCircle, CheckCircle, Search } from 'lucide-react';
 import { guitarService } from '../services/guitarService';
+import { VisualSourceMapper } from './VisualSourceMapper';
 
 interface ExtractedField {
   field: string;
   value: string | number | boolean;
   confidence: number; // 0-1
   category: 'basic' | 'specs' | 'detailed';
+  sourceText?: string; // Exact text snippet from source containing this value
+  reasoning?: string; // Brief explanation of why this value was extracted
 }
 
 interface ExtractedSpecs {
@@ -21,7 +24,7 @@ interface SpecsImporterProps {
 }
 
 type InputMethod = 'file' | 'text';
-type Stage = 'input' | 'processing' | 'review';
+type Stage = 'input' | 'processing' | 'review' | 'mapping';
 
 export const SpecsImporter = ({ onClose, onApply, existingFields }: SpecsImporterProps) => {
   const [stage, setStage] = useState<Stage>('input');
@@ -203,6 +206,7 @@ export const SpecsImporter = ({ onClose, onApply, existingFields }: SpecsImporte
                 {stage === 'input' && 'Upload a document or paste text to extract specs'}
                 {stage === 'processing' && 'Analyzing specifications...'}
                 {stage === 'review' && 'Review and select fields to import'}
+                {stage === 'mapping' && 'View source document and extracted field locations'}
               </p>
             </div>
           </div>
@@ -424,6 +428,15 @@ export const SpecsImporter = ({ onClose, onApply, existingFields }: SpecsImporte
               </div>
             </div>
           )}
+
+          {stage === 'mapping' && extractedSpecs && extractedSpecs.rawText && (
+            <div className="h-[600px]">
+              <VisualSourceMapper
+                fields={extractedSpecs.fields}
+                rawText={extractedSpecs.rawText}
+              />
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -451,6 +464,33 @@ export const SpecsImporter = ({ onClose, onApply, existingFields }: SpecsImporte
             <>
               <button onClick={() => setStage('input')} className="btn-secondary">
                 ← Back
+              </button>
+              <div className="flex items-center gap-3">
+                {extractedSpecs?.rawText && (
+                  <button
+                    onClick={() => setStage('mapping')}
+                    className="btn-secondary flex items-center gap-2"
+                  >
+                    <Search className="w-4 h-4" />
+                    View Source Mapping
+                  </button>
+                )}
+                <button
+                  onClick={handleApplySpecs}
+                  disabled={selectedFields.size === 0}
+                  className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Apply {selectedFields.size} Field{selectedFields.size !== 1 ? 's' : ''} to Form
+                </button>
+              </div>
+            </>
+          )}
+
+          {stage === 'mapping' && (
+            <>
+              <button onClick={() => setStage('review')} className="btn-secondary">
+                ← Back to Review
               </button>
               <button
                 onClick={handleApplySpecs}
