@@ -2,6 +2,8 @@
 
 A modern, full-stack web application for cataloging and managing your guitar collection with AI-powered features, secure cloud storage, and provenance tracking.
 
+You can test drive it here: https://guitarhelp.click/
+
 ## Features
 
 - **🎸 Complete Guitar Catalog** - Track brand, model, year, specs, condition, and modifications
