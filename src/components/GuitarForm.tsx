@@ -24,6 +24,8 @@ export const GuitarForm = () => {
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentUploadIndex, setCurrentUploadIndex] = useState(0);
 
   // Form state
   const [brand, setBrand] = useState('');
@@ -320,15 +322,22 @@ export const GuitarForm = () => {
     if (stagedImages.length === 0) return;
 
     setUploadingImages(true);
+    setUploadProgress(0);
+    setCurrentUploadIndex(0);
+
     try {
       const newImages: GuitarImage[] = [];
 
       for (let i = 0; i < stagedImages.length; i++) {
         const staged = stagedImages[i];
+        setCurrentUploadIndex(i);
+        setUploadProgress(0);
 
         // The file is already processed when saved from the editor
-        // So we just upload it directly
-        const url = await guitarService.uploadImage(staged.file);
+        // So we just upload it directly with progress tracking
+        const url = await guitarService.uploadImage(staged.file, (progress) => {
+          setUploadProgress(progress);
+        });
 
         newImages.push({
           id: `img-${Date.now()}-${i}`,
@@ -349,6 +358,8 @@ export const GuitarForm = () => {
       alert('Failed to upload some images. Please try again.');
     } finally {
       setUploadingImages(false);
+      setUploadProgress(0);
+      setCurrentUploadIndex(0);
     }
   };
 
@@ -793,6 +804,8 @@ export const GuitarForm = () => {
               onImagesChange={setStagedImages}
               onUpload={handleUploadStaged}
               uploading={uploadingImages}
+              uploadProgress={uploadProgress}
+              currentUploadIndex={currentUploadIndex}
             />
 
             {/* Uploaded Images */}

@@ -7,9 +7,10 @@ import { SearchBar } from './SearchBar';
 import { Footer } from './Footer';
 import { UserNameEditor } from './UserNameEditor';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Loader2, LogOut, User, Edit2, Grid, List, FileText, Clock, Calendar, DollarSign } from 'lucide-react';
+import { Plus, Loader2, LogOut, User, Edit2, Grid, List, FileText, Clock, Calendar, DollarSign, Table } from 'lucide-react';
+import { CollectionTable } from './CollectionTable';
 
-type ViewMode = 'gallery' | 'list' | 'timeline';
+type ViewMode = 'gallery' | 'list' | 'timeline' | 'table';
 
 export const GuitarGallery = () => {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export const GuitarGallery = () => {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     // Load view preference from localStorage
     const saved = localStorage.getItem('guitarViewMode');
-    return (saved === 'list' || saved === 'gallery' || saved === 'timeline') ? saved : 'gallery';
+    return (saved === 'list' || saved === 'gallery' || saved === 'timeline' || saved === 'table') ? saved : 'gallery';
   });
 
   useEffect(() => {
@@ -188,6 +189,17 @@ export const GuitarGallery = () => {
                 >
                   <Clock className="w-5 h-5" />
                 </button>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`p-2 rounded transition-colors ${
+                    viewMode === 'table'
+                      ? 'bg-white text-primary-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Table view (editable)"
+                >
+                  <Table className="w-5 h-5" />
+                </button>
               </div>
               <button
                 onClick={() => navigate('/add')}
@@ -225,7 +237,7 @@ export const GuitarGallery = () => {
       </header>
 
       {/* Gallery */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <main className={viewMode === 'table' ? 'w-full px-4 pb-12' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12'}>
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
@@ -312,7 +324,7 @@ export const GuitarGallery = () => {
                       </td>
                       <td className="px-4 sm:px-6 py-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {guitar.brand} - {guitar.model} {guitar.year}
+                          {guitar.brand} {guitar.model} {guitar.year}
                         </div>
                         {/* S/N on mobile */}
                         {guitar.privateInfo?.serialNumber && (
@@ -361,7 +373,7 @@ export const GuitarGallery = () => {
               </table>
             </div>
           </div>
-        ) : (
+        ) : viewMode === 'timeline' ? (
           /* Timeline View */
           <div>
             {/* Vertical Timeline (Mobile and Default) */}
@@ -515,7 +527,25 @@ export const GuitarGallery = () => {
               </div>
             </div>
           </div>
-        )}
+        ) : viewMode === 'table' ? (
+          /* Table View - Editable */
+          <div className="card p-4">
+            <div className="mb-4">
+              <h2 className="text-lg font-bold text-gray-900">Collection Management</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Click any cell to edit. Changes save automatically.
+              </p>
+            </div>
+            <CollectionTable
+              guitars={guitars}
+              onUpdate={(updatedGuitar) => {
+                setGuitars(prev =>
+                  prev.map(g => g.id === updatedGuitar.id ? updatedGuitar : g)
+                );
+              }}
+            />
+          </div>
+        ) : null}
       </main>
 
       <Footer />

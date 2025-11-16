@@ -799,8 +799,8 @@ Resources:
         - ALLOW_USER_PASSWORD_AUTH
         - ALLOW_ADMIN_USER_PASSWORD_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
-      AccessTokenValidity: 1
-      IdTokenValidity: 1
+      AccessTokenValidity: 6
+      IdTokenValidity: 6
       RefreshTokenValidity: 30
       TokenValidityUnits:
         AccessToken: hours

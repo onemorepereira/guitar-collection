@@ -8,6 +8,8 @@ interface ImageStagingProps {
   onImagesChange: (images: StagedImage[]) => void;
   onUpload: () => void;
   uploading: boolean;
+  uploadProgress?: number;
+  currentUploadIndex?: number;
 }
 
 export const ImageStaging = ({
@@ -15,6 +17,8 @@ export const ImageStaging = ({
   onImagesChange,
   onUpload,
   uploading,
+  uploadProgress = 0,
+  currentUploadIndex = 0,
 }: ImageStagingProps) => {
   const [editingImage, setEditingImage] = useState<StagedImage | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -227,6 +231,29 @@ export const ImageStaging = ({
               {uploading ? 'Uploading...' : `Upload ${images.length} Image${images.length > 1 ? 's' : ''}`}
             </button>
           </div>
+
+          {/* Upload Progress Bar */}
+          {uploading && (
+            <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">
+                  Uploading image {currentUploadIndex + 1} of {images.length}
+                </span>
+                <span className="text-sm font-semibold text-primary-600">
+                  {Math.round(uploadProgress)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="bg-primary-600 h-2.5 rounded-full"
+                  style={{
+                    width: `${uploadProgress}%`,
+                    transition: 'width 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {images.map((img, index) => (

@@ -116,7 +116,10 @@ export const guitarService = {
   },
 
   // Upload image to S3
-  async uploadImage(file: File): Promise<string> {
+  async uploadImage(
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<string> {
     // Step 1: Get presigned upload URL
     const urlResponse = await authenticatedRequest('/images/upload-url', getToken(), {
       method: 'POST',
@@ -133,18 +136,41 @@ export const guitarService = {
 
     const { uploadUrl, imageKey } = await urlResponse.json();
 
-    // Step 2: Upload file directly to S3 (no CSRF headers needed for S3 presigned URL)
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': file.type,
-      },
-      body: file,
-    });
+    // Step 2: Upload file directly to S3 using XMLHttpRequest for progress tracking
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
 
-    if (!uploadResponse.ok) {
-      throw new Error('Failed to upload image to S3');
-    }
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable && onProgress) {
+          const percentComplete = (e.loaded / e.total) * 100;
+          onProgress(percentComplete);
+        }
+      });
+
+      // Handle completion
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error('Failed to upload image to S3'));
+        }
+      });
+
+      // Handle errors
+      xhr.addEventListener('error', () => {
+        reject(new Error('Failed to upload image to S3'));
+      });
+
+      xhr.addEventListener('abort', () => {
+        reject(new Error('Upload cancelled'));
+      });
+
+      // Start upload
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', file.type);
+      xhr.send(file);
+    });
 
     // Step 3: Notify backend that upload is complete
     const completeResponse = await authenticatedRequest('/images/upload-complete', getToken(), {
