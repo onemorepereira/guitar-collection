@@ -473,6 +473,40 @@ Resources:
             Auth:
               Authorizer: CognitoAuthorizer
 
+  # Receipt Extractor Handler
+  ReceiptHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-receipts
+      CodeUri: src/
+      Handler: handlers/receipts/extract.handler
+      Description: Handles receipt extraction using Amazon Nova Lite
+      Timeout: 60  # Increased timeout for AI processing
+      MemorySize: 1024  # Increased memory for PDF processing
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+              Resource:
+                - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-lite-v1:0'
+                - !Sub 'arn:aws:bedrock:us-east-1:${AWS::AccountId}:inference-profile/us.amazon.nova-lite-v1:0'
+                - !Sub 'arn:aws:bedrock:us-east-2:${AWS::AccountId}:inference-profile/us.amazon.nova-lite-v1:0'
+                - !Sub 'arn:aws:bedrock:us-west-2:${AWS::AccountId}:inference-profile/us.amazon.nova-lite-v1:0'
+      Events:
+        ExtractReceipt:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /receipts/extract
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+
   # Documents Handler
   DocumentsHandler:
     Type: AWS::Serverless::Function

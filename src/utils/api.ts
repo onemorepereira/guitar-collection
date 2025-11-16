@@ -24,8 +24,9 @@ export async function apiRequest(url: string, options: RequestInit = {}): Promis
   const fullUrl = url.startsWith('http') ? url : `${API_URL}${url}`;
 
   // Merge headers with security headers
+  // Don't set Content-Type if body is FormData - browser will set it with boundary
   const headers = {
-    'Content-Type': 'application/json',
+    ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
     ...SECURITY_HEADERS,
     ...options.headers,
   };

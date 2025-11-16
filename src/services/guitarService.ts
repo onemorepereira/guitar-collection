@@ -194,10 +194,6 @@ export const guitarService = {
 
     const response = await authenticatedRequest('/specs/extract', getToken(), {
       method: 'POST',
-      headers: {
-        // Don't set Content-Type for FormData - browser will set it with boundary
-        'X-Requested-With': 'XMLHttpRequest', // CSRF protection
-      },
       body: formData,
     });
 
@@ -219,6 +215,39 @@ export const guitarService = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to extract specifications');
+    }
+
+    return response.json();
+  },
+
+  // Extract receipt information from uploaded file (PDF or TXT)
+  async extractReceiptFromFile(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await authenticatedRequest('/receipts/extract', getToken(), {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to extract receipt information');
+    }
+
+    return response.json();
+  },
+
+  // Extract receipt information from pasted text
+  async extractReceiptFromText(text: string): Promise<any> {
+    const response = await authenticatedRequest('/receipts/extract', getToken(), {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to extract receipt information');
     }
 
     return response.json();

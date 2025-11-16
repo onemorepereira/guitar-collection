@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Guitar, GuitarType, GuitarImage, NoteEntry, GuitarDocument } from '../types/guitar';
 import { guitarService } from '../services/guitarService';
-import { ArrowLeft, Save, Loader2, X, Upload, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, X, Upload, ChevronDown, ChevronUp, Sparkles, Receipt } from 'lucide-react';
 import { ImageStaging } from './ImageStaging';
 import { StagedImage } from '../utils/imageUtils';
 import { NotesJournal } from './NotesJournal';
@@ -13,6 +13,7 @@ import { GUITAR_SUGGESTIONS } from '../constants/guitarSuggestions';
 import { useAuth } from '../context/AuthContext';
 import { useGuitarSuggestions, getTypicalSpecs } from '../hooks/useGuitarSuggestions';
 import { SpecsImporter } from './SpecsImporter';
+import { ReceiptImporter } from './ReceiptImporter';
 import { DocumentLinker } from './DocumentLinker';
 
 export const GuitarForm = () => {
@@ -64,6 +65,7 @@ export const GuitarForm = () => {
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
   const [showSpecsImporter, setShowSpecsImporter] = useState(false);
+  const [showReceiptImporter, setShowReceiptImporter] = useState(false);
   const [showAutoFillPrompt, setShowAutoFillPrompt] = useState(false);
   const [previousModel, setPreviousModel] = useState('');
 
@@ -466,6 +468,37 @@ export const GuitarForm = () => {
     if (detailedFields.length > 0) {
       setShowDetailedSpecs(true);
     }
+  };
+
+  const handleApplyReceipt = (receiptData: {
+    purchasePrice: number;
+    purchaseDate: string;
+    purchaseLocation: string;
+    serialNumber?: string;
+    notesAddition?: string;
+  }) => {
+    // Apply receipt data to private info
+    setPurchasePrice(receiptData.purchasePrice.toString());
+    setPurchaseDate(receiptData.purchaseDate);
+    setPurchaseLocation(receiptData.purchaseLocation);
+
+    if (receiptData.serialNumber) {
+      setSerialNumber(receiptData.serialNumber);
+    }
+
+    // Add receipt details to notes if provided
+    if (receiptData.notesAddition) {
+      const timestamp = new Date().toISOString();
+      const newNote: NoteEntry = {
+        id: `note-${Date.now()}`,
+        content: receiptData.notesAddition,
+        createdAt: timestamp,
+      };
+      setNotes(prevNotes => [newNote, ...prevNotes]);
+    }
+
+    // Close the modal
+    setShowReceiptImporter(false);
   };
 
   const getCurrentFormValues = () => {
@@ -1422,10 +1455,22 @@ export const GuitarForm = () => {
 
           {/* Private Information */}
           <div className="card p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Private Information</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              This information is stored locally and kept private.
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Private Information</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  This information is stored locally and kept private.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowReceiptImporter(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+              >
+                <Receipt className="w-4 h-4" />
+                Import Receipt
+              </button>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -1625,6 +1670,14 @@ export const GuitarForm = () => {
           onClose={() => setShowSpecsImporter(false)}
           onApply={handleApplyExtractedSpecs}
           existingFields={getCurrentFormValues()}
+        />
+      )}
+
+      {/* Receipt Importer Modal */}
+      {showReceiptImporter && (
+        <ReceiptImporter
+          onClose={() => setShowReceiptImporter(false)}
+          onApply={handleApplyReceipt}
         />
       )}
 
