@@ -771,7 +771,7 @@ export const GuitarForm = () => {
                   <button
                     type="button"
                     onClick={handleAutoFillSpecs}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm whitespace-nowrap"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
                     title="Auto-fill common specifications for this guitar model"
                   >
                     Yes, auto-fill
@@ -779,7 +779,7 @@ export const GuitarForm = () => {
                   <button
                     type="button"
                     onClick={() => setShowAutoFillPrompt(false)}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm whitespace-nowrap"
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm"
                     title="Dismiss auto-fill suggestion"
                   >
                     No thanks
@@ -1482,7 +1482,7 @@ export const GuitarForm = () => {
                 title="Extract purchase information from receipt using AI"
               >
                 <Receipt className="w-4 h-4" />
-                Import Receipt
+                <span className="hidden sm:inline">Import Receipt</span>
               </button>
             </div>
 
@@ -1660,22 +1660,22 @@ export const GuitarForm = () => {
         {/* Danger Zone - Delete Guitar */}
         {isEditMode && (
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-8">
-            <div className="border-2 border-red-300 rounded-lg p-6 bg-red-50">
-              <div className="flex items-start gap-4">
+            <div className="border-2 border-red-300 rounded-lg p-4 sm:p-6 bg-red-50">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
                 <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
-                    <Trash2 className="w-6 h-6 text-white" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-600 rounded-full flex items-center justify-center">
+                    <Trash2 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Danger Zone</h3>
-                  <p className="text-sm text-gray-700 mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">Danger Zone</h3>
+                  <p className="text-xs sm:text-sm text-gray-700 mb-4">
                     Once you delete this guitar, there is no going back. All images, notes, and information will be permanently removed.
                   </p>
                   <button
                     type="button"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold text-sm uppercase tracking-wide"
+                    className="w-full sm:w-auto px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold text-xs sm:text-sm uppercase tracking-wide"
                   >
                     Delete This Guitar Forever
                   </button>

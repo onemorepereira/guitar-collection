@@ -64,9 +64,10 @@ export const DocumentLinker = ({ linkedDocumentIds, onDocumentIdsChange }: Docum
           type="button"
           onClick={() => setShowPicker(!showPicker)}
           className="btn-outline text-sm flex items-center gap-2"
+          title={showPicker ? 'Close document picker' : 'Link documents to this guitar'}
         >
           <Link2 className="w-4 h-4" />
-          {showPicker ? 'Close' : 'Link Documents'}
+          <span className="hidden sm:inline">{showPicker ? 'Close' : 'Link Documents'}</span>
         </button>
       </div>
 

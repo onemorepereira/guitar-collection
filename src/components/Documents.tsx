@@ -235,7 +235,7 @@ export const Documents = () => {
           <p className="text-gray-600">Upload your first document to get started</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {documents.map(doc => (
             <DocumentCard
               key={doc.id}
