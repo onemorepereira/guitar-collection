@@ -176,11 +176,10 @@ export const Documents = () => {
               </div>
               <button
                 onClick={() => navigate('/collection')}
-                className="btn-outline flex items-center gap-2"
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
                 title="Back to guitar collection"
               >
                 <Grid className="w-5 h-5" />
-                <span className="hidden sm:inline">Collection</span>
               </button>
               <button
                 onClick={handleLogout}

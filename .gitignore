@@ -37,6 +37,7 @@ dist-ssr
 
 # Development notes (not for version control)
 CLAUDE.md
+.claude
 
 # AWS SAM cache
 .aws-sam/

@@ -36,7 +36,7 @@ export const GuitarGallery = () => {
 
   useEffect(() => {
     if (user?.name) {
-      document.title = `${user.name}'s Guitar Stash`;
+      document.title = `Guitar Collections - ${user.name}`;
     }
   }, [user]);
 
@@ -71,6 +71,13 @@ export const GuitarGallery = () => {
     const price = guitar.privateInfo?.purchasePrice || 0;
     return sum + price;
   }, 0);
+
+  // Default sort: by purchase date descending (newest first)
+  const displayGuitars = [...guitars].sort((a: Guitar, b: Guitar) => {
+    const dateA = a.privateInfo?.purchaseDate || a.createdAt;
+    const dateB = b.privateInfo?.purchaseDate || b.createdAt;
+    return new Date(dateB).getTime() - new Date(dateA).getTime(); // Newest first
+  });
 
   // Timeline helper functions
   const formatDate = (dateString: string) => {
@@ -127,19 +134,21 @@ export const GuitarGallery = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div className="text-center md:text-left">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{user?.name}'s Guitar Stash</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Guitar Collections</h1>
               <p className="text-gray-600 mt-1">
-                {guitars.length} {guitars.length === 1 ? 'guitar' : 'guitars'} in collection
+                {user?.name}
+                <span className="text-gray-400 mx-2">•</span>
+                {guitars.length} {guitars.length === 1 ? 'guitar' : 'guitars'}
                 {totalValue > 0 && (
-                  <span className="text-gray-400 mx-2">•</span>
-                )}
-                {totalValue > 0 && (
-                  <span>
-                    ${totalValue.toLocaleString('en-US', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })} invested
-                  </span>
+                  <>
+                    <span className="text-gray-400 mx-2">•</span>
+                    <span>
+                      ${totalValue.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })} invested
+                    </span>
+                  </>
                 )}
               </p>
             </div>
@@ -203,19 +212,17 @@ export const GuitarGallery = () => {
               </div>
               <button
                 onClick={() => navigate('/add')}
-                className="btn-primary flex items-center gap-2"
+                className="p-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors shadow-sm hover:shadow-md"
                 title="Add new guitar to collection"
               >
                 <Plus className="w-5 h-5" />
-                <span className="hidden sm:inline">Add Guitar</span>
               </button>
               <button
                 onClick={() => navigate('/documents')}
-                className="btn-outline flex items-center gap-2"
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
                 title="Manage documents"
               >
                 <FileText className="w-5 h-5" />
-                <span className="hidden sm:inline">Documents</span>
               </button>
               <button
                 onClick={handleLogout}
@@ -261,7 +268,7 @@ export const GuitarGallery = () => {
           </div>
         ) : viewMode === 'gallery' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {guitars.map((guitar) => (
+            {displayGuitars.map((guitar) => (
               <GuitarCard
                 key={guitar.id}
                 guitar={guitar}
@@ -299,7 +306,7 @@ export const GuitarGallery = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {guitars.map((guitar) => (
+                  {displayGuitars.map((guitar) => (
                     <tr
                       key={guitar.id}
                       onClick={() => navigate(`/guitar/${guitar.id}`)}
@@ -537,7 +544,7 @@ export const GuitarGallery = () => {
               </p>
             </div>
             <CollectionTable
-              guitars={guitars}
+              guitars={displayGuitars}
               onUpdate={(updatedGuitar) => {
                 setGuitars(prev =>
                   prev.map(g => g.id === updatedGuitar.id ? updatedGuitar : g)
