@@ -7,7 +7,7 @@ import { SearchBar } from './SearchBar';
 import { Footer } from './Footer';
 import { UserNameEditor } from './UserNameEditor';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Loader2, LogOut, User, Edit2, Grid, List, FileText, Clock, Calendar, DollarSign, Table } from 'lucide-react';
+import { Plus, Loader2, DoorOpen, User, Edit2, Grid, List, FileText, Clock, Calendar, DollarSign, Table } from 'lucide-react';
 import { CollectionTable } from './CollectionTable';
 
 type ViewMode = 'gallery' | 'list' | 'timeline' | 'table';
@@ -226,11 +226,10 @@ export const GuitarGallery = () => {
               </button>
               <button
                 onClick={handleLogout}
-                className="btn-secondary flex items-center gap-2"
-                title="Logout"
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
+                title="Logout and exit"
               >
-                <LogOut className="w-5 h-5" />
-                <span className="hidden sm:inline">Logout</span>
+                <DoorOpen className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -238,7 +237,7 @@ export const GuitarGallery = () => {
           <SearchBar
             value={search}
             onChange={handleSearchChange}
-            placeholder="Search by brand, model, color, or notes..."
+            placeholder="Search by brand, model, serial number, color, or notes..."
           />
         </div>
       </header>

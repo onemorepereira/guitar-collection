@@ -35,7 +35,7 @@ async function listGuitars(event) {
           guitar.brand,
           guitar.model,
           guitar.color,
-          guitar.serialNumber,
+          guitar.privateInfo?.serialNumber,
           guitar.notes?.map(n => n.content).join(' '),
         ].filter(Boolean).join(' ').toLowerCase();
 

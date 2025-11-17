@@ -16,9 +16,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  EyeOff,
   FileText as FileCertificate,
   Sparkles,
+  StickyNote,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ReceiptViewer } from './ReceiptViewer';
@@ -53,7 +53,6 @@ export const GuitarDetail = () => {
   const [guitar, setGuitar] = useState<Guitar | null>(null);
   const [linkedDocuments, setLinkedDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showPrivateInfo, setShowPrivateInfo] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReceiptViewer, setShowReceiptViewer] = useState(false);
@@ -289,24 +288,13 @@ export const GuitarDetail = () => {
               <span className="font-medium">Back to Collection</span>
             </button>
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate(`/edit/${guitar.id}`)}
-                className="btn-outline flex items-center gap-2"
-                title="Edit guitar details"
-              >
-                <Edit className="w-4 h-4" />
-                Edit
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="px-4 py-2 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition-colors duration-200 font-medium flex items-center gap-2"
-                title="Delete this guitar"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete
-              </button>
-            </div>
+            <button
+              onClick={() => navigate(`/edit/${guitar.id}`)}
+              className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
+              title="Edit guitar details"
+            >
+              <Edit className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </header>
@@ -606,26 +594,12 @@ export const GuitarDetail = () => {
             {/* Private Information */}
             {guitar.privateInfo && (
               <div className="card p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Lock className="w-5 h-5 text-primary-600" />
-                    <h2 className="text-xl font-bold text-gray-900">Private Information</h2>
-                  </div>
-                  <button
-                    onClick={() => setShowPrivateInfo(!showPrivateInfo)}
-                    className="p-2 text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
-                    title={showPrivateInfo ? 'Hide private information' : 'Show private information'}
-                  >
-                    {showPrivateInfo ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
+                <div className="flex items-center gap-2 mb-4">
+                  <Lock className="w-5 h-5 text-primary-600" />
+                  <h2 className="text-xl font-bold text-gray-900">Private Information</h2>
                 </div>
 
-                {showPrivateInfo && (
-                  <div className="space-y-3 pt-2 border-t border-gray-200">
+                <div className="space-y-3 pt-2 border-t border-gray-200">
                     {guitar.privateInfo.serialNumber && (
                       <PrivateItem label="Serial Number" value={guitar.privateInfo.serialNumber} />
                     )}
@@ -678,7 +652,6 @@ export const GuitarDetail = () => {
                       </div>
                     )}
                   </div>
-                )}
               </div>
             )}
 
@@ -734,7 +707,10 @@ export const GuitarDetail = () => {
             {/* Notes */}
             {guitar.notes && guitar.notes.length > 0 && (
               <div className="card p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Notes</h2>
+                <div className="flex items-center gap-2 mb-4">
+                  <StickyNote className="w-5 h-5 text-primary-600" />
+                  <h2 className="text-xl font-bold text-gray-900">Notes</h2>
+                </div>
                 <NotesJournal
                   notes={guitar.notes}
                   onAddNote={() => {}}

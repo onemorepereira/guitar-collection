@@ -186,7 +186,7 @@ export const ImageStaging = ({
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
-        className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary-400 hover:bg-primary-50/50 transition-colors cursor-pointer"
+        className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-400 hover:bg-primary-50/50 transition-colors cursor-pointer"
       >
         <input
           type="file"
@@ -197,16 +197,16 @@ export const ImageStaging = ({
           id="image-upload"
         />
         <label htmlFor="image-upload" className="cursor-pointer">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
-              <ImageIcon className="w-8 h-8 text-primary-600" />
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+              <ImageIcon className="w-5 h-5 text-primary-600" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-sm font-semibold text-gray-900">
                 Drop images here or click to browse
               </p>
-              <p className="text-sm text-gray-600 mt-1">
-                Supports JPG, PNG, GIF up to 30MB • Auto-resized to 2048px
+              <p className="text-xs text-gray-600">
+                JPG, PNG, GIF up to 30MB • Auto-resized to 2048px
               </p>
             </div>
           </div>

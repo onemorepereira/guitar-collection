@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Guitar, GuitarType, GuitarImage, NoteEntry, GuitarDocument } from '../types/guitar';
 import { guitarService } from '../services/guitarService';
-import { ArrowLeft, Save, Loader2, X, Upload, ChevronDown, ChevronUp, Sparkles, Receipt } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, X, Upload, ChevronDown, ChevronUp, Sparkles, Receipt, Trash2 } from 'lucide-react';
 import { ImageStaging } from './ImageStaging';
 import { StagedImage } from '../utils/imageUtils';
 import { NotesJournal } from './NotesJournal';
@@ -67,6 +67,7 @@ export const GuitarForm = () => {
   const [showSpecsImporter, setShowSpecsImporter] = useState(false);
   const [showReceiptImporter, setShowReceiptImporter] = useState(false);
   const [showAutoFillPrompt, setShowAutoFillPrompt] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [previousModel, setPreviousModel] = useState('');
 
   // Detailed specs
@@ -687,6 +688,18 @@ export const GuitarForm = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+
+    try {
+      await guitarService.deleteGuitar(id);
+      navigate('/collection');
+    } catch (error) {
+      console.error('Error deleting guitar:', error);
+      alert('Failed to delete guitar. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -711,10 +724,6 @@ export const GuitarForm = () => {
                 <ArrowLeft className="w-5 h-5" />
                 <span className="font-medium">Cancel</span>
               </button>
-
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 sm:ml-4">
-                {isEditMode ? 'Edit Guitar' : 'Add New Guitar'}
-              </h1>
             </div>
 
             <button
@@ -763,6 +772,7 @@ export const GuitarForm = () => {
                     type="button"
                     onClick={handleAutoFillSpecs}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm whitespace-nowrap"
+                    title="Auto-fill common specifications for this guitar model"
                   >
                     Yes, auto-fill
                   </button>
@@ -770,6 +780,7 @@ export const GuitarForm = () => {
                     type="button"
                     onClick={() => setShowAutoFillPrompt(false)}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm whitespace-nowrap"
+                    title="Dismiss auto-fill suggestion"
                   >
                     No thanks
                   </button>
@@ -820,6 +831,7 @@ export const GuitarForm = () => {
                 type="button"
                 onClick={() => setShowSpecsImporter(true)}
                 className="btn-primary flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto"
+                title="Import specifications from PDF or text using AI"
               >
                 <Sparkles className="w-4 h-4" />
                 Import Specs
@@ -1139,6 +1151,7 @@ export const GuitarForm = () => {
               type="button"
               onClick={() => setShowDetailedSpecs(!showDetailedSpecs)}
               className="w-full flex items-center justify-between mb-4 hover:opacity-70 transition-opacity"
+              title={showDetailedSpecs ? "Hide detailed specifications" : "Show detailed specifications"}
             >
               <div>
                 <h2 className="text-xl font-bold text-gray-900 text-left">Detailed Specifications</h2>
@@ -1466,6 +1479,7 @@ export const GuitarForm = () => {
                 type="button"
                 onClick={() => setShowReceiptImporter(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+                title="Extract purchase information from receipt using AI"
               >
                 <Receipt className="w-4 h-4" />
                 Import Receipt
@@ -1641,27 +1655,35 @@ export const GuitarForm = () => {
               onDocumentIdsChange={setDocumentIds}
             />
           </div>
-
-          {/* Submit Button */}
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => navigate(isEditMode ? `/guitar/${id}` : '/')}
-              className="btn-secondary"
-              title="Cancel and return"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="btn-primary disabled:opacity-50"
-              title={isEditMode ? 'Save changes' : 'Add guitar to collection'}
-            >
-              {saving ? 'Saving...' : isEditMode ? 'Update Guitar' : 'Add Guitar'}
-            </button>
-          </div>
         </form>
+
+        {/* Danger Zone - Delete Guitar */}
+        {isEditMode && (
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-8">
+            <div className="border-2 border-red-300 rounded-lg p-6 bg-red-50">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
+                    <Trash2 className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Danger Zone</h3>
+                  <p className="text-sm text-gray-700 mb-4">
+                    Once you delete this guitar, there is no going back. All images, notes, and information will be permanently removed.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold text-sm uppercase tracking-wide"
+                  >
+                    Delete This Guitar Forever
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Specs Importer Modal */}
@@ -1679,6 +1701,32 @@ export const GuitarForm = () => {
           onClose={() => setShowReceiptImporter(false)}
           onApply={handleApplyReceipt}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Guitar?</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete {brand} {model}? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <Footer />

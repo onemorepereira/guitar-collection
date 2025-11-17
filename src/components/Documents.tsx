@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Document } from '../types/guitar';
 import { documentService } from '../services/documentService';
-import { Upload, FileText, Image as ImageIcon, Download, Trash2, Edit2, Save, X, Loader2, Tag, ArrowLeft, LogOut, User, Grid } from 'lucide-react';
+import { Upload, FileText, Image as ImageIcon, Download, Trash2, Edit2, Save, X, Loader2, Tag, ArrowLeft, DoorOpen, User, Grid } from 'lucide-react';
 import { useImageUrl } from '../hooks/useImageUrl';
 import { useAuth } from '../context/AuthContext';
 import { UserNameEditor } from './UserNameEditor';
@@ -183,11 +183,10 @@ export const Documents = () => {
               </button>
               <button
                 onClick={handleLogout}
-                className="btn-secondary flex items-center gap-2"
-                title="Logout"
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
+                title="Logout and exit"
               >
-                <LogOut className="w-5 h-5" />
-                <span className="hidden sm:inline">Logout</span>
+                <DoorOpen className="w-5 h-5" />
               </button>
             </div>
           </div>
