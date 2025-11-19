@@ -3,12 +3,16 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
+const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const { putItem } = require('../../lib/dynamodb');
 const { getUserIdFromEvent } = require('../../lib/cognito');
 const { validateCSRF } = require('../../lib/csrf');
 const response = require('../../lib/response');
 const { handleError } = require('../../lib/errors');
 const { TABLES } = require('../../config/constants');
+
+const sqsClient = new SQSClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const EXTRACTION_QUEUE_URL = process.env.SQS_DOCUMENT_EXTRACTION_QUEUE_URL;
 
 async function createDocument(event) {
   try {
@@ -43,6 +47,36 @@ async function createDocument(event) {
     };
 
     await putItem(TABLES.DOCUMENTS, document);
+
+    // Trigger async extraction if queue URL is configured
+    if (EXTRACTION_QUEUE_URL) {
+      try {
+        const message = {
+          userId,
+          documentId: document.documentId,
+          triggeredAt: new Date().toISOString(),
+          source: 'document-create',
+        };
+
+        await sqsClient.send(new SendMessageCommand({
+          QueueUrl: EXTRACTION_QUEUE_URL,
+          MessageBody: JSON.stringify(message),
+        }));
+
+        console.log('Triggered document extraction', {
+          userId,
+          documentId: document.documentId,
+          name: document.name,
+        });
+      } catch (sqsError) {
+        // Log but don't fail document creation if extraction trigger fails
+        console.error('Failed to trigger document extraction', {
+          userId,
+          documentId: document.documentId,
+          error: sqsError.message,
+        });
+      }
+    }
 
     // Map documentId to id for frontend compatibility
     const documentResponse = {

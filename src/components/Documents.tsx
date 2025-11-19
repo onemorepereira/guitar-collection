@@ -7,11 +7,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Document } from '../types/guitar';
 import { documentService } from '../services/documentService';
-import { Upload, FileText, Image as ImageIcon, Download, Trash2, Edit2, Save, X, Loader2, Tag, ArrowLeft, DoorOpen, User, Grid } from 'lucide-react';
+import { Upload, FileText, Image as ImageIcon, Download, Trash2, Edit2, Save, X, Loader2, Tag, ArrowLeft, DoorOpen, User, Grid, Eye, CheckCircle, Clock, AlertCircle, RefreshCw, Search, Filter } from 'lucide-react';
 import { useImageUrl } from '../hooks/useImageUrl';
 import { useAuth } from '../context/AuthContext';
 import { UserNameEditor } from './UserNameEditor';
 import { Footer } from './Footer';
+import { ExtractionStatus } from '../types/guitar';
 
 export const Documents = () => {
   const navigate = useNavigate();
@@ -26,6 +27,53 @@ export const Documents = () => {
     notes: '',
     tags: '',
   });
+  const [viewingContent, setViewingContent] = useState<Document | null>(null);
+
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'pdf' | 'image'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'processing' | 'completed' | 'failed' | 'none'>('all');
+
+  // Filter documents based on search and filters
+  const filteredDocuments = documents.filter(doc => {
+    // Search filter - check name, notes, tags, and extracted content
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesName = doc.name.toLowerCase().includes(query);
+      const matchesNotes = doc.notes?.toLowerCase().includes(query);
+      const matchesTags = doc.tags?.some(tag => tag.toLowerCase().includes(query));
+      const matchesExtractedText = doc.extractedContent?.text?.toLowerCase().includes(query);
+      const matchesExtractedDescription = doc.extractedContent?.description?.toLowerCase().includes(query);
+      if (!matchesName && !matchesNotes && !matchesTags && !matchesExtractedText && !matchesExtractedDescription) {
+        return false;
+      }
+    }
+
+    // Type filter
+    if (typeFilter !== 'all' && doc.type !== typeFilter) {
+      return false;
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      const docStatus = doc.extractedContent?.extractionStatus;
+      if (statusFilter === 'none') {
+        if (docStatus) return false;
+      } else {
+        if (docStatus !== statusFilter) return false;
+      }
+    }
+
+    return true;
+  });
+
+  const hasActiveFilters = searchQuery || typeFilter !== 'all' || statusFilter !== 'all';
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setTypeFilter('all');
+    setStatusFilter('all');
+  };
 
   useEffect(() => {
     loadDocuments();
@@ -142,6 +190,26 @@ export const Documents = () => {
     await updateUserName(newName);
   };
 
+  const handleTriggerExtraction = async (id: string) => {
+    try {
+      await documentService.triggerExtraction(id);
+      // Update local state to show pending status
+      setDocuments(documents.map(d =>
+        d.id === id
+          ? {
+              ...d,
+              extractedContent: {
+                extractionStatus: 'pending' as const
+              }
+            }
+          : d
+      ));
+    } catch (error) {
+      console.error('Error triggering extraction:', error);
+      alert('Failed to trigger extraction');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -227,6 +295,65 @@ export const Documents = () => {
         </label>
       </div>
 
+      {/* Search and Filter Section */}
+      {documents.length > 0 && (
+        <div className="card p-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Search Input */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search name, notes, tags, or content..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Type Filter */}
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'pdf' | 'image')}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="all">All Types</option>
+              <option value="pdf">PDF</option>
+              <option value="image">Image</option>
+            </select>
+
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="all">All Status</option>
+              <option value="completed">Extracted</option>
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="failed">Failed</option>
+              <option value="none">Not Extracted</option>
+            </select>
+          </div>
+
+          {/* Results count and clear filters */}
+          {hasActiveFilters && (
+            <div className="flex items-center justify-between mt-3 pt-3 border-t">
+              <span className="text-sm text-gray-600">
+                Showing {filteredDocuments.length} of {documents.length} documents
+              </span>
+              <button
+                onClick={clearFilters}
+                className="text-sm text-primary-600 hover:text-primary-700"
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Documents Grid */}
       {documents.length === 0 ? (
         <div className="text-center py-12">
@@ -234,9 +361,21 @@ export const Documents = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-2">No documents yet</h3>
           <p className="text-gray-600">Upload your first document to get started</p>
         </div>
+      ) : filteredDocuments.length === 0 ? (
+        <div className="text-center py-12">
+          <Search className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No documents match your filters</h3>
+          <p className="text-gray-600 mb-4">Try adjusting your search or filter criteria</p>
+          <button
+            onClick={clearFilters}
+            className="text-primary-600 hover:text-primary-700 font-medium"
+          >
+            Clear all filters
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {documents.map(doc => (
+          {filteredDocuments.map(doc => (
             <DocumentCard
               key={doc.id}
               document={doc}
@@ -247,6 +386,8 @@ export const Documents = () => {
               onCancelEdit={cancelEdit}
               onSaveEdit={saveEdit}
               onDelete={handleDelete}
+              onViewContent={setViewingContent}
+              onTriggerExtraction={handleTriggerExtraction}
             />
           ))}
         </div>
@@ -265,6 +406,115 @@ export const Documents = () => {
           onCancel={() => setEditingName(false)}
         />
       )}
+
+      {/* Extracted Content Viewer Modal */}
+      {viewingContent && (
+        <ExtractedContentViewer
+          document={viewingContent}
+          onClose={() => setViewingContent(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+// Extracted Content Viewer Modal
+interface ExtractedContentViewerProps {
+  document: Document;
+  onClose: () => void;
+}
+
+const ExtractedContentViewer = ({ document, onClose }: ExtractedContentViewerProps) => {
+  const extractedContent = document.extractedContent;
+  const hasText = extractedContent?.text && extractedContent.text.trim().length > 0;
+  const hasDescription = extractedContent?.description && extractedContent.description.trim().length > 0;
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">{document.name}</h2>
+            <p className="text-sm text-gray-500">
+              Extracted {extractedContent?.extractedAt
+                ? new Date(extractedContent.extractedAt).toLocaleDateString()
+                : 'content'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* AI Description for images */}
+          {hasDescription && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <ImageIcon className="w-4 h-4 text-blue-600" />
+                <h3 className="font-medium text-blue-900">AI Description</h3>
+              </div>
+              <p className="text-blue-800 text-sm whitespace-pre-wrap">
+                {extractedContent?.description}
+              </p>
+            </div>
+          )}
+
+          {/* Extracted Text */}
+          {hasText && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="w-4 h-4 text-gray-600" />
+                <h3 className="font-medium text-gray-900">Extracted Text</h3>
+              </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
+                  {extractedContent?.text}
+                </pre>
+              </div>
+            </div>
+          )}
+
+          {/* No content message */}
+          {!hasText && !hasDescription && (
+            <div className="text-center py-8 text-gray-500">
+              <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+              <p>No extracted content available</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+          <div className="text-sm text-gray-500">
+            {extractedContent?.rawTextLength && (
+              <span>Raw text: {extractedContent.rawTextLength.toLocaleString()} chars</span>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="btn-primary px-4 py-2"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -278,6 +528,8 @@ interface DocumentCardProps {
   onCancelEdit: () => void;
   onSaveEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onViewContent: (doc: Document) => void;
+  onTriggerExtraction: (id: string) => void;
 }
 
 const DocumentCard = ({
@@ -289,9 +541,60 @@ const DocumentCard = ({
   onCancelEdit,
   onSaveEdit,
   onDelete,
+  onViewContent,
+  onTriggerExtraction,
 }: DocumentCardProps) => {
   const imageUrl = useImageUrl(document.url);
   const assignedCount = document.assignedGuitars?.length || 0;
+  const extractionStatus = document.extractedContent?.extractionStatus;
+  const hasExtractedContent = extractionStatus === 'completed' &&
+    (document.extractedContent?.text || document.extractedContent?.description);
+
+  const getStatusBadge = () => {
+    if (!extractionStatus) {
+      return (
+        <button
+          onClick={() => onTriggerExtraction(document.id)}
+          className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+          title="Extract content from this document"
+        >
+          <RefreshCw className="w-3 h-3" />
+          Extract
+        </button>
+      );
+    }
+
+    const statusConfig: Record<ExtractionStatus, { icon: React.ReactNode; label: string; className: string }> = {
+      pending: {
+        icon: <Clock className="w-3 h-3" />,
+        label: 'Pending',
+        className: 'bg-gray-100 text-gray-600',
+      },
+      processing: {
+        icon: <RefreshCw className="w-3 h-3 animate-spin" />,
+        label: 'Processing',
+        className: 'bg-blue-100 text-blue-600',
+      },
+      completed: {
+        icon: <CheckCircle className="w-3 h-3" />,
+        label: 'Extracted',
+        className: 'bg-green-100 text-green-600',
+      },
+      failed: {
+        icon: <AlertCircle className="w-3 h-3" />,
+        label: 'Failed',
+        className: 'bg-red-100 text-red-600',
+      },
+    };
+
+    const config = statusConfig[extractionStatus];
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded ${config.className}`}>
+        {config.icon}
+        {config.label}
+      </span>
+    );
+  };
 
   return (
     <div className="card p-4 hover:shadow-lg transition-shadow">
@@ -380,10 +683,15 @@ const DocumentCard = ({
             </div>
           )}
 
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-            <span className="capitalize">{document.type}</span>
+          <div className="flex items-center flex-wrap gap-2 text-sm text-gray-500 mb-3">
+            {document.type === 'pdf' ? (
+              <span title="PDF"><FileText className="w-4 h-4" /></span>
+            ) : (
+              <span title="Image"><ImageIcon className="w-4 h-4" /></span>
+            )}
             <span>•</span>
             <span>{new Date(document.uploadedAt).toLocaleDateString()}</span>
+            {getStatusBadge()}
           </div>
 
           {assignedCount > 0 && (
@@ -392,30 +700,41 @@ const DocumentCard = ({
             </div>
           )}
 
-          <div className="flex gap-2">
-            <a
-              href={document.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 btn-outline flex items-center justify-center gap-2 text-sm py-2"
-            >
-              <Download className="w-4 h-4" />
-              Download
-            </a>
-            <button
-              onClick={() => onStartEdit(document)}
-              className="btn-outline flex items-center justify-center gap-2 px-3 py-2"
-              title="Edit"
-            >
-              <Edit2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => onDelete(document.id)}
-              className="btn-outline text-red-600 hover:bg-red-50 flex items-center justify-center gap-2 px-3 py-2"
-              title="Delete"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+          <div className="flex flex-col gap-2">
+            {hasExtractedContent && (
+              <button
+                onClick={() => onViewContent(document)}
+                className="w-full btn-primary flex items-center justify-center gap-2 text-sm py-2"
+              >
+                <Eye className="w-4 h-4" />
+                View Extracted Content
+              </button>
+            )}
+            <div className="flex gap-2">
+              <a
+                href={document.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 btn-outline flex items-center justify-center gap-2 text-sm py-2"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </a>
+              <button
+                onClick={() => onStartEdit(document)}
+                className="btn-outline flex items-center justify-center gap-2 px-3 py-2"
+                title="Edit"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => onDelete(document.id)}
+                className="btn-outline text-red-600 hover:bg-red-50 flex items-center justify-center gap-2 px-3 py-2"
+                title="Delete"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </>
       )}

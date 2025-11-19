@@ -9,6 +9,7 @@ const { updateDocument } = require('./update');
 const { deleteDocument } = require('./delete');
 const { assignDocument } = require('./assign');
 const { unassignDocument } = require('./unassign');
+const { extractDocument } = require('./extract');
 const response = require('../../lib/response');
 
 exports.handler = async (event) => {
@@ -47,6 +48,11 @@ exports.handler = async (event) => {
       return await deleteDocument(event);
     }
 
+    // Trigger document extraction
+    if (path.match(/^\/documents\/[^/]+\/extract$/) && method === 'POST') {
+      return await extractDocument(event);
+    }
+
     // Assign document to guitar
     if (path.match(/^\/guitars\/[^/]+\/documents\/[^/]+$/) && method === 'POST') {
       return await assignDocument(event);
@@ -60,6 +66,6 @@ exports.handler = async (event) => {
     return response.notFound('Route not found');
   } catch (error) {
     console.error('Documents handler error:', error);
-    return response.error('Internal server error');
+    return response.internalError('Internal server error');
   }
 };

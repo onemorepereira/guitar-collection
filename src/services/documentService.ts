@@ -161,4 +161,22 @@ export const documentService = {
       await this.unassignFromGuitar(guitarId, documentId);
     }
   },
+
+  /**
+   * Trigger content extraction for a document
+   */
+  async triggerExtraction(id: string): Promise<void> {
+    const response = await authenticatedRequest(
+      `${API_URL}/documents/${id}/extract`,
+      getToken(),
+      {
+        method: 'POST',
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to trigger extraction');
+    }
+  },
 };
