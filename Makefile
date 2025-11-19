@@ -121,7 +121,7 @@ deploy-backend: validate
 		echo "[X] Error: BACKEND_STACK_NAME not set in .env.deploy"; \
 		exit 1; \
 	fi
-	@cd backend && sam build && sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
+	@cd backend && sam build && sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --capabilities CAPABILITY_NAMED_IAM
 	@echo "[✓] Backend deployed"
 	@$(MAKE) _extract-backend-outputs
 	@$(MAKE) _generate-env

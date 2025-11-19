@@ -20,6 +20,7 @@ Globals:
         S3_BUCKET_IMAGES: !Ref ImagesBucket
         CLOUDFRONT_DOMAIN: !If [HasHostedZone, !Ref ImagesDomainName, !GetAtt ImagesDistribution.DomainName]
         FRONTEND_DOMAIN: !Ref FrontendDomain
+        SQS_DOCUMENT_EXTRACTION_QUEUE_URL: !Ref DocumentExtractionQueue
   Api:
     Cors:
       AllowOrigin: !Ref AllowedOrigin
@@ -549,6 +550,12 @@ Resources:
                 - dynamodb:Query
               Resource:
                 - !Sub ${DocumentsTable.Arn}/index/*
+            # SQS permission for triggering document extraction
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+              Resource:
+                - !GetAtt DocumentExtractionQueue.Arn
       Events:
         ListDocuments:
           Type: HttpApi
@@ -590,6 +597,14 @@ Resources:
             Method: DELETE
             Auth:
               Authorizer: CognitoAuthorizer
+        ExtractDocument:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /documents/{id}/extract
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
         AssignDocumentToGuitar:
           Type: HttpApi
           Properties:
@@ -606,6 +621,75 @@ Resources:
             Method: DELETE
             Auth:
               Authorizer: CognitoAuthorizer
+
+  # Document Extraction Handler (async processing via SQS)
+  DocumentExtractionHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-document-extraction
+      CodeUri: src/
+      Handler: handlers/extraction/index.handler
+      Description: Async extraction of content from uploaded documents
+      Timeout: 300  # 5 minutes for Textract processing
+      MemorySize: 1024
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DocumentsTable
+        - Version: '2012-10-17'
+          Statement:
+            # S3 read access for documents
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource:
+                - !Sub ${ImagesBucket.Arn}/images/*
+            # S3 write access for large extracted content
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource:
+                - !Sub ${ImagesBucket.Arn}/extracted/*
+            # Textract permissions
+            - Effect: Allow
+              Action:
+                - textract:DetectDocumentText
+                - textract:AnalyzeDocument
+                - textract:StartDocumentTextDetection
+                - textract:GetDocumentTextDetection
+              Resource: '*'
+            # Bedrock permissions for Nova Lite
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+              Resource:
+                - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.nova-lite-v1:0'
+                - !Sub 'arn:aws:bedrock:us-east-1:${AWS::AccountId}:inference-profile/us.amazon.nova-lite-v1:0'
+                - !Sub 'arn:aws:bedrock:us-east-2:${AWS::AccountId}:inference-profile/us.amazon.nova-lite-v1:0'
+                - !Sub 'arn:aws:bedrock:us-west-2:${AWS::AccountId}:inference-profile/us.amazon.nova-lite-v1:0'
+            # IAM PassRole for Textract to use SNS
+            - Effect: Allow
+              Action:
+                - iam:PassRole
+              Resource:
+                - !GetAtt TextractServiceRole.Arn
+      Environment:
+        Variables:
+          SNS_TEXTRACT_TOPIC_ARN: !Ref TextractNotificationTopic
+          TEXTRACT_SERVICE_ROLE_ARN: !GetAtt TextractServiceRole.Arn
+      Events:
+        SQSTrigger:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt DocumentExtractionQueue.Arn
+            BatchSize: 1
+            Enabled: true
+        TextractComplete:
+          Type: SNS
+          Properties:
+            Topic: !Ref TextractNotificationTopic
 
   ProvenanceHandler:
     Type: AWS::Serverless::Function
@@ -743,16 +827,80 @@ Resources:
           AttributeType: S
         - AttributeName: documentId
           AttributeType: S
+        - AttributeName: jobId
+          AttributeType: S
       KeySchema:
         - AttributeName: userId
           KeyType: HASH
         - AttributeName: documentId
           KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: JobIdIndex
+          KeySchema:
+            - AttributeName: jobId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: !If [IsProduction, true, false]
       Tags:
         - Key: Environment
           Value: !Ref Environment
+
+  # ==================== SQS Queues ====================
+
+  DocumentExtractionDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-document-extraction-dlq
+      MessageRetentionPeriod: 1209600  # 14 days
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  DocumentExtractionQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-document-extraction
+      VisibilityTimeout: 300  # 5 minutes for extraction processing
+      MessageRetentionPeriod: 86400  # 1 day
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DocumentExtractionDLQ.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # SNS Topic for Textract job completion notifications
+  TextractNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-textract-notifications
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # IAM Role for Textract to publish to SNS
+  TextractServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-textract-service-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: textract.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: TextractSNSPublish
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref TextractNotificationTopic
 
   ProvenanceReportsTable:
     Type: AWS::DynamoDB::Table

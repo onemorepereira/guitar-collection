@@ -218,6 +218,21 @@ export enum GuitarType {
   OTHER = 'Other',
 }
 
+// Extraction status for documents
+export type ExtractionStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+// Extracted content from documents
+export interface ExtractedContent {
+  extractionStatus: ExtractionStatus;
+  text?: string;
+  description?: string; // AI-generated description (images only)
+  storageType?: 'dynamo' | 's3';
+  s3Key?: string;
+  extractedAt?: string;
+  rawTextLength?: number;
+  error?: string;
+}
+
 // Standalone Document type for the documents management system
 export interface Document {
   id: string;
@@ -231,6 +246,8 @@ export interface Document {
   tags?: string[];
   notes?: string;
   updatedAt?: string;
+  extractedContent?: ExtractedContent;
+  jobId?: string; // Textract job ID (only present during PDF processing)
 }
 
 export interface GuitarFilters {
