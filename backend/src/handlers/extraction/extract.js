@@ -107,7 +107,7 @@ async function reconstructWithNovaLite(rawText, documentName) {
     textLength: rawText.length,
   });
 
-  const maxInputLength = 100000;
+  const maxInputLength = 200000;
   const truncatedText = rawText.length > maxInputLength
     ? rawText.substring(0, maxInputLength) + '\n\n[Content truncated due to length...]'
     : rawText;
@@ -139,7 +139,7 @@ RECONSTRUCTED CONTENT:`;
       },
     ],
     inferenceConfig: {
-      maxTokens: 4096,
+      maxTokens: 10000,
       temperature: 0.1,
     },
   });
@@ -254,7 +254,7 @@ Format your response as:
       },
     ],
     inferenceConfig: {
-      maxTokens: 4096,
+      maxTokens: 10000,
       temperature: 0.1,
     },
   });
