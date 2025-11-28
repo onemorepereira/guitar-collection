@@ -22,6 +22,9 @@ export const GuitarGallery = () => {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     // Load view preference from localStorage
     const saved = localStorage.getItem('guitarViewMode');
+    const isMobile = window.innerWidth < 640; // sm breakpoint
+    // Force gallery view on mobile if table was saved (table doesn't work well on mobile)
+    if (saved === 'table' && isMobile) return 'gallery';
     return (saved === 'list' || saved === 'gallery' || saved === 'timeline' || saved === 'table') ? saved : 'gallery';
   });
 
@@ -200,7 +203,7 @@ export const GuitarGallery = () => {
                 </button>
                 <button
                   onClick={() => setViewMode('table')}
-                  className={`p-2 rounded transition-colors ${
+                  className={`hidden sm:block p-2 rounded transition-colors ${
                     viewMode === 'table'
                       ? 'bg-white text-primary-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'

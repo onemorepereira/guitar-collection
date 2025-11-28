@@ -272,7 +272,7 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-4 sm:p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Share2 className="w-6 h-6 text-primary-600" />
@@ -320,7 +320,7 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
@@ -459,37 +459,41 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
                     </div>
 
                     {/* Share URL */}
-                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-3 mb-3">
-                      <input
-                        type="text"
-                        value={share.shareUrl}
-                        readOnly
-                        className="flex-1 bg-transparent text-sm text-gray-700 outline-none"
-                      />
-                      <button
-                        onClick={() => handleCopyLink(share.shareUrl)}
-                        className="p-2 text-primary-600 hover:bg-primary-100 rounded-lg transition-colors"
-                        title="Copy link"
-                      >
-                        {copied ? (
-                          <Check className="w-4 h-4" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </button>
-                      <a
-                        href={share.shareUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
-                        title="Open in new tab"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
+                    <div className="bg-gray-100 rounded-lg p-3 mb-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={share.shareUrl}
+                          readOnly
+                          className="flex-1 min-w-0 bg-transparent text-sm text-gray-700 outline-none truncate"
+                        />
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => handleCopyLink(share.shareUrl)}
+                            className="p-2 text-primary-600 hover:bg-primary-100 rounded-lg transition-colors"
+                            title="Copy link"
+                          >
+                            {copied ? (
+                              <Check className="w-4 h-4" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </button>
+                          <a
+                            href={share.shareUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                            title="Open in new tab"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Stats */}
-                    <div className="flex items-center gap-6 text-sm text-gray-600">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm text-gray-600">
                       <div className="flex items-center gap-1">
                         <Eye className="w-4 h-4" />
                         <span>{share.viewCount} views</span>
@@ -499,7 +503,7 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
                         <span>{share.selectedImageIds?.length || 0} photos</span>
                       </div>
                       {share.lastViewedAt && (
-                        <div className="text-gray-400">
+                        <div className="text-gray-400 text-xs sm:text-sm">
                           Last viewed {formatDate(share.lastViewedAt)}
                         </div>
                       )}
@@ -509,16 +513,16 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
                     {share.views && share.views.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <h4 className="text-sm font-medium text-gray-700 mb-2">Recent Views</h4>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           {share.views.slice(-5).reverse().map((view, idx) => (
                             <div
                               key={idx}
-                              className="flex items-center justify-between text-xs text-gray-500"
+                              className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 gap-0.5"
                             >
-                              <span>
+                              <span className="truncate">
                                 {view.country || 'Unknown'} - {view.browser || 'Unknown browser'}
                               </span>
-                              <span>{formatDate(view.viewedAt)}</span>
+                              <span className="text-gray-400 flex-shrink-0">{formatDate(view.viewedAt)}</span>
                             </div>
                           ))}
                         </div>
@@ -532,7 +536,7 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
+        <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50">
           <div className="flex justify-end gap-3">
             <button onClick={onClose} className="btn-secondary">
               Close
