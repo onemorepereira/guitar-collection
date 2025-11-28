@@ -216,86 +216,74 @@ export const Timeline = () => {
           </div>
         </div>
 
-        {/* Horizontal Timeline (Desktop) */}
+        {/* Wrapped Grid Timeline (Desktop) */}
         <div className="hidden lg:block">
-          <div className="relative pb-16">
-            {/* Horizontal line */}
-            <div className="absolute top-16 left-0 right-0 h-0.5 bg-primary-200" />
+          <div className="space-y-10">
+            {years.map((year) => (
+              <div key={year}>
+                {/* Year header */}
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary-600 text-white font-bold text-lg shadow-lg">
+                    {year}
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">
+                      {guitarsByYear[year].length} guitar{guitarsByYear[year].length !== 1 ? 's' : ''} acquired
+                    </div>
+                  </div>
+                  <div className="flex-1 h-0.5 bg-primary-200" />
+                </div>
 
-            <div className="relative">
-              <div className="flex gap-8 overflow-x-auto pb-4">
-                {years.map((year, yearIndex) => (
-                  <div key={year} className="flex gap-8">
-                    {/* Year marker */}
-                    <div className="flex-shrink-0">
-                      <div className="flex flex-col items-center">
-                        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary-600 text-white font-bold text-lg shadow-lg z-10">
-                          {year}
-                        </div>
-                        <div className="mt-2 text-sm text-gray-500 whitespace-nowrap">
-                          {guitarsByYear[year].length} guitar{guitarsByYear[year].length !== 1 ? 's' : ''}
+                {/* Guitars grid for this year */}
+                <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 pl-4">
+                  {guitarsByYear[year].map((guitar) => {
+                    const primaryImage = guitar.images[0];
+                    const date = guitar.privateInfo?.purchaseDate || guitar.createdAt;
+
+                    return (
+                      <div
+                        key={guitar.id}
+                        onClick={() => handleGuitarClick(guitar.id)}
+                        className="cursor-pointer group"
+                      >
+                        <div className="card p-3 hover:shadow-lg transition-shadow h-full">
+                          {primaryImage ? (
+                            <img
+                              src={primaryImage.url}
+                              alt={`${guitar.brand} ${guitar.model}`}
+                              className="w-full h-36 object-cover rounded mb-3"
+                            />
+                          ) : (
+                            <div className="w-full h-36 bg-gray-200 rounded mb-3 flex items-center justify-center">
+                              <Calendar className="w-8 h-8 text-gray-400" />
+                            </div>
+                          )}
+
+                          <h3 className="font-semibold text-gray-900 text-sm truncate">
+                            {guitar.brand} {guitar.model}
+                          </h3>
+                          <p className="text-xs text-gray-600">{guitar.year}</p>
+                          <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                            <Calendar className="w-3 h-3" />
+                            {formatDate(date)}
+                          </div>
+                          {guitar.privateInfo?.purchasePrice && (
+                            <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                              <DollarSign className="w-3 h-3" />
+                              {new Intl.NumberFormat('en-US', {
+                                style: 'currency',
+                                currency: guitar.privateInfo.currency || 'USD',
+                                maximumFractionDigits: 0,
+                              }).format(guitar.privateInfo.purchasePrice)}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Guitars for this year */}
-                    {guitarsByYear[year].map((guitar, guitarIndex) => {
-                      const primaryImage = guitar.images[0];
-                      const date = guitar.privateInfo?.purchaseDate || guitar.createdAt;
-
-                      return (
-                        <div
-                          key={guitar.id}
-                          onClick={() => handleGuitarClick(guitar.id)}
-                          className="flex-shrink-0 cursor-pointer group"
-                        >
-                          <div className="flex flex-col items-center">
-                            {/* Guitar image */}
-                            <div className="relative">
-                              {/* Connection line to main timeline */}
-                              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-primary-400" />
-
-                              <div className="card p-3 hover:shadow-lg transition-shadow w-48">
-                                {primaryImage ? (
-                                  <img
-                                    src={primaryImage.url}
-                                    alt={`${guitar.brand} ${guitar.model}`}
-                                    className="w-full h-32 object-cover rounded mb-3"
-                                  />
-                                ) : (
-                                  <div className="w-full h-32 bg-gray-200 rounded mb-3 flex items-center justify-center">
-                                    <Calendar className="w-8 h-8 text-gray-400" />
-                                  </div>
-                                )}
-
-                                <h3 className="font-semibold text-gray-900 text-sm truncate">
-                                  {guitar.brand} {guitar.model}
-                                </h3>
-                                <p className="text-xs text-gray-600">{guitar.year}</p>
-                                <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
-                                  <Calendar className="w-3 h-3" />
-                                  {formatDate(date)}
-                                </div>
-                                {guitar.privateInfo?.purchasePrice && (
-                                  <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-                                    <DollarSign className="w-3 h-3" />
-                                    {new Intl.NumberFormat('en-US', {
-                                      style: 'currency',
-                                      currency: guitar.privateInfo.currency || 'USD',
-                                      maximumFractionDigits: 0,
-                                    }).format(guitar.privateInfo.purchasePrice)}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>

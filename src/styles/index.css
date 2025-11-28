@@ -41,6 +41,12 @@
   div {
     max-width: 100%;
   }
+
+  /* Allow tooltips to extend beyond parent */
+  .tooltip-nowrap {
+    max-width: none !important;
+    overflow: visible !important;
+  }
 }
 
 @layer components {

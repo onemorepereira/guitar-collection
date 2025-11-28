@@ -7,7 +7,7 @@ import { SearchBar } from './SearchBar';
 import { Footer } from './Footer';
 import { UserNameEditor } from './UserNameEditor';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Loader2, DoorOpen, User, Edit2, Grid, List, FileText, Clock, Calendar, DollarSign, Table } from 'lucide-react';
+import { Plus, Loader2, DoorOpen, User, Edit2, Grid, List, FileText, Clock, Calendar, Table } from 'lucide-react';
 import { CollectionTable } from './CollectionTable';
 
 type ViewMode = 'gallery' | 'list' | 'timeline' | 'table';
@@ -412,7 +412,7 @@ export const GuitarGallery = () => {
                             {guitarsOnDate.map((guitar, index) => {
                               const primaryImage = guitar.images?.find(img => img.isPrimary) || guitar.images?.[0];
                               const tooltipText = [
-                                `${guitar.brand} ${guitar.model}`,
+                                guitar.year ? `${guitar.year} ${guitar.brand} ${guitar.model}` : `${guitar.brand} ${guitar.model}`,
                                 guitar.color,
                                 guitar.privateInfo?.purchasePrice
                                   ? new Intl.NumberFormat('en-US', {
@@ -441,7 +441,7 @@ export const GuitarGallery = () => {
                                     </div>
                                   )}
                                   {/* Tooltip */}
-                                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                                  <div className="tooltip-nowrap absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg whitespace-nowrap">
                                     {tooltipText}
                                     <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
                                   </div>
@@ -457,25 +457,36 @@ export const GuitarGallery = () => {
               </div>
             </div>
 
-            {/* Horizontal Timeline (Desktop) */}
-            <div className="hidden lg:block overflow-x-auto">
-              <div className="relative min-w-max px-8 py-12">
-                {/* Horizontal line */}
-                <div className="absolute top-24 left-8 right-8 h-0.5 bg-primary-200" />
+            {/* Vertical Timeline with Round Tokens (Desktop) */}
+            <div className="hidden lg:block px-8 py-8">
+              <div className="relative">
+                {/* Vertical timeline line */}
+                <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-primary-200" />
 
-                <div className="flex items-start" style={{ minWidth: `${uniqueDates.length * 150}px` }}>
-                  {uniqueDates.map((dateKey) => {
-                    const guitarsOnDate = guitarsByDate[dateKey];
-                    const displayDate = formatDate(dateKey);
+                <div className="space-y-12">
+                  {years.map((year) => (
+                    <div key={year}>
+                      {/* Year marker on timeline */}
+                      <div className="flex items-center gap-6 mb-8">
+                        <div className="flex items-center justify-center w-20 h-20 rounded-full bg-primary-600 text-white font-bold text-xl shadow-lg z-10">
+                          {year}
+                        </div>
+                        <div className="flex items-center gap-4 flex-1">
+                          <span className="text-gray-600 font-medium">
+                            {guitarsByYear[year].length} guitar{guitarsByYear[year].length !== 1 ? 's' : ''} acquired
+                          </span>
+                          <div className="flex-1 h-0.5 bg-primary-100" />
+                        </div>
+                      </div>
 
-                    return (
-                      <div key={dateKey} className="flex flex-col items-center" style={{ width: '150px' }}>
-                        {/* Guitar thumbnails - overlapping if multiple */}
-                        <div className="flex justify-center -space-x-4 mb-4">
-                          {guitarsOnDate.map((guitar, index) => {
+                      {/* Guitars for this year - wrapped with round tokens */}
+                      <div className="ml-10 pl-10 border-l-2 border-primary-100 overflow-visible">
+                        <div className="flex flex-wrap gap-6 overflow-visible">
+                          {guitarsByYear[year].map((guitar) => {
                             const primaryImage = guitar.images?.find(img => img.isPrimary) || guitar.images?.[0];
+                            const date = guitar.privateInfo?.purchaseDate || guitar.createdAt;
                             const tooltipText = [
-                              `${guitar.brand} ${guitar.model}`,
+                              guitar.year ? `${guitar.year} ${guitar.brand} ${guitar.model}` : `${guitar.brand} ${guitar.model}`,
                               guitar.color,
                               guitar.privateInfo?.purchasePrice
                                 ? new Intl.NumberFormat('en-US', {
@@ -489,46 +500,43 @@ export const GuitarGallery = () => {
                               <div
                                 key={guitar.id}
                                 onClick={() => navigate(`/guitar/${guitar.id}`)}
-                                className="cursor-pointer group relative"
-                                style={{ zIndex: guitarsOnDate.length - index }}
+                                className="cursor-pointer group flex flex-col items-center w-32 overflow-visible"
                               >
-                                {primaryImage ? (
-                                  <img
-                                    src={primaryImage.url}
-                                    alt={`${guitar.brand} ${guitar.model}`}
-                                    className="w-24 h-24 object-cover rounded-full shadow-md hover:shadow-xl transition-all hover:scale-110 hover:z-50 border-4 border-white"
-                                  />
-                                ) : (
-                                  <div className="w-24 h-24 bg-gray-200 rounded-full shadow-md hover:shadow-xl transition-all hover:scale-110 hover:z-50 flex items-center justify-center border-4 border-white">
-                                    <Calendar className="w-8 h-8 text-gray-400" />
+                                {/* Round token */}
+                                <div className="relative mb-3 overflow-visible">
+                                  {primaryImage ? (
+                                    <img
+                                      src={primaryImage.url}
+                                      alt={`${guitar.brand} ${guitar.model}`}
+                                      className="w-28 h-28 object-cover rounded-full shadow-md hover:shadow-xl transition-all hover:scale-110 border-4 border-white"
+                                    />
+                                  ) : (
+                                    <div className="w-28 h-28 bg-gray-200 rounded-full shadow-md hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center border-4 border-white">
+                                      <Calendar className="w-10 h-10 text-gray-400" />
+                                    </div>
+                                  )}
+                                  {/* Tooltip */}
+                                  <div className="tooltip-nowrap absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg whitespace-nowrap">
+                                    {tooltipText}
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
                                   </div>
-                                )}
-                                {/* Tooltip */}
-                                <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
-                                  {tooltipText}
-                                  <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+                                </div>
+
+                                {/* Guitar info below token */}
+                                <div className="text-center">
+                                  <h3 className="font-semibold text-gray-900 text-sm truncate w-full">
+                                    {guitar.brand}
+                                  </h3>
+                                  <p className="text-xs text-gray-600 truncate w-full">{guitar.model}</p>
+                                  <p className="text-xs text-gray-400 mt-1">{formatDate(date)}</p>
                                 </div>
                               </div>
                             );
                           })}
                         </div>
-
-                        {/* Connection line */}
-                        <div className="w-0.5 h-8 bg-primary-400" />
-
-                        {/* Timeline dot */}
-                        <div className="w-4 h-4 rounded-full bg-primary-400 border-4 border-white shadow z-10 -my-2" />
-
-                        {/* Date label */}
-                        <div className="mt-6 text-xs text-gray-600 font-medium text-center whitespace-nowrap">
-                          {displayDate}
-                          {guitarsOnDate.length > 1 && (
-                            <span className="text-xs text-gray-500 ml-1">({guitarsOnDate.length})</span>
-                          )}
-                        </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

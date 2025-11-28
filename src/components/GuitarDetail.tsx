@@ -19,12 +19,14 @@ import {
   FileText as FileCertificate,
   Sparkles,
   StickyNote,
+  Share2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ReceiptViewer } from './ReceiptViewer';
 import { NotesJournal } from './NotesJournal';
 import { FileText, Image as ImageIcon, Download, Tag } from 'lucide-react';
 import { ImageViewer } from './ImageViewer';
+import { ShareModal } from './ShareModal';
 import { Footer } from './Footer';
 import { useImageUrls } from '../hooks/useImageUrl';
 import { useAuth } from '../context/AuthContext';
@@ -61,6 +63,7 @@ export const GuitarDetail = () => {
   const [salesAds, setSalesAds] = useState<ProvenanceReportSummary[]>([]);
   const [generatingReport, setGeneratingReport] = useState(false);
   const [generatingSalesAd, setGeneratingSalesAd] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Ref to track thumbnail buttons for scrolling into view
   const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -288,13 +291,22 @@ export const GuitarDetail = () => {
               <span className="font-medium">Back to Collection</span>
             </button>
 
-            <button
-              onClick={() => navigate(`/edit/${guitar.id}`)}
-              className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
-              title="Edit guitar details"
-            >
-              <Edit className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
+                title="Share guitar"
+              >
+                <Share2 className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => navigate(`/edit/${guitar.id}`)}
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
+                title="Edit guitar details"
+              >
+                <Edit className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -911,6 +923,14 @@ export const GuitarDetail = () => {
           imageUrl={currentImageUrl}
           alt={`${guitar.brand} ${guitar.model}`}
           onClose={() => setShowImageViewer(false)}
+        />
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareModal
+          guitar={guitar}
+          onClose={() => setShowShareModal(false)}
         />
       )}
 

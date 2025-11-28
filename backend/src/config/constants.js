@@ -9,6 +9,7 @@ module.exports = {
     USERS: process.env.DYNAMODB_TABLE_USERS || 'guitar-collection-users-dev',
     DOCUMENTS: process.env.DYNAMODB_TABLE_DOCUMENTS || 'guitar-collection-documents-dev',
     PROVENANCE_REPORTS: process.env.DYNAMODB_TABLE_PROVENANCE_REPORTS || 'guitar-collection-provenance-reports-dev',
+    SHARES: process.env.DYNAMODB_TABLE_SHARES || 'guitar-collection-shares-dev',
   },
 
   // HTTP Status Codes
@@ -79,6 +80,14 @@ module.exports = {
   PAGINATION: {
     DEFAULT_LIMIT: 20,
     MAX_LIMIT: 100,
+  },
+
+  // Share constraints
+  SHARE_CONSTRAINTS: {
+    MAX_IMAGES: 10,
+    IMAGE_MAX_WIDTH: 1200,
+    WEBP_QUALITY: 80,
+    MAX_VIEW_ENTRIES: 1000,
   },
 
   // Token expiration

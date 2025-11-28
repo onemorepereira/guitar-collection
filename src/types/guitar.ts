@@ -259,3 +259,107 @@ export interface GuitarFilters {
 }
 
 export interface GuitarFormData extends Omit<Guitar, 'id' | 'userId' | 'createdAt' | 'updatedAt'> {}
+
+// Share types
+export interface SharedFields {
+  brand: boolean;
+  model: boolean;
+  year: boolean;
+  color: boolean;
+  type: boolean;
+  bodyMaterial: boolean;
+  neckMaterial: boolean;
+  fretboardMaterial: boolean;
+  numberOfFrets: boolean;
+  scaleLength: boolean;
+  pickupConfiguration: boolean;
+  finish: boolean;
+  tuningMachines: boolean;
+  bridge: boolean;
+  nut: boolean;
+  electronics: boolean;
+  caseIncluded: boolean;
+  countryOfOrigin: boolean;
+  detailedSpecs: boolean;
+  purchasePrice: boolean;
+  purchaseDate: boolean;
+  notes: boolean;
+  provenance: boolean;
+  documents: boolean;
+}
+
+export interface OptimizedImage {
+  originalId: string;
+  s3Key: string;
+  url: string;
+  width: number;
+  height: number;
+  size?: number;
+}
+
+export interface ShareView {
+  viewedAt: string;
+  referrer: string | null;
+  country: string | null;
+  browser: string | null;
+}
+
+export interface Share {
+  shareId: string;
+  userId: string;
+  guitarId: string;
+  createdAt: string;
+  updatedAt: string;
+  isActive: boolean;
+  sharedFields: SharedFields;
+  selectedImageIds: string[];
+  optimizedImages: OptimizedImage[];
+  viewCount: number;
+  views: ShareView[];
+  lastViewedAt?: string;
+  shareUrl: string;
+  guitar?: {
+    brand: string;
+    model: string;
+    year: number;
+    images?: GuitarImage[];
+  };
+}
+
+export interface ShareListItem {
+  shareId: string;
+  guitarId: string;
+  createdAt: string;
+  updatedAt: string;
+  isActive: boolean;
+  viewCount: number;
+  imageCount: number;
+  shareUrl: string;
+  guitar: {
+    brand: string;
+    model: string;
+    year: number;
+    thumbnail?: string;
+  } | null;
+}
+
+export interface ShareFormData {
+  guitarId: string;
+  sharedFields?: Partial<SharedFields>;
+  selectedImageIds?: string[];
+}
+
+export interface PublicShareImage {
+  id: string;
+  url: string;
+  width?: number;
+  height?: number;
+}
+
+export interface PublicShareData {
+  shareId: string;
+  createdAt: string;
+  guitar: Partial<Guitar>;
+  images: PublicShareImage[];
+  sharedFields: SharedFields;
+}

@@ -17,6 +17,7 @@ Globals:
         DYNAMODB_TABLE_USERS: !Ref UsersTable
         DYNAMODB_TABLE_DOCUMENTS: !Ref DocumentsTable
         DYNAMODB_TABLE_PROVENANCE_REPORTS: !Ref ProvenanceReportsTable
+        DYNAMODB_TABLE_SHARES: !Ref SharesTable
         S3_BUCKET_IMAGES: !Ref ImagesBucket
         CLOUDFRONT_DOMAIN: !If [HasHostedZone, !Ref ImagesDomainName, !GetAtt ImagesDistribution.DomainName]
         FRONTEND_DOMAIN: !Ref FrontendDomain
@@ -25,7 +26,7 @@ Globals:
     Cors:
       AllowOrigin: !Ref AllowedOrigin
       AllowHeaders: "Content-Type,Authorization"
-      AllowMethods: "GET,POST,PUT,DELETE,OPTIONS"
+      AllowMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
 
 # Parameters for different environments
 Parameters:
@@ -98,6 +99,9 @@ Resources:
         "GET /public/guitars/random":
           ThrottlingBurstLimit: 10
           ThrottlingRateLimit: 1      # Prevent DoS on public endpoint
+        "GET /public/shares/{shareId}":
+          ThrottlingBurstLimit: 20
+          ThrottlingRateLimit: 5      # Rate limit public share views
       CorsConfiguration:
         AllowOrigins:
           - !Ref AllowedOrigin
@@ -109,6 +113,7 @@ Resources:
           - GET
           - POST
           - PUT
+          - PATCH
           - DELETE
           - OPTIONS
         MaxAge: 3600                  # Cache preflight for 1 hour
@@ -755,6 +760,108 @@ Resources:
             Auth:
               Authorizer: CognitoAuthorizer
 
+  # Shares Handler
+  SharesHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-shares
+      CodeUri: src/
+      Handler: handlers/shares/index.handler
+      Description: Handles guitar share operations and public share views
+      Timeout: 30
+      MemorySize: 1024
+      Layers:
+        - !Ref SharpLayer
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SharesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref GuitarsTable
+        - Version: '2012-10-17'
+          Statement:
+            # Query shares by shareId GSI
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+              Resource:
+                - !Sub ${SharesTable.Arn}/index/*
+            # S3 read access for original images
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource:
+                - !Sub ${ImagesBucket.Arn}/images/*
+            # S3 write/delete access for shared (optimized) images
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:DeleteObject
+              Resource:
+                - !Sub ${ImagesBucket.Arn}/shared/*
+      Events:
+        ListShares:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /shares
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        CreateShare:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /shares
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetShare:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /shares/{shareId}
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        UpdateShare:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /shares/{shareId}
+            Method: PATCH
+            Auth:
+              Authorizer: CognitoAuthorizer
+        DeleteShare:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /shares/{shareId}
+            Method: DELETE
+            Auth:
+              Authorizer: CognitoAuthorizer
+        GetPublicShare:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /public/shares/{shareId}
+            Method: GET
+            # Note: No Auth section - this endpoint is public
+
+  # Sharp.js Lambda Layer for image processing
+  SharpLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub ${AWS::StackName}-sharp
+      Description: Sharp.js for image processing
+      ContentUri: layers/sharp/
+      CompatibleRuntimes:
+        - nodejs22.x
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: makefile
+
   # ==================== DynamoDB Tables ====================
 
   GuitarsTable:
@@ -937,6 +1044,37 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
 
+  SharesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-shares
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: shareId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: shareId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: ShareIdIndex
+          KeySchema:
+            - AttributeName: shareId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProduction, true, false]
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
   # ==================== Cognito ====================
 
   UserPool:
@@ -1038,7 +1176,9 @@ Resources:
             Principal:
               AWS: !Sub arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${ImagesOAI}
             Action: s3:GetObject
-            Resource: !Sub ${ImagesBucket.Arn}/images/*
+            Resource:
+              - !Sub ${ImagesBucket.Arn}/images/*
+              - !Sub ${ImagesBucket.Arn}/shared/*
 
   ImagesOAI:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity

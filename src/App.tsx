@@ -9,6 +9,7 @@ import { Documents } from './components/Documents';
 import { Timeline } from './components/Timeline';
 import ProvenanceReport from './components/ProvenanceReport';
 import SalesAd from './components/SalesAd';
+import { SharedGuitarView } from './components/SharedGuitarView';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
 import { ForgotPassword } from './components/ForgotPassword';
@@ -25,6 +26,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/s/:shareId" element={<SharedGuitarView />} />
 
           {/* Protected routes */}
           <Route
