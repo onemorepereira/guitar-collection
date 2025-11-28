@@ -9,7 +9,6 @@ import {
   Edit,
   Trash2,
   Calendar,
-  Music,
   Info,
   Lock,
   Loader2,
@@ -25,6 +24,7 @@ import { format } from 'date-fns';
 import { ReceiptViewer } from './ReceiptViewer';
 import { NotesJournal } from './NotesJournal';
 import { FileText, Image as ImageIcon, Download, Tag } from 'lucide-react';
+import { PickIcon } from './PickIcon';
 import { ImageViewer } from './ImageViewer';
 import { ShareModal } from './ShareModal';
 import { Footer } from './Footer';
@@ -340,7 +340,7 @@ export const GuitarDetail = () => {
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <Music className="w-8 h-8 text-gray-400" />
+                          <PickIcon className="w-8 h-8 text-gray-400" gColor="white" />
                         </div>
                       )}
                     </button>
@@ -362,7 +362,7 @@ export const GuitarDetail = () => {
                   />
                 ) : (
                   <div className="w-full h-96 flex items-center justify-center">
-                    <Music className="w-24 h-24 text-gray-400" />
+                    <PickIcon className="w-24 h-24 text-gray-400" gColor="white" />
                   </div>
                 )}
 

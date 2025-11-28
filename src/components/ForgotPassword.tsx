@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authService } from '../services/authService';
-import { Music, Mail, Loader2, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Mail, Loader2, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+import { PickIcon } from './PickIcon';
 
 export const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -87,8 +88,8 @@ export const ForgotPassword = () => {
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4">
-            <Music className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-full mb-4">
+            <PickIcon className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Reset Password</h1>
           <p className="text-gray-600">

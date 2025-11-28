@@ -1,5 +1,6 @@
 import { Guitar } from '../types/guitar';
-import { Calendar, Music } from 'lucide-react';
+import { Calendar } from 'lucide-react';
+import { PickIcon } from './PickIcon';
 import { useImageUrl } from '../hooks/useImageUrl';
 
 interface GuitarCardProps {
@@ -25,7 +26,7 @@ export const GuitarCard = ({ guitar, onClick }: GuitarCardProps) => {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <Music className="w-16 h-16 text-gray-400" />
+            <PickIcon className="w-16 h-16 text-gray-400" gColor="white" />
           </div>
         )}
         {/* Gradient overlay at bottom */}

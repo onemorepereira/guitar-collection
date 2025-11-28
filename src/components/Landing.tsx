@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Music, Loader2, RefreshCw, LogIn, UserPlus } from 'lucide-react';
+import { Loader2, RefreshCw, LogIn, UserPlus } from 'lucide-react';
+import { PickIcon } from './PickIcon';
 import { guitarService } from '../services/guitarService';
 import { Guitar } from '../types/guitar';
 import { useImageUrls } from '../hooks/useImageUrl';
@@ -48,10 +49,13 @@ export const Landing = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
-                <Music className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
+                <PickIcon className="w-10 h-10 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">Guitar Collection</h1>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Guitar Collection Manager</h1>
+                <p className="text-xs text-gray-400 tracking-wide">guitarhelp.click</p>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <Link to="/login" className="btn-secondary flex items-center gap-2" title="Sign in to your account">
@@ -100,7 +104,7 @@ export const Landing = () => {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Music className="w-24 h-24 text-gray-300" />
+                        <PickIcon className="w-24 h-24 text-gray-300" gColor="white" />
                       </div>
                     )}
                   </div>
@@ -222,7 +226,7 @@ export const Landing = () => {
             </div>
           ) : (
             <div className="text-center py-20">
-              <Music className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <PickIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" gColor="white" />
               <h3 className="text-2xl font-semibold text-gray-900 mb-2">
                 No Guitars Yet
               </h3>

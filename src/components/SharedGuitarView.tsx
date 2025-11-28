@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  Music,
   Calendar,
   Info,
   Loader2,
@@ -11,6 +10,7 @@ import {
   X,
   Maximize2,
 } from 'lucide-react';
+import { PickIcon } from './PickIcon';
 import { PublicShareData } from '../types/guitar';
 import { shareService } from '../services/shareService';
 
@@ -104,7 +104,7 @@ export const SharedGuitarView = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md px-4">
-          <Music className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <PickIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" gColor="white" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             {error === 'Share not found' ? 'Share Not Found' : 'Unable to Load'}
           </h2>
@@ -128,7 +128,7 @@ export const SharedGuitarView = () => {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Music className="w-6 h-6 text-primary-600" />
+              <PickIcon className="w-6 h-6 text-primary-600" gColor="white" />
               <span className="text-lg font-semibold text-gray-900">
                 Shared from GuitarHelp
               </span>
@@ -190,7 +190,7 @@ export const SharedGuitarView = () => {
                   </button>
                 ) : (
                   <div className="w-full h-96 flex items-center justify-center">
-                    <Music className="w-24 h-24 text-gray-400" />
+                    <PickIcon className="w-24 h-24 text-gray-400" gColor="white" />
                   </div>
                 )}
 
@@ -447,7 +447,7 @@ export const SharedGuitarView = () => {
       <footer className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
-            <Music className="w-4 h-4" />
+            <PickIcon className="w-4 h-4" />
             <span>Shared with</span>
             <a
               href="https://guitarhelp.click"

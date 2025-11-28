@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Music, Mail, Lock, User, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { PickIcon } from './PickIcon';
 import { TermsModal } from './TermsModal';
 import { PrivacyModal } from './PrivacyModal';
 
@@ -80,8 +81,8 @@ export const Register = () => {
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4">
-            <Music className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-full mb-4">
+            <PickIcon className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
           <p className="text-gray-600">Start tracking your guitar collection today</p>
