@@ -1,3 +1,4 @@
+import { useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
 
 interface PrivacyModalProps {
@@ -6,6 +7,19 @@ interface PrivacyModalProps {
 }
 
 export const PrivacyModal = ({ isOpen, onClose }: PrivacyModalProps) => {
+  // Handle Escape key to close
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose();
+    }
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleKeyDown]);
+
   if (!isOpen) return null;
 
   return (
