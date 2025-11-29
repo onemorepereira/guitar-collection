@@ -345,6 +345,261 @@ In this example, `type`, `bodyMaterial`, `neckMaterial`, etc. are completely abs
 
 This guitar has a condition score of 93 (100 - 2 - 5 = 93), rated "Excellent".
 
+---
+
+## Shares API
+
+The Shares API enables creating public links to share guitar information with configurable field visibility and watermarked images.
+
+### Share Data Model
+
+```typescript
+interface Share {
+  shareId: string;           // Unique share identifier (UUID)
+  userId: string;            // Owner's user ID
+  guitarId: string;          // Associated guitar ID
+  createdAt: string;         // ISO 8601 timestamp
+  updatedAt: string;         // ISO 8601 timestamp
+  isActive: boolean;         // Whether share link is active
+  sharedFields: SharedFields; // Field visibility configuration
+  selectedImageIds: string[];// IDs of images to include
+  optimizedImages: OptimizedImage[]; // Watermarked/resized images
+  viewCount: number;         // Total view count
+  views: ShareView[];        // View analytics (max 1000)
+  lastViewedAt?: string;     // Last view timestamp
+}
+
+interface SharedFields {
+  brand: boolean;            // Default: true
+  model: boolean;            // Default: true
+  year: boolean;             // Default: true
+  color: boolean;            // Default: true
+  type: boolean;             // Default: true
+  bodyMaterial: boolean;     // Default: false
+  neckMaterial: boolean;     // Default: false
+  fretboardMaterial: boolean;// Default: false
+  numberOfFrets: boolean;    // Default: false
+  scaleLength: boolean;      // Default: false
+  pickupConfiguration: boolean; // Default: false
+  finish: boolean;           // Default: false
+  tuningMachines: boolean;   // Default: false
+  bridge: boolean;           // Default: false
+  nut: boolean;              // Default: false
+  electronics: boolean;      // Default: false
+  caseIncluded: boolean;     // Default: false
+  countryOfOrigin: boolean;  // Default: false
+  detailedSpecs: boolean;    // Default: false
+  conditionReport: boolean;  // Default: false
+  purchasePrice: boolean;    // Default: false (private)
+  purchaseDate: boolean;     // Default: false (private)
+  notes: boolean;            // Default: false (private)
+  provenance: boolean;       // Default: false (private)
+  documents: boolean;        // Default: false (private)
+}
+
+interface OptimizedImage {
+  originalId: string;        // Original image ID
+  s3Key: string;             // S3 storage key
+  url: string;               // Public URL
+  width: number;             // Image width
+  height: number;            // Image height
+}
+```
+
+### Creating Shares (POST /shares)
+
+**Authentication**: Required (JWT token)
+**CSRF**: Required (`x-csrf-protection` header)
+
+**Request**:
+```json
+{
+  "guitarId": "abc-123",
+  "sharedFields": {
+    "bodyMaterial": true,
+    "neckMaterial": true
+  },
+  "selectedImageIds": ["img-1", "img-2"]
+}
+```
+
+- `guitarId` (required) - Guitar to share
+- `sharedFields` (optional) - Override default field visibility
+- `selectedImageIds` (optional) - Specific images to include (max 10). If omitted, all images are included.
+
+**Response** (201):
+```json
+{
+  "message": "Share created successfully",
+  "share": {
+    "shareId": "uuid-here",
+    "guitarId": "abc-123",
+    "isActive": true,
+    "sharedFields": { ... },
+    "selectedImageIds": ["img-1", "img-2"],
+    "optimizedImages": [
+      {
+        "originalId": "img-1",
+        "url": "https://images.guitarhelp.click/shares/...",
+        "width": 1200,
+        "height": 800
+      }
+    ],
+    "viewCount": 0,
+    "shareUrl": "https://guitarhelp.click/s/uuid-here"
+  }
+}
+```
+
+### Listing Shares (GET /shares)
+
+**Authentication**: Required
+
+Returns all shares for the authenticated user with guitar summary info.
+
+**Response** (200):
+```json
+{
+  "shares": [
+    {
+      "shareId": "uuid-here",
+      "guitarId": "abc-123",
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-01T00:00:00Z",
+      "isActive": true,
+      "viewCount": 42,
+      "imageCount": 3,
+      "shareUrl": "https://guitarhelp.click/s/uuid-here",
+      "guitar": {
+        "brand": "Fender",
+        "model": "Stratocaster",
+        "year": 1965,
+        "thumbnail": "https://images.guitarhelp.click/..."
+      }
+    }
+  ],
+  "count": 1
+}
+```
+
+### Getting Share Details (GET /shares/{shareId})
+
+**Authentication**: Required (owner only)
+
+Returns full share details including all configuration and analytics.
+
+**Response** (200):
+```json
+{
+  "share": {
+    "shareId": "uuid-here",
+    "guitarId": "abc-123",
+    "isActive": true,
+    "sharedFields": { ... },
+    "selectedImageIds": [...],
+    "optimizedImages": [...],
+    "viewCount": 42,
+    "views": [
+      {
+        "viewedAt": "2025-01-15T10:30:00Z",
+        "referrer": "https://reverb.com",
+        "country": "US",
+        "browser": "Chrome"
+      }
+    ],
+    "shareUrl": "https://guitarhelp.click/s/uuid-here",
+    "guitar": {
+      "brand": "Fender",
+      "model": "Stratocaster",
+      "year": 1965,
+      "images": [...]
+    }
+  }
+}
+```
+
+### Updating Shares (PUT /shares/{shareId})
+
+**Authentication**: Required (owner only)
+**CSRF**: Required
+
+**Request**:
+```json
+{
+  "sharedFields": {
+    "purchasePrice": true
+  },
+  "selectedImageIds": ["img-1", "img-3"],
+  "isActive": false
+}
+```
+
+All fields are optional. Only provided fields are updated.
+
+- Changing `selectedImageIds` triggers image reprocessing
+- Setting `isActive: false` disables the share link
+
+**Response** (200):
+```json
+{
+  "message": "Share updated successfully",
+  "share": { ... }
+}
+```
+
+### Deleting Shares (DELETE /shares/{shareId})
+
+**Authentication**: Required (owner only)
+**CSRF**: Required
+
+Deletes the share and its optimized images from S3.
+
+**Response** (200):
+```json
+{
+  "message": "Share deleted successfully"
+}
+```
+
+### Public Share View (GET /public/shares/{shareId})
+
+**Authentication**: None (public endpoint)
+
+Returns filtered guitar data based on `sharedFields` configuration. Records view analytics.
+
+**Response** (200):
+```json
+{
+  "shareId": "uuid-here",
+  "createdAt": "2025-01-01T00:00:00Z",
+  "guitar": {
+    "brand": "Fender",
+    "model": "Stratocaster",
+    "year": 1965,
+    "color": "Sunburst",
+    "conditionShape": "stratocaster",
+    "conditionMarkers": [...]
+  },
+  "images": [
+    {
+      "id": "img-1",
+      "url": "https://images.guitarhelp.click/shares/...",
+      "width": 1200,
+      "height": 800
+    }
+  ],
+  "sharedFields": { ... }
+}
+```
+
+**Note**: Only fields with `sharedFields[field] === true` are included in `guitar`. Condition data (`conditionShape`, `conditionMarkers`) requires `sharedFields.conditionReport === true`.
+
+**Error Responses**:
+- `404` - Share not found or inactive
+- `404` - Guitar no longer exists
+
+---
+
 ## Frontend Handling Guidelines
 
 1. **Always check for null/undefined** before calling methods on optional string fields
