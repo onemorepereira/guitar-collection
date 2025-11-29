@@ -90,6 +90,35 @@ Array of journal notes. May be empty array, but should not be null:
 - `content` (string) - Note text
 - `createdAt` (string, ISO 8601) - When note was created
 
+### Condition Documentation Fields
+
+These fields document the physical condition of the guitar using visual diagrams:
+
+#### `conditionShape` (string, optional)
+
+Guitar body shape template for condition diagrams. Valid values:
+- `stratocaster`, `telecaster`, `lespaul`, `sg`, `semihollow`
+- `offset`, `superstrat`, `explorer`, `flyingv`, `rickenbacker`
+
+#### `conditionMarkers` (array, optional)
+
+Array of condition markers placed on the guitar diagram. Each marker documents a blemish or issue:
+
+- `id` (string) - Unique marker identifier
+- `x` (number) - X position as percentage (0-100)
+- `y` (number) - Y position as percentage (0-100)
+- `view` (string) - Which diagram view: `"front"` or `"back"`
+- `severity` (string) - Issue severity: `"minor"`, `"moderate"`, or `"major"`
+- `type` (string) - Issue type (e.g., "Scratch", "Ding / dent", "Chip", "Crack", "Wear", "Fret issue", "Hardware issue", "Electronics issue", "Repair", "Modification", "Other")
+- `note` (string) - Detailed description of the issue
+
+**Condition Score Calculation** (frontend):
+```
+score = 100 - (minor × 2) - (moderate × 5) - (major × 10)
+```
+
+Score labels: Mint (95+), Excellent (85+), Very Good (70+), Good (50+), Fair (30+), Poor (<30)
+
 ## API Behavior
 
 ### Creating Guitars (POST /guitars)
@@ -276,6 +305,45 @@ Content-Type: application/pdf
 ```
 
 In this example, `type`, `bodyMaterial`, `neckMaterial`, etc. are completely absent from the response because they were never provided.
+
+### Guitar with Condition Documentation
+
+```json
+{
+  "id": "cond-123",
+  "userId": "user-456",
+  "brand": "Fender",
+  "model": "Stratocaster",
+  "year": 1965,
+  "conditionShape": "stratocaster",
+  "conditionMarkers": [
+    {
+      "id": "marker-1",
+      "x": 45.2,
+      "y": 32.8,
+      "view": "front",
+      "severity": "minor",
+      "type": "Scratch",
+      "note": "Light surface scratch near pickguard"
+    },
+    {
+      "id": "marker-2",
+      "x": 78.5,
+      "y": 65.0,
+      "view": "back",
+      "severity": "moderate",
+      "type": "Ding / dent",
+      "note": "Small dent from belt buckle wear"
+    }
+  ],
+  "images": [],
+  "notes": [],
+  "createdAt": "2025-01-01T00:00:00Z",
+  "updatedAt": "2025-01-01T00:00:00Z"
+}
+```
+
+This guitar has a condition score of 93 (100 - 2 - 5 = 93), rated "Excellent".
 
 ## Frontend Handling Guidelines
 
