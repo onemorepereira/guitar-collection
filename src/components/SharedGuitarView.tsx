@@ -9,10 +9,12 @@ import {
   ExternalLink,
   X,
   Maximize2,
+  ClipboardCheck,
 } from 'lucide-react';
 import { PickIcon } from './PickIcon';
 import { PublicShareData } from '../types/guitar';
 import { shareService } from '../services/shareService';
+import { ConditionReport } from './condition';
 
 export const SharedGuitarView = () => {
   const { shareId } = useParams<{ shareId: string }>();
@@ -353,6 +355,20 @@ export const SharedGuitarView = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Condition Report */}
+            {sharedFields.conditionReport && (guitar as any).conditionShape && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <ClipboardCheck className="w-5 h-5 text-primary-600" />
+                  <h2 className="text-xl font-bold text-gray-900">Condition Report</h2>
+                </div>
+                <ConditionReport
+                  shape={(guitar as any).conditionShape}
+                  markers={(guitar as any).conditionMarkers || []}
+                />
               </div>
             )}
           </div>

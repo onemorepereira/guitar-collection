@@ -31,6 +31,8 @@ import { Footer } from './Footer';
 import { useImageUrls } from '../hooks/useImageUrl';
 import { useAuth } from '../context/AuthContext';
 import { NoteEntry } from '../types/guitar';
+import { ConditionReport } from './condition';
+import { ClipboardCheck } from 'lucide-react';
 
 const getCurrencySymbol = (currencyCode?: string): string => {
   const symbols: Record<string, string> = {
@@ -729,6 +731,20 @@ export const GuitarDetail = () => {
                   onDeleteNote={() => {}}
                   readOnly={true}
                   maxInitialNotes={3}
+                />
+              </div>
+            )}
+
+            {/* Condition Report */}
+            {guitar.conditionShape && (
+              <div className="card p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <ClipboardCheck className="w-5 h-5 text-primary-600" />
+                  <h2 className="text-xl font-bold text-gray-900">Condition Report</h2>
+                </div>
+                <ConditionReport
+                  shape={guitar.conditionShape}
+                  markers={guitar.conditionMarkers || []}
                 />
               </div>
             )}

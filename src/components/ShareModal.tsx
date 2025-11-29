@@ -42,6 +42,7 @@ const DEFAULT_SHARED_FIELDS: SharedFields = {
   caseIncluded: false,
   countryOfOrigin: false,
   detailedSpecs: false,
+  conditionReport: false,
   purchasePrice: false,
   purchaseDate: false,
   notes: false,
@@ -67,7 +68,7 @@ const FIELD_CATEGORIES = {
     'caseIncluded',
     'countryOfOrigin',
   ],
-  'Detailed Specs': ['detailedSpecs'],
+  'Detailed Specs': ['detailedSpecs', 'conditionReport'],
   'Private Info': ['purchasePrice', 'purchaseDate', 'notes', 'provenance', 'documents'],
 };
 
@@ -92,6 +93,7 @@ const FIELD_LABELS: Record<string, string> = {
   caseIncluded: 'Case Included',
   countryOfOrigin: 'Country of Origin',
   detailedSpecs: 'Detailed Specifications',
+  conditionReport: 'Condition Report',
   purchasePrice: 'Purchase Price',
   purchaseDate: 'Purchase Date',
   notes: 'Notes',

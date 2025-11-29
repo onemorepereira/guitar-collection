@@ -258,6 +258,7 @@ const ALLOWED_GUITAR_FIELDS = [
 
   // Condition & description
   'condition', 'notes', 'tags',
+  'conditionShape', 'conditionMarkers',
 
   // Specifications (includes both new and legacy field names)
   'bodyStyle', 'bodyWood', 'bodyMaterial', 'topWood', 'backWood', 'sideWood',

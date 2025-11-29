@@ -59,6 +59,16 @@ function filterSharedData(guitar, sharedFields) {
     detailedSpecs: 'detailedSpecs',
   };
 
+  // Handle condition report separately (mapped to conditionReport share field)
+  if (sharedFields.conditionReport) {
+    if (guitar.conditionShape) {
+      filtered.conditionShape = guitar.conditionShape;
+    }
+    if (guitar.conditionMarkers) {
+      filtered.conditionMarkers = guitar.conditionMarkers;
+    }
+  }
+
   // Only include fields that are marked as shared
   for (const [guitarField, shareField] of Object.entries(fieldMapping)) {
     if (sharedFields[shareField] && guitar[guitarField] !== undefined) {

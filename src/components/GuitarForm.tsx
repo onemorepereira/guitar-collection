@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Guitar, GuitarType, GuitarImage, NoteEntry, GuitarDocument } from '../types/guitar';
+import { Guitar, GuitarType, GuitarImage, NoteEntry, GuitarDocument, GuitarBodyShape, ConditionMarkerData } from '../types/guitar';
 import { guitarService } from '../services/guitarService';
-import { ArrowLeft, Save, Loader2, X, Upload, ChevronDown, ChevronUp, Sparkles, Receipt, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, X, Upload, ChevronDown, ChevronUp, Sparkles, Receipt, Trash2, ClipboardCheck } from 'lucide-react';
 import { ImageStaging } from './ImageStaging';
 import { StagedImage } from '../utils/imageUtils';
 import { NotesJournal } from './NotesJournal';
@@ -15,6 +15,7 @@ import { useGuitarSuggestions, getTypicalSpecs } from '../hooks/useGuitarSuggest
 import { SpecsImporter } from './SpecsImporter';
 import { ReceiptImporter } from './ReceiptImporter';
 import { DocumentLinker } from './DocumentLinker';
+import { ConditionDiagram, ConditionMarker, getAvailableShapes, GuitarShape } from './condition';
 
 export const GuitarForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -50,6 +51,11 @@ export const GuitarForm = () => {
   const [stagedImages, setStagedImages] = useState<StagedImage[]>([]);
   const [notes, setNotes] = useState<NoteEntry[]>([]);
   const [documentIds, setDocumentIds] = useState<string[]>([]);
+
+  // Condition
+  const [conditionShape, setConditionShape] = useState<GuitarShape | ''>('');
+  const [conditionMarkers, setConditionMarkers] = useState<ConditionMarker[]>([]);
+  const [showConditionSection, setShowConditionSection] = useState(false);
 
   // Private info
   const [serialNumber, setSerialNumber] = useState('');
@@ -237,6 +243,13 @@ export const GuitarForm = () => {
     setImages(guitar.images);
     setNotes(guitar.notes || []);
     setDocumentIds(guitar.documentIds || []);
+
+    // Condition data
+    if (guitar.conditionShape) {
+      setConditionShape(guitar.conditionShape);
+      setConditionMarkers((guitar.conditionMarkers || []) as ConditionMarker[]);
+      setShowConditionSection(true);
+    }
 
     if (guitar.privateInfo) {
       setSerialNumber(guitar.privateInfo.serialNumber || '');
@@ -638,6 +651,8 @@ export const GuitarForm = () => {
       images: finalImages,
       documentIds: documentIds.length > 0 ? documentIds : undefined,
       notes,
+      conditionShape: conditionShape || undefined,
+      conditionMarkers: conditionMarkers.length > 0 ? conditionMarkers : undefined,
       privateInfo: {
         serialNumber: serialNumber || undefined,
         purchaseDate: purchaseDate || undefined,
@@ -1646,6 +1661,66 @@ export const GuitarForm = () => {
               onAddNote={handleAddNote}
               onDeleteNote={handleDeleteNote}
             />
+          </div>
+
+          {/* Condition */}
+          <div className="card p-6">
+            <button
+              type="button"
+              onClick={() => setShowConditionSection(!showConditionSection)}
+              className="w-full flex items-center justify-between mb-4 hover:opacity-70 transition-opacity"
+            >
+              <div className="flex items-center gap-2">
+                <ClipboardCheck className="w-5 h-5 text-primary-600" />
+                <div className="text-left">
+                  <h2 className="text-xl font-bold text-gray-900">Condition Report</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Document blemishes and condition issues on a visual diagram
+                  </p>
+                </div>
+              </div>
+              {showConditionSection ? (
+                <ChevronUp className="w-5 h-5 text-gray-500" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-gray-500" />
+              )}
+            </button>
+
+            {showConditionSection && (
+              <div className="space-y-4 pt-4 border-t border-gray-200">
+                <div>
+                  <label className="label">Guitar Shape</label>
+                  <select
+                    value={conditionShape}
+                    onChange={(e) => {
+                      setConditionShape(e.target.value as GuitarShape);
+                      if (e.target.value !== conditionShape) {
+                        setConditionMarkers([]); // Reset markers when shape changes
+                      }
+                    }}
+                    className="input-field max-w-xs"
+                  >
+                    <option value="">Select a shape...</option>
+                    {getAvailableShapes().map((shape) => (
+                      <option key={shape} value={shape}>
+                        {shape.charAt(0).toUpperCase() + shape.slice(1).replace(/([A-Z])/g, ' $1')}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select the body shape that best matches your guitar
+                  </p>
+                </div>
+
+                {conditionShape && (
+                  <ConditionDiagram
+                    shape={conditionShape}
+                    markers={conditionMarkers}
+                    onMarkersChange={setConditionMarkers}
+                  />
+                )}
+              </div>
+            )}
           </div>
 
           {/* Documentation */}

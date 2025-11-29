@@ -36,6 +36,30 @@ export interface DetailedSpecs {
   weight?: string;
 }
 
+// Condition marker for documenting blemishes on guitar diagrams
+export interface ConditionMarkerData {
+  id: string;
+  x: number; // Percentage 0-100
+  y: number; // Percentage 0-100
+  view: 'front' | 'back';
+  severity: 'minor' | 'moderate' | 'major';
+  type: string;
+  note: string;
+}
+
+// Guitar body shape for condition diagrams
+export type GuitarBodyShape =
+  | 'stratocaster'
+  | 'telecaster'
+  | 'lespaul'
+  | 'sg'
+  | 'semihollow'
+  | 'offset'
+  | 'superstrat'
+  | 'explorer'
+  | 'flyingv'
+  | 'rickenbacker';
+
 export interface Guitar {
   id: string;
   userId: string; // Owner of the guitar - for multi-user data isolation
@@ -65,6 +89,10 @@ export interface Guitar {
 
   // Detailed Specifications (optional, for enthusiasts)
   detailedSpecs?: DetailedSpecs;
+
+  // Condition Documentation
+  conditionShape?: GuitarBodyShape;
+  conditionMarkers?: ConditionMarkerData[];
 
   // Images
   images: GuitarImage[];
@@ -281,6 +309,7 @@ export interface SharedFields {
   caseIncluded: boolean;
   countryOfOrigin: boolean;
   detailedSpecs: boolean;
+  conditionReport: boolean;
   purchasePrice: boolean;
   purchaseDate: boolean;
   notes: boolean;
