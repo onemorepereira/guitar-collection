@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Landing } from './components/Landing';
@@ -17,8 +18,9 @@ import { ResetPassword } from './components/ResetPassword';
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
+    <ThemeProvider>
+      <Router>
+        <AuthProvider>
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Landing />} />
@@ -93,9 +95,10 @@ function App() {
               </ProtectedRoute>
             }
           />
-        </Routes>
-      </AuthProvider>
-    </Router>
+          </Routes>
+        </AuthProvider>
+      </Router>
+    </ThemeProvider>
   );
 }
 

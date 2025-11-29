@@ -6,6 +6,7 @@ import { GuitarCard } from './GuitarCard';
 import { SearchBar } from './SearchBar';
 import { Footer } from './Footer';
 import { UserNameEditor } from './UserNameEditor';
+import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Loader2, DoorOpen, User, Edit2, Grid, List, FileText, Clock, Calendar, Table } from 'lucide-react';
 import { CollectionTable } from './CollectionTable';
@@ -131,14 +132,14 @@ export const GuitarGallery = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div className="text-center md:text-left">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Guitar Collection Manager</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Guitar Collection Manager</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
                 {user?.name}
                 <span className="text-gray-400 mx-2">•</span>
                 {guitars.length} {guitars.length === 1 ? 'guitar' : 'guitars'}
@@ -156,24 +157,24 @@ export const GuitarGallery = () => {
               </p>
             </div>
             <div className="flex items-center justify-center md:justify-end gap-2 sm:gap-4 flex-wrap">
-              <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg group">
-                <User className="w-4 h-4 text-gray-600" />
-                <span className="text-sm text-gray-700">{user?.name}</span>
+              <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg group">
+                <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <span className="text-sm text-gray-700 dark:text-gray-300">{user?.name}</span>
                 <button
                   onClick={() => setEditingName(true)}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-all"
                   title="Change display name"
                 >
-                  <Edit2 className="w-3 h-3 text-gray-600" />
+                  <Edit2 className="w-3 h-3 text-gray-600 dark:text-gray-400" />
                 </button>
               </div>
-              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+              <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('gallery')}
                   className={`p-2 rounded transition-colors ${
                     viewMode === 'gallery'
-                      ? 'bg-white text-primary-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                   }`}
                   title="Gallery view"
                 >
@@ -183,8 +184,8 @@ export const GuitarGallery = () => {
                   onClick={() => setViewMode('list')}
                   className={`p-2 rounded transition-colors ${
                     viewMode === 'list'
-                      ? 'bg-white text-primary-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                   }`}
                   title="List view"
                 >
@@ -194,8 +195,8 @@ export const GuitarGallery = () => {
                   onClick={() => setViewMode('timeline')}
                   className={`p-2 rounded transition-colors ${
                     viewMode === 'timeline'
-                      ? 'bg-white text-primary-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                   }`}
                   title="Timeline view"
                 >
@@ -205,8 +206,8 @@ export const GuitarGallery = () => {
                   onClick={() => setViewMode('table')}
                   className={`hidden sm:block p-2 rounded transition-colors ${
                     viewMode === 'table'
-                      ? 'bg-white text-primary-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white dark:bg-gray-600 text-primary-600 dark:text-primary-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                   }`}
                   title="Table view (editable)"
                 >
@@ -222,14 +223,15 @@ export const GuitarGallery = () => {
               </button>
               <button
                 onClick={() => navigate('/documents')}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
                 title="Manage documents"
               >
                 <FileText className="w-5 h-5" />
               </button>
+              <ThemeToggle />
               <button
                 onClick={handleLogout}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
                 title="Logout and exit"
               >
                 <DoorOpen className="w-5 h-5" />
@@ -253,11 +255,11 @@ export const GuitarGallery = () => {
           </div>
         ) : guitars.length === 0 ? (
           <div className="text-center py-20">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-4">
               <Plus className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No guitars found</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No guitars found</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               {search
                 ? 'Try a different search term'
                 : 'Start building your collection by adding your first guitar'}
@@ -282,37 +284,37 @@ export const GuitarGallery = () => {
           <div className="card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                   <tr>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Image
                     </th>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Guitar
                     </th>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Color
                     </th>
-                    <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       S/N
                     </th>
-                    <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Price
                     </th>
-                    <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="hidden xl:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Purchase Date
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {displayGuitars.map((guitar) => (
                     <tr
                       key={guitar.id}
                       onClick={() => navigate(`/guitar/${guitar.id}`)}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                     >
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -324,39 +326,39 @@ export const GuitarGallery = () => {
                                 alt={`${guitar.brand} ${guitar.model}`}
                               />
                             ) : (
-                              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded bg-gray-200 flex items-center justify-center">
-                                <span className="text-gray-400 text-xs">No image</span>
+                              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                <span className="text-gray-400 dark:text-gray-500 text-xs">No image</span>
                               </div>
                             )}
                           </div>
                         </div>
                       </td>
                       <td className="px-4 sm:px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {guitar.brand} {guitar.model} {guitar.year}
                         </div>
                         {/* S/N on mobile */}
                         {guitar.privateInfo?.serialNumber && (
-                          <div className="md:hidden text-xs text-gray-500 font-mono mt-1">
+                          <div className="md:hidden text-xs text-gray-500 dark:text-gray-400 font-mono mt-1">
                             S/N: {guitar.privateInfo.serialNumber}
                           </div>
                         )}
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{guitar.color || '—'}</div>
+                        <div className="text-sm text-gray-900 dark:text-gray-100">{guitar.color || '—'}</div>
                       </td>
                       <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-600 font-mono">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 font-mono">
                           {guitar.privateInfo?.serialNumber || '—'}
                         </div>
                       </td>
                       <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary-100 text-primary-800">
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300">
                           {guitar.type}
                         </span>
                       </td>
                       <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {guitar.privateInfo?.purchasePrice
                             ? `$${guitar.privateInfo.purchasePrice.toLocaleString('en-US', {
                                 minimumFractionDigits: 2,
@@ -366,7 +368,7 @@ export const GuitarGallery = () => {
                         </div>
                       </td>
                       <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
                           {guitar.privateInfo?.purchaseDate
                             ? new Date(guitar.privateInfo.purchaseDate).toLocaleDateString('en-US', {
                                 year: 'numeric',
@@ -389,7 +391,7 @@ export const GuitarGallery = () => {
             <div className="lg:hidden">
               <div className="relative px-4 pt-8">
                 {/* Vertical line */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-8 bottom-0 w-0.5 bg-primary-200" />
+                <div className="absolute left-1/2 -translate-x-1/2 top-8 bottom-0 w-0.5 bg-primary-200 dark:bg-primary-800" />
 
                 <div className="space-y-8 py-4">
                   {uniqueDates.map((dateKey) => {
@@ -399,15 +401,15 @@ export const GuitarGallery = () => {
                     return (
                       <div key={dateKey} className="relative flex items-center justify-between gap-4">
                         {/* Date label (left side) */}
-                        <div className="text-sm text-gray-600 font-medium text-right flex-1">
+                        <div className="text-sm text-gray-600 dark:text-gray-400 font-medium text-right flex-1">
                           {displayDate}
                           {guitarsOnDate.length > 1 && (
-                            <span className="text-xs text-gray-500 ml-1">({guitarsOnDate.length})</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-500 ml-1">({guitarsOnDate.length})</span>
                           )}
                         </div>
 
                         {/* Connection dot */}
-                        <div className="w-3 h-3 rounded-full bg-primary-400 border-4 border-white shadow z-10 flex-shrink-0" />
+                        <div className="w-3 h-3 rounded-full bg-primary-400 dark:bg-primary-500 border-4 border-white dark:border-gray-900 shadow z-10 flex-shrink-0" />
 
                         {/* Guitar thumbnails (right side) - overlapping if multiple */}
                         <div className="flex-1">
@@ -439,8 +441,8 @@ export const GuitarGallery = () => {
                                       className="w-20 h-20 object-cover rounded-full shadow-md hover:shadow-xl transition-all hover:scale-110 hover:z-50 border-2 border-white"
                                     />
                                   ) : (
-                                    <div className="w-20 h-20 bg-gray-200 rounded-full shadow-md hover:shadow-xl transition-all hover:scale-110 hover:z-50 flex items-center justify-center border-2 border-white">
-                                      <Calendar className="w-6 h-6 text-gray-400" />
+                                    <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full shadow-md hover:shadow-xl transition-all hover:scale-110 hover:z-50 flex items-center justify-center border-2 border-white dark:border-gray-900">
+                                      <Calendar className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                                     </div>
                                   )}
                                   {/* Tooltip */}
@@ -464,26 +466,26 @@ export const GuitarGallery = () => {
             <div className="hidden lg:block px-8 py-8">
               <div className="relative">
                 {/* Vertical timeline line */}
-                <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-primary-200" />
+                <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-primary-200 dark:bg-primary-800" />
 
                 <div className="space-y-12">
                   {years.map((year) => (
                     <div key={year}>
                       {/* Year marker on timeline */}
                       <div className="flex items-center gap-6 mb-8">
-                        <div className="flex items-center justify-center w-20 h-20 rounded-full bg-primary-600 text-white font-bold text-xl shadow-lg z-10">
+                        <div className="flex items-center justify-center w-20 h-20 rounded-full bg-primary-600 dark:bg-primary-500 text-white font-bold text-xl shadow-lg z-10">
                           {year}
                         </div>
                         <div className="flex items-center gap-4 flex-1">
-                          <span className="text-gray-600 font-medium">
+                          <span className="text-gray-600 dark:text-gray-400 font-medium">
                             {guitarsByYear[year].length} guitar{guitarsByYear[year].length !== 1 ? 's' : ''} acquired
                           </span>
-                          <div className="flex-1 h-0.5 bg-primary-100" />
+                          <div className="flex-1 h-0.5 bg-primary-100 dark:bg-primary-900/50" />
                         </div>
                       </div>
 
                       {/* Guitars for this year - wrapped with round tokens */}
-                      <div className="ml-10 pl-10 border-l-2 border-primary-100 overflow-visible">
+                      <div className="ml-10 pl-10 border-l-2 border-primary-100 dark:border-primary-900/50 overflow-visible">
                         <div className="flex flex-wrap gap-6 overflow-visible">
                           {guitarsByYear[year].map((guitar) => {
                             const primaryImage = guitar.images?.find(img => img.isPrimary) || guitar.images?.[0];
@@ -514,24 +516,24 @@ export const GuitarGallery = () => {
                                       className="w-28 h-28 object-cover rounded-full shadow-md hover:shadow-xl transition-all hover:scale-110 border-4 border-white"
                                     />
                                   ) : (
-                                    <div className="w-28 h-28 bg-gray-200 rounded-full shadow-md hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center border-4 border-white">
-                                      <Calendar className="w-10 h-10 text-gray-400" />
+                                    <div className="w-28 h-28 bg-gray-200 dark:bg-gray-700 rounded-full shadow-md hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center border-4 border-white dark:border-gray-900">
+                                      <Calendar className="w-10 h-10 text-gray-400 dark:text-gray-500" />
                                     </div>
                                   )}
                                   {/* Tooltip */}
-                                  <div className="tooltip-nowrap absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg whitespace-nowrap">
+                                  <div className="tooltip-nowrap absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-1.5 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg whitespace-nowrap">
                                     {tooltipText}
-                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
                                   </div>
                                 </div>
 
                                 {/* Guitar info below token */}
                                 <div className="text-center">
-                                  <h3 className="font-semibold text-gray-900 text-sm truncate w-full">
+                                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm truncate w-full">
                                     {guitar.brand}
                                   </h3>
-                                  <p className="text-xs text-gray-600 truncate w-full">{guitar.model}</p>
-                                  <p className="text-xs text-gray-400 mt-1">{formatDate(date)}</p>
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate w-full">{guitar.model}</p>
+                                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatDate(date)}</p>
                                 </div>
                               </div>
                             );
@@ -548,8 +550,8 @@ export const GuitarGallery = () => {
           /* Table View - Editable */
           <div className="card p-4">
             <div className="mb-4">
-              <h2 className="text-lg font-bold text-gray-900">Collection Management</h2>
-              <p className="text-sm text-gray-600 mt-1">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Collection Management</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Click any cell to edit. Changes save automatically.
               </p>
             </div>

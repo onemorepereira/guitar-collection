@@ -255,7 +255,7 @@ export const GuitarDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
       </div>
     );
@@ -263,9 +263,9 @@ export const GuitarDetail = () => {
 
   if (!guitar) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Guitar not found</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Guitar not found</h2>
           <button onClick={() => navigate('/collection')} className="btn-primary mt-4">
             Back to Collection
           </button>
@@ -279,14 +279,14 @@ export const GuitarDetail = () => {
   const currentThumbnailUrls = thumbnailUrls;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <button
               onClick={() => navigate('/collection')}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
               title="Return to guitar collection"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -296,14 +296,14 @@ export const GuitarDetail = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowShareModal(true)}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
                 title="Share guitar"
               >
                 <Share2 className="w-5 h-5" />
               </button>
               <button
                 onClick={() => navigate(`/edit/${guitar.id}`)}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
                 title="Edit guitar details"
               >
                 <Edit className="w-5 h-5" />
@@ -329,8 +329,8 @@ export const GuitarDetail = () => {
                       onClick={() => setCurrentImageIndex(idx)}
                       className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
                         idx === currentImageIndex
-                          ? 'border-primary-600 ring-2 ring-primary-200'
-                          : 'border-gray-300 hover:border-gray-400'
+                          ? 'border-primary-600 ring-2 ring-primary-200 dark:ring-primary-800'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                       }`}
                       title={`View image ${idx + 1}`}
                     >
@@ -341,8 +341,8 @@ export const GuitarDetail = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <PickIcon className="w-8 h-8 text-gray-400" gColor="white" />
+                        <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                          <PickIcon className="w-8 h-8 text-gray-400 dark:text-gray-500" gColor="white" />
                         </div>
                       )}
                     </button>
@@ -353,7 +353,7 @@ export const GuitarDetail = () => {
 
             {/* Main Image - Bottom */}
             <div className="card overflow-hidden">
-              <div className="relative min-h-96 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4">
+              <div className="relative min-h-96 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center p-4">
                 {currentImageUrl ? (
                   <img
                     src={currentImageUrl}
@@ -364,7 +364,7 @@ export const GuitarDetail = () => {
                   />
                 ) : (
                   <div className="w-full h-96 flex items-center justify-center">
-                    <PickIcon className="w-24 h-24 text-gray-400" gColor="white" />
+                    <PickIcon className="w-24 h-24 text-gray-400 dark:text-gray-500" gColor="white" />
                   </div>
                 )}
 
@@ -395,8 +395,8 @@ export const GuitarDetail = () => {
               </div>
 
               {currentImage?.caption && (
-                <div className="p-4 bg-gray-50">
-                  <p className="text-sm text-gray-700">{currentImage.caption}</p>
+                <div className="p-4 bg-gray-50 dark:bg-gray-700">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{currentImage.caption}</p>
                 </div>
               )}
             </div>
@@ -408,16 +408,16 @@ export const GuitarDetail = () => {
             <div className="card p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                     {guitar.brand} {guitar.model}
                   </h1>
-                  <div className="flex items-center gap-3 text-gray-600">
+                  <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
                     <Calendar className="w-4 h-4" />
                     <span>{guitar.year}</span>
                     {guitar.type && (
                       <>
-                        <span className="text-gray-400">•</span>
-                        <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
+                        <span className="text-gray-400 dark:text-gray-500">•</span>
+                        <span className="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm font-medium">
                           {guitar.type}
                         </span>
                       </>
@@ -430,8 +430,8 @@ export const GuitarDetail = () => {
             {/* Specifications */}
             <div className="card p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Info className="w-5 h-5 text-primary-600" />
-                <h2 className="text-xl font-bold text-gray-900">Specifications</h2>
+                <Info className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Specifications</h2>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -465,8 +465,8 @@ export const GuitarDetail = () => {
             {guitar.detailedSpecs && Object.values(guitar.detailedSpecs).some(v => v) && (
               <div className="card p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <Info className="w-5 h-5 text-primary-600" />
-                  <h2 className="text-xl font-bold text-gray-900">Detailed Specifications</h2>
+                  <Info className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Detailed Specifications</h2>
                 </div>
 
                 <div className="space-y-6">
@@ -474,7 +474,7 @@ export const GuitarDetail = () => {
                   {(guitar.detailedSpecs.bodyShape || guitar.detailedSpecs.bodyBinding ||
                     guitar.detailedSpecs.topWood || guitar.detailedSpecs.topCarve) && (
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Body Details</h3>
+                      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">Body Details</h3>
                       <div className="grid grid-cols-2 gap-4">
                         {guitar.detailedSpecs.bodyShape && (
                           <SpecItem label="Body Shape" value={guitar.detailedSpecs.bodyShape} />
@@ -499,7 +499,7 @@ export const GuitarDetail = () => {
                     guitar.detailedSpecs.nutWidth || guitar.detailedSpecs.nutMaterial ||
                     guitar.detailedSpecs.trussRod) && (
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Neck Details</h3>
+                      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">Neck Details</h3>
                       <div className="grid grid-cols-2 gap-4">
                         {guitar.detailedSpecs.neckProfile && (
                           <SpecItem label="Neck Profile" value={guitar.detailedSpecs.neckProfile} />
@@ -536,7 +536,7 @@ export const GuitarDetail = () => {
                   {(guitar.detailedSpecs.neckPickup || guitar.detailedSpecs.bridgePickup ||
                     guitar.detailedSpecs.pickupSelector || guitar.detailedSpecs.controls) && (
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Pickup Details</h3>
+                      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">Pickup Details</h3>
                       <div className="grid grid-cols-2 gap-4">
                         {guitar.detailedSpecs.neckPickup && (
                           <SpecItem label="Neck Pickup" value={guitar.detailedSpecs.neckPickup} />
@@ -559,7 +559,7 @@ export const GuitarDetail = () => {
                     guitar.detailedSpecs.pickguard || guitar.detailedSpecs.controlKnobs ||
                     guitar.detailedSpecs.strapButtons || guitar.detailedSpecs.stringTrees) && (
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Hardware Details</h3>
+                      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">Hardware Details</h3>
                       <div className="grid grid-cols-2 gap-4">
                         {guitar.detailedSpecs.hardwareFinish && (
                           <SpecItem label="Hardware Finish" value={guitar.detailedSpecs.hardwareFinish} />
@@ -587,7 +587,7 @@ export const GuitarDetail = () => {
                   {(guitar.detailedSpecs.stringGauge || guitar.detailedSpecs.headstock ||
                     guitar.detailedSpecs.weight) && (
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Miscellaneous</h3>
+                      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">Miscellaneous</h3>
                       <div className="grid grid-cols-2 gap-4">
                         {guitar.detailedSpecs.stringGauge && (
                           <SpecItem label="String Gauge" value={guitar.detailedSpecs.stringGauge} />
@@ -609,11 +609,11 @@ export const GuitarDetail = () => {
             {guitar.privateInfo && (
               <div className="card p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <Lock className="w-5 h-5 text-primary-600" />
-                  <h2 className="text-xl font-bold text-gray-900">Private Information</h2>
+                  <Lock className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Private Information</h2>
                 </div>
 
-                <div className="space-y-3 pt-2 border-t border-gray-200">
+                <div className="space-y-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                     {guitar.privateInfo.serialNumber && (
                       <PrivateItem label="Serial Number" value={guitar.privateInfo.serialNumber} />
                     )}
@@ -655,10 +655,10 @@ export const GuitarDetail = () => {
                     )}
                     {guitar.privateInfo.receiptUrl && (
                       <div className="flex justify-between items-start">
-                        <span className="text-sm text-gray-500">Receipt:</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">Receipt:</span>
                         <button
                           onClick={() => setShowReceiptViewer(true)}
-                          className="font-medium text-primary-600 hover:text-primary-700 text-right underline"
+                          className="font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-right underline"
                           title="View receipt or proof of purchase"
                         >
                           View Receipt
@@ -672,12 +672,12 @@ export const GuitarDetail = () => {
             {/* Documentation */}
             {linkedDocuments.length > 0 && (
               <div className="card p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Documentation</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Documentation</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {linkedDocuments.map((doc) => (
                     <div
                       key={doc.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:border-primary-500 transition-colors"
+                      className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-primary-500 transition-colors"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1 min-w-0">
@@ -686,10 +686,10 @@ export const GuitarDetail = () => {
                           ) : (
                             <ImageIcon className="w-8 h-8 text-blue-500 mb-2" />
                           )}
-                          <p className="text-sm font-medium text-gray-900 truncate" title={doc.name}>
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" title={doc.name}>
                             {doc.name}
                           </p>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {new Date(doc.uploadedAt).toLocaleDateString()}
                           </p>
                         </div>
@@ -722,8 +722,8 @@ export const GuitarDetail = () => {
             {guitar.notes && guitar.notes.length > 0 && (
               <div className="card p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <StickyNote className="w-5 h-5 text-primary-600" />
-                  <h2 className="text-xl font-bold text-gray-900">Notes</h2>
+                  <StickyNote className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Notes</h2>
                 </div>
                 <NotesJournal
                   notes={guitar.notes}
@@ -739,8 +739,8 @@ export const GuitarDetail = () => {
             {guitar.conditionShape && (
               <div className="card p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <ClipboardCheck className="w-5 h-5 text-primary-600" />
-                  <h2 className="text-xl font-bold text-gray-900">Condition Report</h2>
+                  <ClipboardCheck className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Condition Report</h2>
                 </div>
                 <ConditionReport
                   shape={guitar.conditionShape}
@@ -753,20 +753,20 @@ export const GuitarDetail = () => {
             <div className="card p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-primary-600" />
-                  <h2 className="text-xl font-bold text-gray-900">AI-Generated Documents</h2>
+                  <Sparkles className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">AI-Generated Documents</h2>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={handleGenerateReport}
                     disabled={generatingReport}
-                    className="p-2 rounded-lg border border-gray-300 hover:border-primary-500 hover:bg-primary-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Generate provenance certificate"
                   >
                     {generatingReport ? (
                       <Loader2 className="w-5 h-5 animate-spin text-primary-600" />
                     ) : (
-                      <FileCertificate className="w-5 h-5 text-gray-600 hover:text-primary-600" />
+                      <FileCertificate className="w-5 h-5 text-gray-600 dark:text-gray-400 hover:text-primary-600" />
                     )}
                   </button>
                   <button
@@ -787,7 +787,7 @@ export const GuitarDetail = () => {
               {/* Provenance Reports Section */}
               {provenanceReports.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                     <FileCertificate className="w-4 h-4" />
                     Provenance Certificates
                   </h3>
@@ -799,15 +799,15 @@ export const GuitarDetail = () => {
                       >
                         <button
                           onClick={() => handleViewReport(report.id)}
-                          className="w-full text-left p-3 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all duration-200"
+                          className="w-full text-left p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-200"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-1">
-                                <span className="text-sm font-semibold text-primary-600">
+                                <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
                                   Version {report.version}
                                 </span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
                                   {new Date(report.generatedAt).toLocaleDateString('en-US', {
                                     year: 'numeric',
                                     month: 'short',
@@ -821,10 +821,10 @@ export const GuitarDetail = () => {
                         </button>
                         <button
                           onClick={(e) => handleDeleteReport(report.id, e)}
-                          className="absolute right-2 top-2 p-1.5 rounded bg-red-50 border border-red-200 hover:bg-red-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute right-2 top-2 p-1.5 rounded bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/50 opacity-0 group-hover:opacity-100 transition-opacity"
                           title="Delete report"
                         >
-                          <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                          <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                         </button>
                       </div>
                     ))}
@@ -835,7 +835,7 @@ export const GuitarDetail = () => {
               {/* Sales Ads Section */}
               {salesAds.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                     <Tag className="w-4 h-4" />
                     Sales Listings
                   </h3>
@@ -847,15 +847,15 @@ export const GuitarDetail = () => {
                       >
                         <button
                           onClick={() => handleViewSalesAd(ad.id)}
-                          className="w-full text-left p-3 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all duration-200"
+                          className="w-full text-left p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-200"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-1">
-                                <span className="text-sm font-semibold text-primary-600">
+                                <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
                                   Version {ad.version}
                                 </span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
                                   {new Date(ad.generatedAt).toLocaleDateString('en-US', {
                                     year: 'numeric',
                                     month: 'short',
@@ -869,10 +869,10 @@ export const GuitarDetail = () => {
                         </button>
                         <button
                           onClick={(e) => handleDeleteReport(ad.id, e)}
-                          className="absolute right-2 top-2 p-1.5 rounded bg-red-50 border border-red-200 hover:bg-red-100 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute right-2 top-2 p-1.5 rounded bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/50 opacity-0 group-hover:opacity-100 transition-opacity"
                           title="Delete sales ad"
                         >
-                          <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                          <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                         </button>
                       </div>
                     ))}
@@ -882,8 +882,8 @@ export const GuitarDetail = () => {
 
               {/* Empty State */}
               {provenanceReports.length === 0 && salesAds.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Sparkles className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <Sparkles className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                   <p className="mb-2 font-medium">No AI-generated documents yet</p>
                   <p className="text-sm max-w-md mx-auto">
                     Generate a formal provenance certificate or a compelling sales listing
@@ -899,9 +899,9 @@ export const GuitarDetail = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Guitar?</h3>
-            <p className="text-gray-600 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Delete Guitar?</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Are you sure you want to delete {guitar.brand} {guitar.model}? This action cannot
               be undone.
             </p>
@@ -965,14 +965,14 @@ const SpecItem = ({
   span2?: boolean;
 }) => (
   <div className={span2 ? 'col-span-2' : ''}>
-    <span className="text-sm text-gray-500 block mb-1">{label}</span>
-    <span className="font-medium text-gray-900">{value}</span>
+    <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">{label}</span>
+    <span className="font-medium text-gray-900 dark:text-gray-100">{value}</span>
   </div>
 );
 
 const PrivateItem = ({ label, value }: { label: string; value: string }) => (
   <div className="flex justify-between items-start">
-    <span className="text-sm text-gray-500">{label}:</span>
-    <span className="font-medium text-gray-900 text-right">{value}</span>
+    <span className="text-sm text-gray-500 dark:text-gray-400">{label}:</span>
+    <span className="font-medium text-gray-900 dark:text-gray-100 text-right">{value}</span>
   </div>
 );

@@ -94,7 +94,7 @@ export const NotesJournal = ({ notes, onAddNote, onDeleteNote, readOnly = false,
       {/* Notes List */}
       <div className="space-y-3">
         {sortedNotes.length === 0 ? (
-          <p className="text-gray-500 text-center py-8 italic">
+          <p className="text-gray-500 dark:text-gray-400 text-center py-8 italic">
             No notes yet. Add your first note above!
           </p>
         ) : (
@@ -102,10 +102,10 @@ export const NotesJournal = ({ notes, onAddNote, onDeleteNote, readOnly = false,
             {visibleNotes.map((note) => (
             <div
               key={note.id}
-              className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow relative group"
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md dark:hover:shadow-gray-900/30 transition-shadow relative group"
             >
               <div className="flex items-start justify-between gap-3 mb-2">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                   <Calendar className="w-4 h-4" />
                   <time dateTime={note.createdAt}>
                     {note.createdAt ? format(new Date(note.createdAt), 'PPp') : 'Unknown date'}
@@ -119,20 +119,20 @@ export const NotesJournal = ({ notes, onAddNote, onDeleteNote, readOnly = false,
                       e.stopPropagation();
                       setShowDeleteConfirm(note.id);
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded transition-all text-red-600"
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all text-red-600 dark:text-red-400"
                     title="Delete note"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
               </div>
-              <p className="text-gray-700 whitespace-pre-wrap">{note.content}</p>
+              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{note.content}</p>
 
               {/* Delete Confirmation */}
               {showDeleteConfirm === note.id && (
-                <div className="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-lg flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg flex items-center justify-center p-4">
                   <div className="text-center space-y-3">
-                    <p className="text-sm text-gray-700 font-medium">Delete this entry?</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">Delete this entry?</p>
                     <div className="flex gap-2 justify-center">
                       <button
                         type="button"
@@ -141,7 +141,7 @@ export const NotesJournal = ({ notes, onAddNote, onDeleteNote, readOnly = false,
                           e.stopPropagation();
                           setShowDeleteConfirm(null);
                         }}
-                        className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                        className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
                         title="Cancel deletion"
                       >
                         Cancel

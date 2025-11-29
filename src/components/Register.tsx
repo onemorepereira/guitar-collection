@@ -77,24 +77,24 @@ export const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-full mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 dark:bg-primary-500 rounded-full mb-4">
             <PickIcon className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-          <p className="text-gray-600">Start tracking your guitar collection today</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Create Account</h1>
+          <p className="text-gray-600 dark:text-gray-400">Start tracking your guitar collection today</p>
         </div>
 
         {/* Register Form */}
         <div className="card p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-red-700">{error}</p>
+              <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
               </div>
             )}
 
@@ -148,7 +148,7 @@ export const Register = () => {
               {password && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-600">Password strength:</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Password strength:</span>
                     <span
                       className={`text-xs font-medium ${
                         passwordStrength.color === 'red'
@@ -163,7 +163,7 @@ export const Register = () => {
                       {passwordStrength.label}
                     </span>
                   </div>
-                  <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-300 ${
                         passwordStrength.color === 'red'
@@ -205,14 +205,14 @@ export const Register = () => {
                 type="checkbox"
                 id="terms"
                 required
-                className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 mt-0.5"
+                className="w-4 h-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 dark:bg-gray-700 mt-0.5"
               />
-              <label htmlFor="terms" className="text-sm text-gray-700">
+              <label htmlFor="terms" className="text-sm text-gray-700 dark:text-gray-300">
                 I agree to the{' '}
                 <button
                   type="button"
                   onClick={() => setShowTerms(true)}
-                  className="text-primary-600 hover:text-primary-700 font-medium underline"
+                  className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium underline"
                 >
                   Terms of Service
                 </button>{' '}
@@ -220,7 +220,7 @@ export const Register = () => {
                 <button
                   type="button"
                   onClick={() => setShowPrivacy(true)}
-                  className="text-primary-600 hover:text-primary-700 font-medium underline"
+                  className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium underline"
                 >
                   Privacy Policy
                 </button>
@@ -244,11 +244,11 @@ export const Register = () => {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               Already have an account?{' '}
               <Link
                 to="/login"
-                className="text-primary-600 hover:text-primary-700 font-medium"
+                className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
               >
                 Sign in
               </Link>
@@ -257,11 +257,11 @@ export const Register = () => {
         </div>
 
         {/* Features */}
-        <div className="mt-6 p-4 bg-white/50 backdrop-blur-sm rounded-lg border border-primary-200">
-          <p className="text-xs text-gray-600 text-center mb-2 font-medium">
+        <div className="mt-6 p-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-lg border border-primary-200 dark:border-gray-700">
+          <p className="text-xs text-gray-600 dark:text-gray-400 text-center mb-2 font-medium">
             Why join Guitar Collection?
           </p>
-          <ul className="text-xs text-gray-600 space-y-1">
+          <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
             <li className="flex items-center gap-2">
               <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
               Track unlimited guitars with detailed specs

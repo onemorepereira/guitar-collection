@@ -212,46 +212,46 @@ export const Documents = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
         <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div className="text-center md:text-left">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Document Library</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Document Library</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
                 {documents.length} {documents.length === 1 ? 'document' : 'documents'} • Manage brochures, marketing materials, and manuals
               </p>
             </div>
             <div className="flex items-center justify-center md:justify-end gap-2 sm:gap-4 flex-wrap">
-              <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg group">
-                <User className="w-4 h-4 text-gray-600" />
-                <span className="text-sm text-gray-700">{user?.name}</span>
+              <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg group">
+                <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <span className="text-sm text-gray-700 dark:text-gray-300">{user?.name}</span>
                 <button
                   onClick={() => setEditingName(true)}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-all"
                   title="Change display name"
                 >
-                  <Edit2 className="w-3 h-3 text-gray-600" />
+                  <Edit2 className="w-3 h-3 text-gray-600 dark:text-gray-400" />
                 </button>
               </div>
               <button
                 onClick={() => navigate('/collection')}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
                 title="Back to guitar collection"
               >
                 <Grid className="w-5 h-5" />
               </button>
               <button
                 onClick={handleLogout}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
                 title="Logout and exit"
               >
                 <DoorOpen className="w-5 h-5" />
@@ -267,20 +267,20 @@ export const Documents = () => {
 
       {/* Upload Section */}
       <div className="card p-6 mb-8">
-        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:border-primary-500 transition-colors">
+        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg cursor-pointer hover:border-primary-500 dark:hover:border-primary-400 transition-colors">
           <div className="flex flex-col items-center justify-center pt-5 pb-6">
             {uploading ? (
               <>
                 <Loader2 className="w-10 h-10 mb-3 text-primary-600 animate-spin" />
-                <p className="text-sm text-gray-600">Uploading...</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Uploading...</p>
               </>
             ) : (
               <>
-                <Upload className="w-10 h-10 mb-3 text-gray-400" />
-                <p className="text-sm text-gray-600">
+                <Upload className="w-10 h-10 mb-3 text-gray-400 dark:text-gray-500" />
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   <span className="font-semibold">Click to upload</span> or drag and drop
                 </p>
-                <p className="text-xs text-gray-500 mt-1">PDF or images (PNG, JPG, WEBP)</p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">PDF or images (PNG, JPG, WEBP)</p>
               </>
             )}
           </div>
@@ -307,7 +307,7 @@ export const Documents = () => {
                 placeholder="Search name, notes, tags, or content..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
             </div>
 
@@ -315,7 +315,7 @@ export const Documents = () => {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as 'all' | 'pdf' | 'image')}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="all">All Types</option>
               <option value="pdf">PDF</option>
@@ -326,7 +326,7 @@ export const Documents = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="all">All Status</option>
               <option value="completed">Extracted</option>
@@ -339,13 +339,13 @@ export const Documents = () => {
 
           {/* Results count and clear filters */}
           {hasActiveFilters && (
-            <div className="flex items-center justify-between mt-3 pt-3 border-t">
-              <span className="text-sm text-gray-600">
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
                 Showing {filteredDocuments.length} of {documents.length} documents
               </span>
               <button
                 onClick={clearFilters}
-                className="text-sm text-primary-600 hover:text-primary-700"
+                className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
               >
                 Clear filters
               </button>
@@ -357,18 +357,18 @@ export const Documents = () => {
       {/* Documents Grid */}
       {documents.length === 0 ? (
         <div className="text-center py-12">
-          <FileText className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No documents yet</h3>
-          <p className="text-gray-600">Upload your first document to get started</p>
+          <FileText className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No documents yet</h3>
+          <p className="text-gray-600 dark:text-gray-400">Upload your first document to get started</p>
         </div>
       ) : filteredDocuments.length === 0 ? (
         <div className="text-center py-12">
-          <Search className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No documents match your filters</h3>
-          <p className="text-gray-600 mb-4">Try adjusting your search or filter criteria</p>
+          <Search className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No documents match your filters</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Try adjusting your search or filter criteria</p>
           <button
             onClick={clearFilters}
-            className="text-primary-600 hover:text-primary-700 font-medium"
+            className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
           >
             Clear all filters
           </button>
@@ -442,12 +442,12 @@ const ExtractedContentViewer = ({ document, onClose }: ExtractedContentViewerPro
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">{document.name}</h2>
-            <p className="text-sm text-gray-500">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{document.name}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Extracted {extractedContent?.extractedAt
                 ? new Date(extractedContent.extractedAt).toLocaleDateString()
                 : 'content'}
@@ -455,9 +455,9 @@ const ExtractedContentViewer = ({ document, onClose }: ExtractedContentViewerPro
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -465,12 +465,12 @@ const ExtractedContentViewer = ({ document, onClose }: ExtractedContentViewerPro
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* AI Description for images */}
           {hasDescription && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <ImageIcon className="w-4 h-4 text-blue-600" />
-                <h3 className="font-medium text-blue-900">AI Description</h3>
+                <ImageIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <h3 className="font-medium text-blue-900 dark:text-blue-200">AI Description</h3>
               </div>
-              <p className="text-blue-800 text-sm whitespace-pre-wrap">
+              <p className="text-blue-800 dark:text-blue-300 text-sm whitespace-pre-wrap">
                 {extractedContent?.description}
               </p>
             </div>
@@ -480,11 +480,11 @@ const ExtractedContentViewer = ({ document, onClose }: ExtractedContentViewerPro
           {hasText && (
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <FileText className="w-4 h-4 text-gray-600" />
-                <h3 className="font-medium text-gray-900">Extracted Text</h3>
+                <FileText className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <h3 className="font-medium text-gray-900 dark:text-gray-100">Extracted Text</h3>
               </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
+              <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-sans">
                   {extractedContent?.text}
                 </pre>
               </div>
@@ -493,16 +493,16 @@ const ExtractedContentViewer = ({ document, onClose }: ExtractedContentViewerPro
 
           {/* No content message */}
           {!hasText && !hasDescription && (
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
               <p>No extracted content available</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-4 border-t bg-gray-50">
-          <div className="text-sm text-gray-500">
+        <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             {extractedContent?.rawTextLength && (
               <span>Raw text: {extractedContent.rawTextLength.toLocaleString()} chars</span>
             )}
@@ -555,7 +555,7 @@ const DocumentCard = ({
       return (
         <button
           onClick={() => onTriggerExtraction(document.id)}
-          className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+          className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           title="Extract content from this document"
         >
           <RefreshCw className="w-3 h-3" />
@@ -568,22 +568,22 @@ const DocumentCard = ({
       pending: {
         icon: <Clock className="w-3 h-3" />,
         label: 'Pending',
-        className: 'bg-gray-100 text-gray-600',
+        className: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
       },
       processing: {
         icon: <RefreshCw className="w-3 h-3 animate-spin" />,
         label: 'Processing',
-        className: 'bg-blue-100 text-blue-600',
+        className: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
       },
       completed: {
         icon: <CheckCircle className="w-3 h-3" />,
         label: 'Extracted',
-        className: 'bg-green-100 text-green-600',
+        className: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
       },
       failed: {
         icon: <AlertCircle className="w-3 h-3" />,
         label: 'Failed',
-        className: 'bg-red-100 text-red-600',
+        className: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
       },
     };
 
@@ -607,8 +607,8 @@ const DocumentCard = ({
             className="w-full h-48 object-cover rounded"
           />
         ) : (
-          <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 rounded flex items-center justify-center">
-            <FileText className="w-16 h-16 text-gray-400" />
+          <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded flex items-center justify-center">
+            <FileText className="w-16 h-16 text-gray-400 dark:text-gray-500" />
           </div>
         )}
       </div>
@@ -617,30 +617,30 @@ const DocumentCard = ({
       {isEditing ? (
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
             <input
               type="text"
               value={editForm.name}
               onChange={e => onEditFormChange({ ...editForm, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
             <textarea
               value={editForm.notes}
               onChange={e => onEditFormChange({ ...editForm, notes: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               rows={2}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tags (comma-separated)</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags (comma-separated)</label>
             <input
               type="text"
               value={editForm.tags}
               onChange={e => onEditFormChange({ ...editForm, tags: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="manual, brochure, specs"
             />
           </div>
@@ -663,10 +663,10 @@ const DocumentCard = ({
         </div>
       ) : (
         <>
-          <h3 className="font-semibold text-gray-900 mb-2 truncate">{document.name}</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 truncate">{document.name}</h3>
 
           {document.notes && (
-            <p className="text-sm text-gray-600 mb-2 line-clamp-2">{document.notes}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{document.notes}</p>
           )}
 
           {document.tags && document.tags.length > 0 && (
@@ -674,7 +674,7 @@ const DocumentCard = ({
               {document.tags.map(tag => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded"
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs rounded"
                 >
                   <Tag className="w-3 h-3" />
                   {tag}
@@ -683,7 +683,7 @@ const DocumentCard = ({
             </div>
           )}
 
-          <div className="flex items-center flex-wrap gap-2 text-sm text-gray-500 mb-3">
+          <div className="flex items-center flex-wrap gap-2 text-sm text-gray-500 dark:text-gray-400 mb-3">
             {document.type === 'pdf' ? (
               <span title="PDF"><FileText className="w-4 h-4" /></span>
             ) : (
@@ -695,7 +695,7 @@ const DocumentCard = ({
           </div>
 
           {assignedCount > 0 && (
-            <div className="text-sm text-gray-600 mb-3">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
               Assigned to {assignedCount} guitar{assignedCount !== 1 ? 's' : ''}
             </div>
           )}
@@ -729,7 +729,7 @@ const DocumentCard = ({
               </button>
               <button
                 onClick={() => onDelete(document.id)}
-                className="btn-outline text-red-600 hover:bg-red-50 flex items-center justify-center gap-2 px-3 py-2"
+                className="btn-outline text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center gap-2 px-3 py-2"
                 title="Delete"
               >
                 <Trash2 className="w-4 h-4" />

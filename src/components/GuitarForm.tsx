@@ -717,23 +717,23 @@ export const GuitarForm = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           {/* Mobile: Stack vertically */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center justify-between sm:justify-start">
               <button
                 onClick={() => navigate(isEditMode ? `/guitar/${id}` : '/')}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
                 title="Cancel and return"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -767,17 +767,17 @@ export const GuitarForm = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Auto-fill Prompt Toast */}
           {showAutoFillPrompt && (
-            <div className="card p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 shadow-lg animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="card p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border-2 border-green-300 dark:border-green-700 shadow-lg animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <div className="p-2 bg-green-600 rounded-lg flex-shrink-0">
                     <Sparkles className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900">
+                    <h4 className="font-semibold text-gray-900 dark:text-gray-100">
                       Auto-fill typical specs for {brand} {model}?
                     </h4>
-                    <p className="text-sm text-gray-600 mt-0.5">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
                       We can fill in common specifications based on this model
                     </p>
                   </div>
@@ -794,7 +794,7 @@ export const GuitarForm = () => {
                   <button
                     type="button"
                     onClick={() => setShowAutoFillPrompt(false)}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm"
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium text-sm"
                     title="Dismiss auto-fill suggestion"
                   >
                     No thanks
@@ -806,7 +806,7 @@ export const GuitarForm = () => {
 
           {/* Validation Warnings */}
           {validationWarnings.length > 0 && (
-            <div className="card p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 shadow-md">
+            <div className="card p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border-2 border-amber-300 dark:border-amber-700 shadow-md">
               <div className="flex items-start gap-3">
                 <div className="p-2 bg-amber-500 rounded-lg flex-shrink-0">
                   <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -814,11 +814,11 @@ export const GuitarForm = () => {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 mb-2">Heads up!</h4>
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Heads up!</h4>
                   <ul className="space-y-1">
                     {validationWarnings.map((warning: string, index: number) => (
-                      <li key={index} className="text-sm text-gray-700 flex items-start gap-2">
-                        <span className="text-amber-600 font-bold">•</span>
+                      <li key={index} className="text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2">
+                        <span className="text-amber-600 dark:text-amber-400 font-bold">•</span>
                         <span>{warning}</span>
                       </li>
                     ))}
@@ -829,15 +829,15 @@ export const GuitarForm = () => {
           )}
 
           {/* Import Specs Button */}
-          <div className="card p-4 sm:p-6 bg-gradient-to-r from-primary-50 to-purple-50 border-2 border-primary-200">
+          <div className="card p-4 sm:p-6 bg-gradient-to-r from-primary-50 to-purple-50 dark:from-primary-900/30 dark:to-purple-900/30 border-2 border-primary-200 dark:border-primary-700">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-start sm:items-center gap-3 sm:gap-4">
                 <div className="p-2 sm:p-3 bg-primary-600 rounded-xl flex-shrink-0">
                   <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900">Auto-Import Specifications</h3>
-                  <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">Auto-Import Specifications</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
                     Upload a PDF or paste text from manufacturer specs to automatically fill out the form
                   </p>
                 </div>
@@ -856,7 +856,7 @@ export const GuitarForm = () => {
 
           {/* Images */}
           <div className="card p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Images</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Images</h2>
 
             {/* Image Staging Area */}
             <ImageStaging
@@ -871,9 +871,9 @@ export const GuitarForm = () => {
             {/* Uploaded Images */}
             {images.length > 0 && (
               <div className="mt-8 space-y-4">
-                <h3 className="text-lg font-bold text-gray-900">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
                   Uploaded Images ({images.length})
-                  <span className="text-sm font-normal text-gray-500 ml-2">
+                  <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
                     (Drag to reorder)
                   </span>
                 </h3>
@@ -910,7 +910,7 @@ export const GuitarForm = () => {
                             }`}
                           />
                         ) : (
-                          <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
+                          <div className="w-full h-32 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
                             <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
                           </div>
                         )}
@@ -947,7 +947,7 @@ export const GuitarForm = () => {
 
           {/* Basic Information */}
           <div className="card p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Basic Information</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Basic Information</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -1029,7 +1029,7 @@ export const GuitarForm = () => {
 
           {/* Specifications */}
           <div className="card p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Specifications</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Specifications</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -1151,9 +1151,9 @@ export const GuitarForm = () => {
                   id="caseIncluded"
                   checked={caseIncluded}
                   onChange={(e) => setCaseIncluded(e.target.checked)}
-                  className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  className="w-4 h-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500 dark:bg-gray-700"
                 />
-                <label htmlFor="caseIncluded" className="text-sm font-medium text-gray-700">
+                <label htmlFor="caseIncluded" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Case Included
                 </label>
               </div>
@@ -1169,23 +1169,23 @@ export const GuitarForm = () => {
               title={showDetailedSpecs ? "Hide detailed specifications" : "Show detailed specifications"}
             >
               <div>
-                <h2 className="text-xl font-bold text-gray-900 text-left">Detailed Specifications</h2>
-                <p className="text-sm text-gray-600 text-left mt-1">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 text-left">Detailed Specifications</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 text-left mt-1">
                   Optional advanced specifications for enthusiasts
                 </p>
               </div>
               {showDetailedSpecs ? (
-                <ChevronUp className="w-5 h-5 text-gray-500" />
+                <ChevronUp className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               ) : (
-                <ChevronDown className="w-5 h-5 text-gray-500" />
+                <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               )}
             </button>
 
             {showDetailedSpecs && (
-              <div className="space-y-6 pt-4 border-t border-gray-200">
+              <div className="space-y-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                 {/* Body Details */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Body Details</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Body Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="label">Body Shape</label>
@@ -1232,7 +1232,7 @@ export const GuitarForm = () => {
 
                 {/* Neck Details */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Neck Details</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Neck Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="label">Neck Profile</label>
@@ -1329,7 +1329,7 @@ export const GuitarForm = () => {
 
                 {/* Pickup Details */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Pickup Details</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Pickup Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="label">Neck Pickup</label>
@@ -1376,7 +1376,7 @@ export const GuitarForm = () => {
 
                 {/* Hardware Details */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Hardware Details</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Hardware Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="label">Hardware Finish</label>
@@ -1443,7 +1443,7 @@ export const GuitarForm = () => {
 
                 {/* Miscellaneous */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Miscellaneous</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">Miscellaneous</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="label">String Gauge</label>
@@ -1485,8 +1485,8 @@ export const GuitarForm = () => {
           <div className="card p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Private Information</h2>
-                <p className="text-sm text-gray-600 mt-1">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Private Information</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   This information is stored locally and kept private.
                 </p>
               </div>
@@ -1606,7 +1606,7 @@ export const GuitarForm = () => {
                       href={receiptUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
                       title="View uploaded receipt"
                     >
                       <Upload className="w-4 h-4" />
@@ -1643,7 +1643,7 @@ export const GuitarForm = () => {
                     )}
                   </label>
                 )}
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                   Upload an image or PDF of your receipt
                 </p>
               </div>
@@ -1652,8 +1652,8 @@ export const GuitarForm = () => {
 
           {/* Notes */}
           <div className="card p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Notes</h2>
-            <p className="text-sm text-gray-600 mb-4">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Notes</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Keep notes about your guitar's history, modifications, maintenance, and memories.
             </p>
             <NotesJournal
@@ -1673,21 +1673,21 @@ export const GuitarForm = () => {
               <div className="flex items-center gap-2">
                 <ClipboardCheck className="w-5 h-5 text-primary-600" />
                 <div className="text-left">
-                  <h2 className="text-xl font-bold text-gray-900">Condition Report</h2>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Condition Report</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     Document blemishes and condition issues on a visual diagram
                   </p>
                 </div>
               </div>
               {showConditionSection ? (
-                <ChevronUp className="w-5 h-5 text-gray-500" />
+                <ChevronUp className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               ) : (
-                <ChevronDown className="w-5 h-5 text-gray-500" />
+                <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               )}
             </button>
 
             {showConditionSection && (
-              <div className="space-y-4 pt-4 border-t border-gray-200">
+              <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div>
                   <label className="label">Guitar Shape</label>
                   <select
@@ -1707,7 +1707,7 @@ export const GuitarForm = () => {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Select the body shape that best matches your guitar
                   </p>
                 </div>
@@ -1735,7 +1735,7 @@ export const GuitarForm = () => {
         {/* Danger Zone - Delete Guitar */}
         {isEditMode && (
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 pt-8">
-            <div className="border-2 border-red-300 rounded-lg p-4 sm:p-6 bg-red-50">
+            <div className="border-2 border-red-300 dark:border-red-700 rounded-lg p-4 sm:p-6 bg-red-50 dark:bg-red-900/20">
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
                 <div className="flex-shrink-0">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-600 rounded-full flex items-center justify-center">
@@ -1743,8 +1743,8 @@ export const GuitarForm = () => {
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">Danger Zone</h3>
-                  <p className="text-xs sm:text-sm text-gray-700 mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Danger Zone</h3>
+                  <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 mb-4">
                     Once you delete this guitar, there is no going back. All images, notes, and information will be permanently removed.
                   </p>
                   <button
@@ -1781,15 +1781,15 @@ export const GuitarForm = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Guitar?</h3>
-            <p className="text-gray-600 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Delete Guitar?</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Are you sure you want to delete {brand} {model}? This action cannot be undone.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium text-gray-900 dark:text-gray-100"
               >
                 Cancel
               </button>

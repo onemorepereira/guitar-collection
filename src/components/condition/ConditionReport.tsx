@@ -6,22 +6,22 @@ const SEVERITY_CONFIG = {
     label: 'Minor',
     color: 'bg-yellow-400',
     borderColor: 'border-yellow-500',
-    textColor: 'text-yellow-700',
-    bgLight: 'bg-yellow-50',
+    textColor: 'text-yellow-700 dark:text-yellow-400',
+    bgLight: 'bg-yellow-50 dark:bg-yellow-900/20',
   },
   moderate: {
     label: 'Moderate',
     color: 'bg-orange-400',
     borderColor: 'border-orange-500',
-    textColor: 'text-orange-700',
-    bgLight: 'bg-orange-50',
+    textColor: 'text-orange-700 dark:text-orange-400',
+    bgLight: 'bg-orange-50 dark:bg-orange-900/20',
   },
   major: {
     label: 'Major',
     color: 'bg-red-500',
     borderColor: 'border-red-600',
-    textColor: 'text-red-700',
-    bgLight: 'bg-red-50',
+    textColor: 'text-red-700 dark:text-red-400',
+    bgLight: 'bg-red-50 dark:bg-red-900/20',
   },
 };
 
@@ -67,16 +67,16 @@ export const ConditionReport = ({ shape, markers, compact = false }: ConditionRe
   const scoreInfo = getScoreLabel(conditionScore);
 
   const renderDiagram = (view: ViewAngle, viewMarkers: ConditionMarker[]) => (
-    <div className="flex flex-col items-center">
-      <h4 className="text-sm font-medium text-gray-600 mb-2 capitalize">{view}</h4>
+    <div className="text-center">
+      <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 capitalize">{view}</h4>
       <div
-        className="relative bg-gray-50 border border-gray-200 rounded-lg"
+        className="relative bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg mx-auto"
         style={{
-          width: compact ? '160px' : '200px',
-          height: compact ? '160px' : '200px',
+          width: compact ? '160px' : '260px',
+          height: compact ? '160px' : '260px',
         }}
       >
-        <TemplateComponent className="absolute inset-0 w-full h-full text-gray-300 p-1" view={view} />
+        <TemplateComponent className="absolute inset-0 w-full h-full text-gray-300 dark:text-gray-600 p-1" view={view} />
 
         {viewMarkers.map((marker) => {
           const config = SEVERITY_CONFIG[marker.severity];
@@ -101,9 +101,9 @@ export const ConditionReport = ({ shape, markers, compact = false }: ConditionRe
   if (markers.length === 0) {
     return (
       <div className="text-center py-4">
-        <div className="text-3xl font-bold text-green-600 mb-1">100</div>
-        <div className="text-sm font-medium text-green-600">Mint Condition</div>
-        <p className="text-xs text-gray-500 mt-2">No issues documented</p>
+        <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-1">100</div>
+        <div className="text-sm font-medium text-green-600 dark:text-green-400">Mint Condition</div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">No issues documented</p>
       </div>
     );
   }
@@ -116,8 +116,8 @@ export const ConditionReport = ({ shape, markers, compact = false }: ConditionRe
           <div className={`text-3xl font-bold ${scoreInfo.color}`}>{conditionScore}</div>
           <div className={`text-sm font-medium ${scoreInfo.color}`}>{scoreInfo.label}</div>
         </div>
-        <div className="flex-1 border-l border-gray-200 pl-4">
-          <div className="text-sm text-gray-600 mb-1">
+        <div className="flex-1 border-l border-gray-200 dark:border-gray-700 pl-4">
+          <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
             {markers.length} issue{markers.length !== 1 ? 's' : ''} documented
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -138,7 +138,7 @@ export const ConditionReport = ({ shape, markers, compact = false }: ConditionRe
       </div>
 
       {/* Diagrams */}
-      <div className="flex gap-4 justify-center">
+      <div className="flex flex-wrap gap-4 justify-center">
         {renderDiagram('front', frontMarkers)}
         {renderDiagram('back', backMarkers)}
       </div>
@@ -157,14 +157,14 @@ export const ConditionReport = ({ shape, markers, compact = false }: ConditionRe
               </span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900 text-sm">{marker.type}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100 text-sm">{marker.type}</span>
                   <span className={`px-1.5 py-0.5 rounded text-xs ${config.bgLight} ${config.textColor}`}>
                     {config.label}
                   </span>
-                  <span className="text-xs text-gray-400 capitalize">({marker.view})</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">({marker.view})</span>
                 </div>
                 {marker.note && (
-                  <p className="text-sm text-gray-600 mt-0.5">{marker.note}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{marker.note}</p>
                 )}
               </div>
             </div>

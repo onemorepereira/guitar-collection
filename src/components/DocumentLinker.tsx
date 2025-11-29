@@ -59,7 +59,7 @@ export const DocumentLinker = ({ linkedDocumentIds, onDocumentIdsChange }: Docum
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Linked Documents</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Linked Documents</h3>
         <button
           type="button"
           onClick={() => setShowPicker(!showPicker)}
@@ -83,15 +83,15 @@ export const DocumentLinker = ({ linkedDocumentIds, onDocumentIdsChange }: Docum
           ))}
         </div>
       ) : (
-        <p className="text-sm text-gray-500">No documents linked yet</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">No documents linked yet</p>
       )}
 
       {/* Document Picker */}
       {showPicker && (
-        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">Available Documents</h4>
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+          <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Available Documents</h4>
           {availableDocuments.length === 0 ? (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               No more documents available.{' '}
               <a href="/documents" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline inline-flex items-center gap-1">
                 Upload documents <ExternalLink className="w-3 h-3" />
@@ -123,7 +123,7 @@ const LinkedDocumentCard = ({ document, onUnlink }: LinkedDocumentCardProps) => 
   const imageUrl = useImageUrl(document.url);
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg">
+    <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
       {/* Preview */}
       <div className="flex-shrink-0">
         {document.type === 'image' && imageUrl ? (
@@ -133,23 +133,23 @@ const LinkedDocumentCard = ({ document, onUnlink }: LinkedDocumentCardProps) => 
             className="w-12 h-12 object-cover rounded"
           />
         ) : (
-          <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded flex items-center justify-center">
-            <FileText className="w-6 h-6 text-gray-400" />
+          <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded flex items-center justify-center">
+            <FileText className="w-6 h-6 text-gray-400 dark:text-gray-500" />
           </div>
         )}
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{document.name}</p>
-        <p className="text-xs text-gray-500 capitalize">{document.type}</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{document.name}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{document.type}</p>
       </div>
 
       {/* Unlink Button */}
       <button
         type="button"
         onClick={onUnlink}
-        className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+        className="flex-shrink-0 p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
         title="Unlink document"
       >
         <Unlink className="w-4 h-4" />
@@ -167,7 +167,7 @@ const AvailableDocumentCard = ({ document, onLink }: AvailableDocumentCardProps)
   const imageUrl = useImageUrl(document.url);
 
   return (
-    <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-primary-300 transition-colors cursor-pointer"
+    <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary-300 dark:hover:border-primary-600 transition-colors cursor-pointer"
       onClick={onLink}
     >
       {/* Preview */}
@@ -179,23 +179,23 @@ const AvailableDocumentCard = ({ document, onLink }: AvailableDocumentCardProps)
             className="w-12 h-12 object-cover rounded"
           />
         ) : (
-          <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded flex items-center justify-center">
-            <FileText className="w-6 h-6 text-gray-400" />
+          <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded flex items-center justify-center">
+            <FileText className="w-6 h-6 text-gray-400 dark:text-gray-500" />
           </div>
         )}
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{document.name}</p>
-        <p className="text-xs text-gray-500 capitalize">{document.type}</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{document.name}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{document.type}</p>
       </div>
 
       {/* Link Button */}
       <button
         type="button"
         onClick={onLink}
-        className="flex-shrink-0 p-2 text-primary-600 hover:bg-primary-50 rounded transition-colors"
+        className="flex-shrink-0 p-2 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
         title="Link document"
       >
         <Link2 className="w-4 h-4" />

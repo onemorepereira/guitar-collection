@@ -114,35 +114,98 @@ async function generateEnhancedContent(guitar, documents, ownerName) {
       guitarBrand: guitar.brand,
       guitarModel: guitar.model,
       guitarYear: guitar.year,
-      serialNumber: guitar.serialNumber || null,
+      serialNumber: guitar.privateInfo?.serialNumber || null,
     },
   };
 }
 
 function buildContext(guitar, documents) {
+  // Build condition summary from markers
+  let conditionSummary = null;
+  if (guitar.conditionMarkers && guitar.conditionMarkers.length > 0) {
+    const markers = guitar.conditionMarkers;
+    const bySeverity = {
+      minor: markers.filter(m => m.severity === 'minor'),
+      moderate: markers.filter(m => m.severity === 'moderate'),
+      major: markers.filter(m => m.severity === 'major'),
+    };
+    conditionSummary = {
+      totalIssues: markers.length,
+      minorCount: bySeverity.minor.length,
+      moderateCount: bySeverity.moderate.length,
+      majorCount: bySeverity.major.length,
+      issues: markers.map(m => ({
+        severity: m.severity,
+        type: m.type,
+        note: m.note,
+        location: m.view, // front or back
+      })),
+    };
+  }
+
+  // Extract content from linked documents
+  const documentContent = documents
+    .filter(d => d.extractedContent?.text || d.extractedContent?.description)
+    .map(d => ({
+      name: d.name,
+      type: d.type,
+      extractedText: d.extractedContent?.text?.substring(0, 2000), // Limit to 2000 chars
+      description: d.extractedContent?.description,
+    }));
+
+  // Serial number is in privateInfo
+  const serialNumber = guitar.privateInfo?.serialNumber || null;
+
   return {
     basic: {
       brand: guitar.brand,
       model: guitar.model,
       year: guitar.year,
-      serialNumber: guitar.serialNumber,
+      serialNumber,
       type: guitar.type,
       color: guitar.color,
       finish: guitar.finish,
       condition: guitar.condition,
+      countryOfOrigin: guitar.countryOfOrigin,
+      caseIncluded: guitar.caseIncluded,
     },
-    specs: guitar.detailedSpecs || {},
+    coreSpecs: {
+      bodyMaterial: guitar.bodyMaterial,
+      neckMaterial: guitar.neckMaterial,
+      fretboardMaterial: guitar.fretboardMaterial,
+      numberOfFrets: guitar.numberOfFrets,
+      scaleLength: guitar.scaleLength,
+      pickupConfiguration: guitar.pickupConfiguration,
+      tuningMachines: guitar.tuningMachines,
+      bridge: guitar.bridge,
+      nut: guitar.nut,
+      electronics: guitar.electronics,
+    },
+    detailedSpecs: guitar.detailedSpecs || {},
+    conditionReport: conditionSummary,
     notes: guitar.notes || [],
-    privateInfo: guitar.privateInfo || {},
+    privateInfo: {
+      ...guitar.privateInfo,
+      originalRetailPrice: guitar.privateInfo?.originalRetailPrice,
+      currency: guitar.privateInfo?.currency || 'USD',
+    },
     documents: documents.map(d => ({
       name: d.name,
       type: d.type,
       notes: d.notes,
     })),
+    documentContent,
   };
 }
 
 async function generateOverview(context, ownerName) {
+  // Include document-extracted content if available
+  const docContext = context.documentContent?.length > 0
+    ? `\n\nRelevant information from attached documents:\n${context.documentContent.map(d =>
+        `${d.name}: ${d.extractedText || d.description || 'No content'}`
+      ).join('\n')}`
+    : '';
+
   const prompt = `You are creating a professional instrument provenance certificate section.
 
 Generate a formal, authoritative overview paragraph for this guitar:
@@ -151,12 +214,18 @@ Generate a formal, authoritative overview paragraph for this guitar:
 - Year: ${context.basic.year}
 - Type: ${context.basic.type}
 - Serial Number: ${context.basic.serialNumber || 'Not specified'}
+- Country of Origin: ${context.basic.countryOfOrigin || 'Not specified'}
+- Body: ${context.coreSpecs.bodyMaterial || 'Not specified'}
+- Neck: ${context.coreSpecs.neckMaterial || 'Not specified'}
+- Fretboard: ${context.coreSpecs.fretboardMaterial || 'Not specified'}
+- Pickups: ${context.coreSpecs.pickupConfiguration || 'Not specified'}
 
 Context from owner notes: ${JSON.stringify(context.notes)}
+${docContext}
 
 Write a single paragraph (3-5 sentences) that:
 1. Introduces the instrument formally
-2. Highlights key distinguishing features
+2. Highlights key distinguishing features (materials, origin, pickups)
 3. Maintains professional, certificate-appropriate tone
 4. Is grammatically perfect and well-structured
 
@@ -168,24 +237,28 @@ Return ONLY the paragraph text, no additional formatting or labels.`;
 async function generateSpecifications(context) {
   const prompt = `You are creating technical specifications for an instrument provenance certificate.
 
-Given these specifications:
-${JSON.stringify(context.specs, null, 2)}
+Core specifications:
+${JSON.stringify(context.coreSpecs, null, 2)}
+
+Detailed specifications:
+${JSON.stringify(context.detailedSpecs, null, 2)}
 
 Basic info:
 ${JSON.stringify(context.basic, null, 2)}
 
 Generate a clean, professional specifications section that:
-1. Groups specifications logically (Construction, Electronics, Hardware, etc.)
+1. Groups specifications logically (Construction, Electronics, Hardware, Finish)
 2. Uses proper technical terminology
 3. Formats consistently
-4. Is complete and accurate
+4. Includes ALL provided specs - do not omit any data
+5. Is complete and accurate
 
 Return ONLY valid JSON (no markdown, no explanations) with this structure:
 {
-  "construction": { "key": "value" pairs },
-  "electronics": { "key": "value" pairs },
-  "hardware": { "key": "value" pairs },
-  "finish": { "key": "value" pairs }
+  "construction": { "key": "value" pairs for body, neck, fretboard, frets, scale length },
+  "electronics": { "key": "value" pairs for pickups, controls, electronics },
+  "hardware": { "key": "value" pairs for bridge, tuners, nut, hardware finish },
+  "finish": { "key": "value" pairs for color, finish type, binding }
 }`;
 
   const result = await invokeNova(prompt, { temperature: 0.3 });
@@ -201,27 +274,39 @@ Return ONLY valid JSON (no markdown, no explanations) with this structure:
 }
 
 async function generateProvenance(context, ownerName) {
-  const notesText = context.notes.map(n => `${n.date || 'Undated'}: ${n.content}`).join('\n');
+  const notesText = context.notes.map(n => `${n.createdAt || 'Undated'}: ${n.content}`).join('\n');
   const purchaseInfo = context.privateInfo.purchaseDate || context.privateInfo.purchaseLocation
     ? `Acquired ${context.privateInfo.purchaseDate || ''} ${context.privateInfo.purchaseLocation ? 'from ' + context.privateInfo.purchaseLocation : ''}`
     : '';
 
+  // Include document-extracted content for historical context
+  const docContext = context.documentContent?.length > 0
+    ? `\n\nInformation from attached documents (receipts, catalogs, etc.):\n${context.documentContent.map(d =>
+        `${d.name}: ${d.extractedText || d.description || 'No content'}`
+      ).join('\n\n')}`
+    : '';
+
   const prompt = `You are writing the provenance section for an instrument authentication certificate.
 
+Guitar: ${context.basic.year} ${context.basic.brand} ${context.basic.model}
+Serial Number: ${context.basic.serialNumber || 'Not documented'}
+Country of Origin: ${context.basic.countryOfOrigin || 'Not specified'}
 Owner: ${ownerName}
 
 Historical notes and timeline:
-${notesText}
+${notesText || 'No notes provided'}
 
 Purchase information:
-${purchaseInfo}
+${purchaseInfo || 'Not documented'}
+${docContext}
 
 Generate a professional provenance narrative that:
-1. Establishes chain of custody
-2. Creates a coherent timeline
-3. Maintains formal certificate tone
-4. Presents information factually
-5. Is 2-4 paragraphs
+1. Establishes chain of custody based on available documentation
+2. Creates a coherent timeline from manufacture to current ownership
+3. References any supporting documents (receipts, catalogs) if provided
+4. Maintains formal certificate tone
+5. Presents information factually - do not invent details
+6. Is 2-4 paragraphs
 
 Return ONLY the narrative text, properly formatted with paragraph breaks.`;
 
@@ -245,16 +330,28 @@ async function generateAuthentication(context, documents) {
 
 function generateValuation(guitar) {
   const purchasePrice = guitar.privateInfo?.purchasePrice;
-  const currentValue = guitar.privateInfo?.estimatedValue;
+  const currentValue = guitar.privateInfo?.currentValue;
+  const originalRetail = guitar.privateInfo?.originalRetailPrice;
+  const currency = guitar.privateInfo?.currency || 'USD';
+
+  // Generate valuation notes based on available data
+  let notes = null;
+  if (currentValue && purchasePrice && currentValue > purchasePrice) {
+    const appreciation = ((currentValue - purchasePrice) / purchasePrice * 100).toFixed(0);
+    notes = `Instrument has appreciated ${appreciation}% from purchase price`;
+  } else if (originalRetail && purchasePrice && purchasePrice < originalRetail) {
+    notes = `Acquired below original retail price`;
+  }
 
   return {
     purchasePrice: purchasePrice || null,
     purchaseDate: guitar.privateInfo?.purchaseDate || null,
+    originalRetailPrice: originalRetail || null,
     currentEstimatedValue: currentValue || null,
+    currency,
     condition: guitar.condition,
-    notes: currentValue && purchasePrice && currentValue > purchasePrice
-      ? 'Instrument has appreciated in value'
-      : null,
+    caseIncluded: guitar.caseIncluded || false,
+    notes,
   };
 }
 
@@ -269,36 +366,59 @@ async function generateSalesAdContent(guitar, documents) {
     generateSalesSpecs(context),
   ]);
 
+  // Build condition string with issue summary if available
+  let conditionString = guitar.condition || 'Excellent';
+  if (context.conditionReport) {
+    const { minorCount, moderateCount, majorCount } = context.conditionReport;
+    const issues = [];
+    if (majorCount > 0) issues.push(`${majorCount} major`);
+    if (moderateCount > 0) issues.push(`${moderateCount} moderate`);
+    if (minorCount > 0) issues.push(`${minorCount} minor`);
+    if (issues.length > 0) {
+      conditionString += ` (${issues.join(', ')} issue${context.conditionReport.totalIssues > 1 ? 's' : ''} documented)`;
+    }
+  }
+
   return {
     headline,
     description,
     features,
     specifications: specs,
-    condition: guitar.condition || 'Excellent',
-    price: guitar.privateInfo?.purchasePrice || guitar.privateInfo?.estimatedValue || null,
+    condition: conditionString,
+    conditionDetails: context.conditionReport,
+    price: guitar.privateInfo?.currentValue || guitar.privateInfo?.purchasePrice || null,
+    currency: guitar.privateInfo?.currency || 'USD',
+    caseIncluded: guitar.caseIncluded || false,
     images: guitar.images || [],
     metadata: {
       guitarBrand: guitar.brand,
       guitarModel: guitar.model,
       guitarYear: guitar.year,
-      serialNumber: guitar.serialNumber || null,
+      serialNumber: guitar.privateInfo?.serialNumber || null,
+      countryOfOrigin: guitar.countryOfOrigin || null,
     },
   };
 }
 
 async function generateSalesHeadline(context) {
+  const extras = [];
+  if (context.basic.caseIncluded) extras.push('w/ Case');
+  if (context.basic.countryOfOrigin) extras.push(context.basic.countryOfOrigin);
+
   const prompt = `You are writing a compelling sales headline for a guitar listing on marketplaces like Reverb or eBay.
 
 Guitar details:
 - Brand: ${context.basic.brand}
 - Model: ${context.basic.model}
 - Year: ${context.basic.year}
-- Condition: ${context.basic.condition}
+- Condition: ${context.basic.condition || 'Excellent'}
 - Color/Finish: ${context.basic.color} ${context.basic.finish}
+- Extras: ${extras.join(', ') || 'None'}
+- Pickups: ${context.coreSpecs.pickupConfiguration || 'Stock'}
 
 Create a short, attention-grabbing headline (8-12 words) that:
 1. Includes year, brand, and model
-2. Highlights the condition or a key feature
+2. Highlights the condition or a key feature (like pickups, origin, case)
 3. Is compelling but honest
 4. Follows marketplace best practices
 
@@ -310,6 +430,24 @@ Return ONLY the headline text, no quotes or extra formatting.`;
 async function generateSalesDescription(context) {
   const notesText = context.notes.map(n => n.content).join(' ');
 
+  // Build condition disclosure section
+  let conditionSection = `Condition: ${context.basic.condition || 'Excellent'}`;
+  if (context.conditionReport) {
+    const { issues } = context.conditionReport;
+    if (issues && issues.length > 0) {
+      conditionSection += `\n\nDocumented condition issues:\n${issues.map(i =>
+        `- ${i.type} (${i.severity}): ${i.note || 'No details'} [${i.location}]`
+      ).join('\n')}`;
+    }
+  }
+
+  // Include document content if available
+  const docContext = context.documentContent?.length > 0
+    ? `\n\nFrom attached documentation:\n${context.documentContent.map(d =>
+        d.extractedText || d.description || ''
+      ).filter(Boolean).join('\n').substring(0, 1000)}`
+    : '';
+
   const prompt = `You are writing a compelling sales description for a guitar listing.
 
 Guitar details:
@@ -317,21 +455,30 @@ Guitar details:
 - Model: ${context.basic.model}
 - Year: ${context.basic.year}
 - Type: ${context.basic.type}
-- Condition: ${context.basic.condition}
-- Serial: ${context.basic.serialNumber || 'Not specified'}
+- Country of Origin: ${context.basic.countryOfOrigin || 'Not specified'}
+- Case Included: ${context.basic.caseIncluded ? 'Yes' : 'No'}
+- Serial: ${context.basic.serialNumber || 'Available upon request'}
+
+${conditionSection}
+
+Core Specifications:
+${JSON.stringify(context.coreSpecs, null, 2)}
+
+Detailed Specifications:
+${JSON.stringify(context.detailedSpecs, null, 2)}
 
 Owner notes: ${notesText || 'None provided'}
-
-Specifications: ${JSON.stringify(context.specs)}
+${docContext}
 
 Write an engaging sales description (3-5 paragraphs) that:
 1. Opens with why this guitar is special
-2. Describes the tone, playability, and feel
+2. Describes the tone, playability, and feel based on specs (woods, pickups, etc.)
 3. Mentions notable features and specifications
-4. Addresses condition honestly
+4. Addresses condition HONESTLY - if there are documented issues, mention them transparently
 5. Creates emotional connection while staying factual
-6. Uses marketplace-friendly language
-7. Ends with a call to action
+6. Mentions what's included (case, etc.)
+7. Uses marketplace-friendly language
+8. Ends with a call to action
 
 Return ONLY the description text with paragraph breaks.`;
 
@@ -339,20 +486,31 @@ Return ONLY the description text with paragraph breaks.`;
 }
 
 async function generateSalesFeatures(context) {
+  // Build extras list
+  const extras = [];
+  if (context.basic.caseIncluded) extras.push('Original case included');
+  if (context.basic.countryOfOrigin) extras.push(`Made in ${context.basic.countryOfOrigin}`);
+
   const prompt = `You are creating a bullet-point feature list for a guitar sales listing.
 
-Guitar specifications:
-${JSON.stringify(context.specs, null, 2)}
+Core specifications:
+${JSON.stringify(context.coreSpecs, null, 2)}
+
+Detailed specifications:
+${JSON.stringify(context.detailedSpecs, null, 2)}
 
 Basic details:
 ${JSON.stringify(context.basic, null, 2)}
 
-Create a concise list of 5-8 key selling points that:
-1. Highlights premium features
-2. Includes technical specs that matter
-3. Mentions unique characteristics
-4. Is easy to scan
-5. Uses marketplace-friendly language
+Extras/Includes: ${extras.join(', ') || 'Guitar only'}
+
+Create a concise list of 6-10 key selling points that:
+1. Highlights premium features (tonewoods, pickups, hardware)
+2. Includes technical specs buyers care about (scale length, frets, radius)
+3. Mentions origin and what's included
+4. Notes unique characteristics
+5. Is easy to scan
+6. Uses marketplace-friendly language
 
 Return ONLY a JSON array of strings, no markdown or explanations:
 ["Feature 1", "Feature 2", ...]`;
@@ -372,21 +530,25 @@ Return ONLY a JSON array of strings, no markdown or explanations:
 async function generateSalesSpecs(context) {
   const prompt = `You are creating a clean specifications table for a guitar sales listing.
 
-Given specifications:
-${JSON.stringify(context.specs, null, 2)}
+Core specifications:
+${JSON.stringify(context.coreSpecs, null, 2)}
+
+Detailed specifications:
+${JSON.stringify(context.detailedSpecs, null, 2)}
 
 Basic info:
 ${JSON.stringify(context.basic, null, 2)}
 
-Create a clean, easy-to-read specs section with key details buyers care about.
+Create a clean, easy-to-read specs section with ALL key details buyers care about.
+Include every specification provided - do not omit data.
 
 Return ONLY valid JSON (no markdown, no explanations) with this structure:
 {
-  "body": { "key": "value" pairs for body specs },
-  "neck": { "key": "value" pairs for neck specs },
-  "electronics": { "key": "value" pairs for electronics },
-  "hardware": { "key": "value" pairs for hardware },
-  "other": { "key": "value" pairs for other important details }
+  "body": { "key": "value" pairs for body material, shape, binding, top, finish },
+  "neck": { "key": "value" pairs for neck material, fretboard, frets, scale length, nut, profile },
+  "electronics": { "key": "value" pairs for pickups, controls, wiring },
+  "hardware": { "key": "value" pairs for bridge, tuners, tailpiece, hardware finish },
+  "other": { "key": "value" pairs for origin, case included, weight, etc. }
 }`;
 
   const result = await invokeNova(prompt, { temperature: 0.3 });
