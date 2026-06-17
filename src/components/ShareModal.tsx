@@ -272,25 +272,25 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-4 sm:p-6 border-b border-gray-200">
+        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Share2 className="w-6 h-6 text-primary-600" />
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Share Guitar</h2>
-                <p className="text-sm text-gray-500">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Share Guitar</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {guitar.brand} {guitar.model} ({guitar.year})
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               title="Close"
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             </button>
           </div>
 
@@ -300,8 +300,8 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
               onClick={() => setActiveTab('create')}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 activeTab === 'create'
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               <Settings className="w-4 h-4 inline-block mr-2" />
@@ -311,8 +311,8 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
               onClick={() => setActiveTab('manage')}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 activeTab === 'manage'
-                  ? 'bg-primary-100 text-primary-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               <BarChart3 className="w-4 h-4 inline-block mr-2" />
@@ -324,7 +324,7 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm">
               {error}
             </div>
           )}
@@ -334,18 +334,18 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
               {/* Image Selection */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900">Select Photos</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">Select Photos</h3>
                   <div className="flex gap-2">
                     <button
                       onClick={handleSelectAllImages}
-                      className="text-sm text-primary-600 hover:text-primary-700"
+                      className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
                     >
                       Select All
                     </button>
-                    <span className="text-gray-300">|</span>
+                    <span className="text-gray-300 dark:text-gray-600">|</span>
                     <button
                       onClick={handleDeselectAllImages}
-                      className="text-sm text-primary-600 hover:text-primary-700"
+                      className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
                     >
                       Deselect All
                     </button>
@@ -358,8 +358,8 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
                       onClick={() => handleImageToggle(image.id)}
                       className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
                         selectedImageIds.includes(image.id)
-                          ? 'border-primary-600 ring-2 ring-primary-200'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-primary-600 ring-2 ring-primary-200 dark:ring-primary-800'
+                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                       }`}
                     >
                       <img
@@ -375,26 +375,26 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
                     </button>
                   ))}
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                   {selectedImageIds.length} of {guitar.images.length} photos selected
                 </p>
               </div>
 
               {/* Field Selection */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Information to Share</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Information to Share</h3>
                 <div className="space-y-4">
                   {Object.entries(FIELD_CATEGORIES).map(([category, fields]) => (
                     <div key={category}>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">{category}</h4>
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{category}</h4>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {fields.map((field) => (
                           <label
                             key={field}
                             className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
                               sharedFields[field as keyof SharedFields]
-                                ? 'border-primary-300 bg-primary-50'
-                                : 'border-gray-200 hover:border-gray-300'
+                                ? 'border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/30'
+                                : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                             }`}
                           >
                             <input
@@ -403,7 +403,7 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
                               onChange={() => handleFieldToggle(field as keyof SharedFields)}
                               className="w-4 h-4 text-primary-600 rounded"
                             />
-                            <span className="text-sm text-gray-700">
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
                               {FIELD_LABELS[field] || field}
                             </span>
                           </label>
@@ -420,9 +420,9 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
             <div className="space-y-4">
               {shares.length === 0 ? (
                 <div className="text-center py-12">
-                  <Share2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No shares yet</p>
-                  <p className="text-sm text-gray-400 mt-1">
+                  <Share2 className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400">No shares yet</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
                     Configure your share settings and create a public link
                   </p>
                 </div>
@@ -431,29 +431,29 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
                   <div
                     key={share.shareId}
                     className={`p-4 border rounded-lg ${
-                      share.isActive ? 'border-primary-200 bg-primary-50/30' : 'border-gray-200'
+                      share.isActive ? 'border-primary-200 dark:border-primary-700 bg-primary-50/30 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700'
                     }`}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <div className="flex items-center gap-2">
-                          <Link className="w-4 h-4 text-gray-400" />
-                          <span className="font-medium text-gray-900">
+                          <Link className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                          <span className="font-medium text-gray-900 dark:text-white">
                             {share.isActive ? 'Active Share' : 'Inactive Share'}
                           </span>
                           {share.isActive && (
-                            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                            <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-xs rounded-full">
                               Live
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                           Created {formatDate(share.createdAt)}
                         </p>
                       </div>
                       <button
                         onClick={() => handleDeleteShare(share.shareId)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                         title="Delete share"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -461,18 +461,18 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
                     </div>
 
                     {/* Share URL */}
-                    <div className="bg-gray-100 rounded-lg p-3 mb-3">
+                    <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-3">
                       <div className="flex items-center gap-2">
                         <input
                           type="text"
                           value={share.shareUrl}
                           readOnly
-                          className="flex-1 min-w-0 bg-transparent text-sm text-gray-700 outline-none truncate"
+                          className="flex-1 min-w-0 bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none truncate"
                         />
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <button
                             onClick={() => handleCopyLink(share.shareUrl)}
-                            className="p-2 text-primary-600 hover:bg-primary-100 rounded-lg transition-colors"
+                            className="p-2 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/30 rounded-lg transition-colors"
                             title="Copy link"
                           >
                             {copied ? (
@@ -485,7 +485,7 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
                             href={share.shareUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                            className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
                             title="Open in new tab"
                           >
                             <ExternalLink className="w-4 h-4" />
@@ -495,7 +495,7 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
                     </div>
 
                     {/* Stats */}
-                    <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm text-gray-600">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-sm text-gray-600 dark:text-gray-400">
                       <div className="flex items-center gap-1">
                         <Eye className="w-4 h-4" />
                         <span>{share.viewCount} views</span>
@@ -505,7 +505,7 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
                         <span>{share.selectedImageIds?.length || 0} photos</span>
                       </div>
                       {share.lastViewedAt && (
-                        <div className="text-gray-400 text-xs sm:text-sm">
+                        <div className="text-gray-400 dark:text-gray-500 text-xs sm:text-sm">
                           Last viewed {formatDate(share.lastViewedAt)}
                         </div>
                       )}
@@ -513,18 +513,18 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
 
                     {/* Analytics Preview */}
                     {share.views && share.views.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Recent Views</h4>
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Recent Views</h4>
                         <div className="space-y-2">
                           {share.views.slice(-5).reverse().map((view, idx) => (
                             <div
                               key={idx}
-                              className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 gap-0.5"
+                              className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-gray-500 dark:text-gray-400 gap-0.5"
                             >
                               <span className="truncate">
                                 {view.country || 'Unknown'} - {view.browser || 'Unknown browser'}
                               </span>
-                              <span className="text-gray-400 flex-shrink-0">{formatDate(view.viewedAt)}</span>
+                              <span className="text-gray-400 dark:text-gray-500 flex-shrink-0">{formatDate(view.viewedAt)}</span>
                             </div>
                           ))}
                         </div>
@@ -538,7 +538,7 @@ export const ShareModal = ({ guitar, onClose }: ShareModalProps) => {
         </div>
 
         {/* Footer */}
-        <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50">
+        <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <div className="flex justify-end gap-3">
             <button onClick={onClose} className="btn-secondary">
               Close
