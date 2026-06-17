@@ -96,7 +96,7 @@ export const SharedGuitarView = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
       </div>
     );
@@ -104,13 +104,13 @@ export const SharedGuitarView = () => {
 
   if (error || !shareData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center max-w-md px-4">
-          <PickIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" gColor="white" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <PickIcon className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" gColor="white" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             {error === 'Share not found' ? 'Share Not Found' : 'Unable to Load'}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             {error === 'Share not found'
               ? 'This shared guitar link is no longer available or has been removed.'
               : 'There was a problem loading this shared guitar. Please try again later.'}
@@ -124,14 +124,14 @@ export const SharedGuitarView = () => {
   const currentImage = images[currentImageIndex];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <PickIcon className="w-6 h-6 text-primary-600" gColor="white" />
-              <span className="text-lg font-semibold text-gray-900">
+              <span className="text-lg font-semibold text-gray-900 dark:text-white">
                 Shared from GuitarHelp
               </span>
             </div>
@@ -139,7 +139,7 @@ export const SharedGuitarView = () => {
               href="https://guitarhelp.click"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center gap-1"
             >
               <span>Learn more</span>
               <ExternalLink className="w-3 h-3" />
@@ -161,8 +161,8 @@ export const SharedGuitarView = () => {
                     onClick={() => setCurrentImageIndex(idx)}
                     className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
                       idx === currentImageIndex
-                        ? 'border-primary-600 ring-2 ring-primary-200'
-                        : 'border-gray-300 hover:border-gray-400'
+                        ? 'border-primary-600 ring-2 ring-primary-200 dark:ring-primary-800'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                     }`}
                   >
                     <img
@@ -176,8 +176,8 @@ export const SharedGuitarView = () => {
             )}
 
             {/* Main Image */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="relative min-h-96 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+              <div className="relative min-h-96 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center p-4">
                 {currentImage ? (
                   <button
                     onClick={() => openFullScreen()}
@@ -238,12 +238,12 @@ export const SharedGuitarView = () => {
           {/* Details */}
           <div className="space-y-6">
             {/* Basic Info */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 {sharedFields.brand && guitar.brand}{' '}
                 {sharedFields.model && guitar.model}
               </h1>
-              <div className="flex items-center gap-3 text-gray-600">
+              <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
                 {sharedFields.year && guitar.year && (
                   <>
                     <Calendar className="w-4 h-4" />
@@ -252,8 +252,8 @@ export const SharedGuitarView = () => {
                 )}
                 {sharedFields.type && guitar.type && (
                   <>
-                    {sharedFields.year && <span className="text-gray-400">|</span>}
-                    <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
+                    {sharedFields.year && <span className="text-gray-400 dark:text-gray-500">|</span>}
+                    <span className="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 rounded-full text-sm font-medium">
                       {guitar.type}
                     </span>
                   </>
@@ -263,10 +263,10 @@ export const SharedGuitarView = () => {
 
             {/* Specifications */}
             {hasVisibleSpecs(guitar, sharedFields) && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Info className="w-5 h-5 text-primary-600" />
-                  <h2 className="text-xl font-bold text-gray-900">Specifications</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Specifications</h2>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -318,10 +318,10 @@ export const SharedGuitarView = () => {
 
             {/* Detailed Specifications */}
             {sharedFields.detailedSpecs && guitar.detailedSpecs && hasDetailedSpecs(guitar.detailedSpecs) && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Info className="w-5 h-5 text-primary-600" />
-                  <h2 className="text-xl font-bold text-gray-900">Detailed Specifications</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Detailed Specifications</h2>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -341,14 +341,14 @@ export const SharedGuitarView = () => {
 
             {/* Notes */}
             {sharedFields.notes && guitar.notes && Array.isArray(guitar.notes) && guitar.notes.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Notes</h2>
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Notes</h2>
                 <div className="space-y-3">
                   {guitar.notes.map((note: any, index: number) => (
-                    <div key={note.id || index} className="text-gray-700">
+                    <div key={note.id || index} className="text-gray-700 dark:text-gray-300">
                       <p className="whitespace-pre-wrap">{note.content}</p>
                       {note.createdAt && (
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                           {new Date(note.createdAt).toLocaleDateString()}
                         </p>
                       )}
@@ -360,10 +360,10 @@ export const SharedGuitarView = () => {
 
             {/* Condition Report */}
             {sharedFields.conditionReport && (guitar as any).conditionShape && (
-              <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <ClipboardCheck className="w-5 h-5 text-primary-600" />
-                  <h2 className="text-xl font-bold text-gray-900">Condition Report</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Condition Report</h2>
                 </div>
                 <ConditionReport
                   shape={(guitar as any).conditionShape}
@@ -460,16 +460,16 @@ export const SharedGuitarView = () => {
       )}
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-12">
+      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
+          <div className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
             <PickIcon className="w-4 h-4" />
             <span>Shared with</span>
             <a
               href="https://guitarhelp.click"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary-600 hover:text-primary-700 font-medium"
+              className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
             >
               GuitarHelp
             </a>
@@ -548,7 +548,7 @@ const SpecItem = ({
   span2?: boolean;
 }) => (
   <div className={span2 ? 'col-span-2' : ''}>
-    <span className="text-sm text-gray-500 block mb-1">{label}</span>
-    <span className="font-medium text-gray-900">{value}</span>
+    <span className="text-sm text-gray-500 dark:text-gray-400 block mb-1">{label}</span>
+    <span className="font-medium text-gray-900 dark:text-white">{value}</span>
   </div>
 );
