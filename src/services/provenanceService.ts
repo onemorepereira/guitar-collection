@@ -1,15 +1,5 @@
 import { ProvenanceReport, ProvenanceReportSummary } from '../types/guitar';
 import { authService } from './authService';
-import { authenticatedRequest } from '../utils/api';
-
-// Helper to get authenticated token
-const getToken = () => {
-  const token = authService.getToken();
-  if (!token) {
-    throw new Error('Not authenticated');
-  }
-  return token;
-};
 
 export const provenanceService = {
   /**
@@ -19,9 +9,8 @@ export const provenanceService = {
     guitarId: string,
     type: 'provenance' | 'sales_ad' = 'provenance'
   ): Promise<{ id: string; version: number; generatedAt: string; type: string }> {
-    const response = await authenticatedRequest(
+    const response = await authService.authFetch(
       `/guitars/${encodeURIComponent(guitarId)}/provenance`,
-      getToken(),
       {
         method: 'POST',
         headers: {
@@ -48,7 +37,7 @@ export const provenanceService = {
       ? `/guitars/${encodeURIComponent(guitarId)}/provenance?type=${type}`
       : `/guitars/${encodeURIComponent(guitarId)}/provenance`;
 
-    const response = await authenticatedRequest(url, getToken(), {
+    const response = await authService.authFetch(url, {
       method: 'GET',
     });
 
@@ -65,9 +54,8 @@ export const provenanceService = {
    * Get a specific provenance report
    */
   async getReport(guitarId: string, reportId: string): Promise<ProvenanceReport> {
-    const response = await authenticatedRequest(
+    const response = await authService.authFetch(
       `/guitars/${encodeURIComponent(guitarId)}/provenance/${encodeURIComponent(reportId)}`,
-      getToken(),
       {
         method: 'GET',
       }
@@ -89,9 +77,8 @@ export const provenanceService = {
    * Delete a specific report (provenance or sales ad)
    */
   async deleteReport(guitarId: string, reportId: string): Promise<void> {
-    const response = await authenticatedRequest(
+    const response = await authService.authFetch(
       `/guitars/${encodeURIComponent(guitarId)}/provenance/${encodeURIComponent(reportId)}`,
-      getToken(),
       {
         method: 'DELETE',
       }

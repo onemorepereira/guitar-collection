@@ -1,15 +1,6 @@
 import { Guitar, GuitarFilters, GuitarFormData } from '../types/guitar';
 import { authService } from './authService';
-import { authenticatedRequest, API_URL } from '../utils/api';
-
-// Helper to get authenticated token
-const getToken = () => {
-  const token = authService.getToken();
-  if (!token) {
-    throw new Error('Not authenticated');
-  }
-  return token;
-};
+import { API_URL } from '../utils/api';
 
 export const guitarService = {
   // Get all guitars with optional filtering
@@ -25,7 +16,7 @@ export const guitarService = {
     const queryString = params.toString();
     const url = `/guitars${queryString ? `?${queryString}` : ''}`;
 
-    const response = await authenticatedRequest(url, getToken(), {
+    const response = await authService.authFetch(url, {
       method: 'GET',
     });
 
@@ -40,7 +31,7 @@ export const guitarService = {
 
   // Get single guitar by ID
   async getGuitar(id: string, userId?: string): Promise<Guitar | null> {
-    const response = await authenticatedRequest(`/guitars/${id}`, getToken(), {
+    const response = await authService.authFetch(`/guitars/${id}`, {
       method: 'GET',
     });
 
@@ -58,7 +49,7 @@ export const guitarService = {
 
   // Create new guitar
   async createGuitar(data: GuitarFormData): Promise<Guitar> {
-    const response = await authenticatedRequest('/guitars', getToken(), {
+    const response = await authService.authFetch('/guitars', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -74,7 +65,7 @@ export const guitarService = {
 
   // Update existing guitar
   async updateGuitar(id: string, data: Partial<GuitarFormData>, userId?: string): Promise<Guitar> {
-    const response = await authenticatedRequest(`/guitars/${id}`, getToken(), {
+    const response = await authService.authFetch(`/guitars/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -90,7 +81,7 @@ export const guitarService = {
 
   // Delete guitar
   async deleteGuitar(id: string, userId?: string): Promise<void> {
-    const response = await authenticatedRequest(`/guitars/${id}`, getToken(), {
+    const response = await authService.authFetch(`/guitars/${id}`, {
       method: 'DELETE',
     });
 
@@ -102,7 +93,7 @@ export const guitarService = {
 
   // Get unique brands for filtering
   async getBrands(userId?: string): Promise<string[]> {
-    const response = await authenticatedRequest('/guitars/brands', getToken(), {
+    const response = await authService.authFetch('/guitars/brands', {
       method: 'GET',
     });
 
@@ -121,7 +112,7 @@ export const guitarService = {
     onProgress?: (progress: number) => void
   ): Promise<string> {
     // Step 1: Get presigned upload URL
-    const urlResponse = await authenticatedRequest('/images/upload-url', getToken(), {
+    const urlResponse = await authService.authFetch('/images/upload-url', {
       method: 'POST',
       body: JSON.stringify({
         fileName: file.name,
@@ -173,7 +164,7 @@ export const guitarService = {
     });
 
     // Step 3: Notify backend that upload is complete
-    const completeResponse = await authenticatedRequest('/images/upload-complete', getToken(), {
+    const completeResponse = await authService.authFetch('/images/upload-complete', {
       method: 'POST',
       body: JSON.stringify({ imageKey }),
     });
@@ -192,7 +183,7 @@ export const guitarService = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await authenticatedRequest('/specs/extract', getToken(), {
+    const response = await authService.authFetch('/specs/extract', {
       method: 'POST',
       body: formData,
     });
@@ -207,7 +198,7 @@ export const guitarService = {
 
   // Extract guitar specs from pasted text
   async extractSpecsFromText(text: string): Promise<any> {
-    const response = await authenticatedRequest('/specs/extract', getToken(), {
+    const response = await authService.authFetch('/specs/extract', {
       method: 'POST',
       body: JSON.stringify({ text }),
     });
@@ -225,7 +216,7 @@ export const guitarService = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await authenticatedRequest('/receipts/extract', getToken(), {
+    const response = await authService.authFetch('/receipts/extract', {
       method: 'POST',
       body: formData,
     });
@@ -240,7 +231,7 @@ export const guitarService = {
 
   // Extract receipt information from pasted text
   async extractReceiptFromText(text: string): Promise<any> {
-    const response = await authenticatedRequest('/receipts/extract', getToken(), {
+    const response = await authService.authFetch('/receipts/extract', {
       method: 'POST',
       body: JSON.stringify({ text }),
     });
@@ -256,7 +247,7 @@ export const guitarService = {
   // Upload document (PDF or image) - uses same S3 upload flow as images
   async uploadDocument(file: File): Promise<string> {
     // Step 1: Get presigned upload URL
-    const urlResponse = await authenticatedRequest('/images/upload-url', getToken(), {
+    const urlResponse = await authService.authFetch('/images/upload-url', {
       method: 'POST',
       body: JSON.stringify({
         fileName: file.name,
@@ -285,7 +276,7 @@ export const guitarService = {
     }
 
     // Step 3: Notify backend that upload is complete
-    const completeResponse = await authenticatedRequest('/images/upload-complete', getToken(), {
+    const completeResponse = await authService.authFetch('/images/upload-complete', {
       method: 'POST',
       body: JSON.stringify({ imageKey }),
     });

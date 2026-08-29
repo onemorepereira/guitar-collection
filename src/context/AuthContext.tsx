@@ -20,6 +20,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     checkAuth();
+
+    // When a request definitively fails auth (expired session that can't be
+    // refreshed), authService dispatches 'auth:logout'; clear the user so
+    // ProtectedRoute sends the visitor back to /login.
+    const handleForcedLogout = () => setUser(null);
+    window.addEventListener('auth:logout', handleForcedLogout);
+    return () => window.removeEventListener('auth:logout', handleForcedLogout);
   }, []);
 
   const checkAuth = async () => {

@@ -1,20 +1,11 @@
 import { Share, ShareFormData, PublicShareData, ShareListItem } from '../types/guitar';
 import { authService } from './authService';
-import { authenticatedRequest, API_URL } from '../utils/api';
-
-// Helper to get authenticated token
-const getToken = () => {
-  const token = authService.getToken();
-  if (!token) {
-    throw new Error('Not authenticated');
-  }
-  return token;
-};
+import { API_URL } from '../utils/api';
 
 export const shareService = {
   // Create a new share
   async createShare(data: ShareFormData): Promise<Share> {
-    const response = await authenticatedRequest('/shares', getToken(), {
+    const response = await authService.authFetch('/shares', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -30,7 +21,7 @@ export const shareService = {
 
   // Get all shares for the current user
   async getShares(): Promise<ShareListItem[]> {
-    const response = await authenticatedRequest('/shares', getToken(), {
+    const response = await authService.authFetch('/shares', {
       method: 'GET',
     });
 
@@ -45,7 +36,7 @@ export const shareService = {
 
   // Get a specific share by ID
   async getShare(shareId: string): Promise<Share> {
-    const response = await authenticatedRequest(`/shares/${shareId}`, getToken(), {
+    const response = await authService.authFetch(`/shares/${shareId}`, {
       method: 'GET',
     });
 
@@ -60,7 +51,7 @@ export const shareService = {
 
   // Update a share
   async updateShare(shareId: string, data: Partial<ShareFormData> & { isActive?: boolean }): Promise<Share> {
-    const response = await authenticatedRequest(`/shares/${shareId}`, getToken(), {
+    const response = await authService.authFetch(`/shares/${shareId}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
@@ -76,7 +67,7 @@ export const shareService = {
 
   // Delete a share
   async deleteShare(shareId: string): Promise<void> {
-    const response = await authenticatedRequest(`/shares/${shareId}`, getToken(), {
+    const response = await authService.authFetch(`/shares/${shareId}`, {
       method: 'DELETE',
     });
 

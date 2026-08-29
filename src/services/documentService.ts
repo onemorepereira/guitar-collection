@@ -4,24 +4,16 @@
  */
 
 import { Document } from '../types/guitar';
-import { authenticatedRequest, API_URL } from '../utils/api';
+import { API_URL } from '../utils/api';
 import { authService } from './authService';
 import { guitarService } from './guitarService';
-
-const getToken = () => {
-  const token = authService.getToken();
-  if (!token) {
-    throw new Error('No authentication token found');
-  }
-  return token;
-};
 
 export const documentService = {
   /**
    * Get all documents for the current user
    */
   async list(): Promise<Document[]> {
-    const response = await authenticatedRequest(`${API_URL}/documents`, getToken());
+    const response = await authService.authFetch(`${API_URL}/documents`);
 
     if (!response.ok) {
       const error = await response.json();
@@ -36,7 +28,7 @@ export const documentService = {
    * Get a single document by ID
    */
   async get(id: string): Promise<Document> {
-    const response = await authenticatedRequest(`${API_URL}/documents/${id}`, getToken());
+    const response = await authService.authFetch(`${API_URL}/documents/${id}`);
 
     if (!response.ok) {
       const error = await response.json();
@@ -56,7 +48,7 @@ export const documentService = {
     const url = await guitarService.uploadDocument(file);
 
     // Step 2: Create document record
-    const response = await authenticatedRequest(`${API_URL}/documents`, getToken(), {
+    const response = await authService.authFetch(`${API_URL}/documents`, {
       method: 'POST',
       body: JSON.stringify({
         name: file.name,
@@ -79,7 +71,7 @@ export const documentService = {
    * Update document metadata (name, tags, notes)
    */
   async update(id: string, updates: { name?: string; tags?: string[]; notes?: string }): Promise<Document> {
-    const response = await authenticatedRequest(`${API_URL}/documents/${id}`, getToken(), {
+    const response = await authService.authFetch(`${API_URL}/documents/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
@@ -98,7 +90,7 @@ export const documentService = {
    * Will also unassign it from all guitars
    */
   async delete(id: string): Promise<void> {
-    const response = await authenticatedRequest(`${API_URL}/documents/${id}`, getToken(), {
+    const response = await authService.authFetch(`${API_URL}/documents/${id}`, {
       method: 'DELETE',
     });
 
@@ -112,9 +104,8 @@ export const documentService = {
    * Assign a document to a guitar
    */
   async assignToGuitar(guitarId: string, documentId: string): Promise<void> {
-    const response = await authenticatedRequest(
+    const response = await authService.authFetch(
       `${API_URL}/guitars/${guitarId}/documents/${documentId}`,
-      getToken(),
       {
         method: 'POST',
       }
@@ -130,9 +121,8 @@ export const documentService = {
    * Unassign a document from a guitar
    */
   async unassignFromGuitar(guitarId: string, documentId: string): Promise<void> {
-    const response = await authenticatedRequest(
+    const response = await authService.authFetch(
       `${API_URL}/guitars/${guitarId}/documents/${documentId}`,
-      getToken(),
       {
         method: 'DELETE',
       }
@@ -166,9 +156,8 @@ export const documentService = {
    * Trigger content extraction for a document
    */
   async triggerExtraction(id: string): Promise<void> {
-    const response = await authenticatedRequest(
+    const response = await authService.authFetch(
       `${API_URL}/documents/${id}/extract`,
-      getToken(),
       {
         method: 'POST',
       }
