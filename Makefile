@@ -209,6 +209,8 @@ deploy-frontend-infra: validate
 			BucketPrefix=$(FRONTEND_BUCKET_PREFIX) \
 			DomainName=$(FRONTEND_DOMAIN) \
 			HostedZoneId=$(HOSTED_ZONE_ID) \
+			ApiDomainName=$(if $(API_DOMAIN),$(API_DOMAIN),api.$(FRONTEND_DOMAIN)) \
+			ImagesDomainName=$(if $(IMAGES_DOMAIN),$(IMAGES_DOMAIN),images.$(FRONTEND_DOMAIN)) \
 		--capabilities CAPABILITY_IAM \
 		--no-fail-on-empty-changeset
 	@echo "[✓] Frontend infrastructure deployed"

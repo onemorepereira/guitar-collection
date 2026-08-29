@@ -16,30 +16,32 @@ Parameters:
     Type: String
     Description: Route53 Hosted Zone ID for your domain (required)
 
+  ApiDomainName:
+    Type: String
+    Description: API domain the SPA calls (used in the CSP connect-src)
+    Default: api.your-domain.com
+
+  ImagesDomainName:
+    Type: String
+    Description: Images CDN domain the SPA loads from (used in the CSP img-src)
+    Default: images.your-domain.com
+
 Resources:
   # S3 Bucket for static website hosting
   FrontendBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub '${BucketPrefix}-${AWS::AccountId}'
-      WebsiteConfiguration:
-        IndexDocument: index.html
-        ErrorDocument: index.html
+      # Served only via CloudFront + OAI, so keep all public access blocked.
       PublicAccessBlockConfiguration:
-        BlockPublicAcls: false
-        BlockPublicPolicy: false
-        IgnorePublicAcls: false
-        RestrictPublicBuckets: false
-      CorsConfiguration:
-        CorsRules:
-          - AllowedOrigins:
-              - '*'
-            AllowedMethods:
-              - GET
-              - HEAD
-            AllowedHeaders:
-              - '*'
-            MaxAge: 3000
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
       Tags:
         - Key: Environment
           Value: prod
@@ -64,6 +66,42 @@ Resources:
     Properties:
       CloudFrontOriginAccessIdentityConfig:
         Comment: !Sub 'OAI for ${DomainName}'
+
+  # Security headers for the SPA (CSP, HSTS, anti-clickjacking, etc.)
+  FrontendSecurityHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub '${BucketPrefix}-security-headers'
+        Comment: Security headers for the frontend SPA
+        SecurityHeadersConfig:
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 63072000
+            IncludeSubdomains: true
+            Preload: true
+            Override: true
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            FrameOption: DENY
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: strict-origin-when-cross-origin
+            Override: true
+          ContentSecurityPolicy:
+            Override: true
+            ContentSecurityPolicy: !Sub >-
+              default-src 'self';
+              script-src 'self';
+              style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+              font-src 'self' data: https://fonts.gstatic.com;
+              img-src 'self' data: https://${ImagesDomainName};
+              connect-src 'self' https://${ApiDomainName};
+              object-src 'none';
+              base-uri 'self';
+              form-action 'self';
+              frame-ancestors 'none';
+              upgrade-insecure-requests
 
   # ACM Certificate for HTTPS
   FrontendCertificate:
@@ -92,6 +130,7 @@ Resources:
               OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${FrontendOAI}'
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
+          ResponseHeadersPolicyId: !Ref FrontendSecurityHeadersPolicy
           ViewerProtocolPolicy: redirect-to-https
           AllowedMethods:
             - GET
