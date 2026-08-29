@@ -18,8 +18,8 @@ PATTERNS=(
   "api[_-]?key\s*=\s*['\"][^'\"]{8,}"
 )
 
-# Files to check (staged files)
-FILES=$(git diff --cached --name-only --diff-filter=ACM)
+# Files to check (staged files); the hook itself contains the patterns it scans for
+FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -v "^\.git-hooks/pre-commit$")
 
 if [ -z "$FILES" ]; then
   echo "✅ No files to check"
@@ -39,7 +39,7 @@ for PATTERN in "${PATTERNS[@]}"; do
 done
 
 # Check for AWS account IDs (12 digits)
-AWS_ACCOUNT_MATCHES=$(echo "$FILES" | xargs grep -E "[0-9]{12}" 2>/dev/null | grep -v "max-age" | grep -v "31536000")
+AWS_ACCOUNT_MATCHES=$(echo "$FILES" | xargs grep -E "[0-9]{12}" 2>/dev/null | grep -v "max-age" | grep -v "31536000" | grep -v "123456789012")
 if [ ! -z "$AWS_ACCOUNT_MATCHES" ]; then
   echo "⚠️  Found potential AWS Account ID:"
   echo "$AWS_ACCOUNT_MATCHES"

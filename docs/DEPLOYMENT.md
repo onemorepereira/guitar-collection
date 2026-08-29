@@ -277,7 +277,7 @@ BACKEND_STACK_NAME=guitarhelp
 FRONTEND_BUCKET_PREFIX=guitarhelp-click-frontend
 
 # Route53 (optional - leave empty if not using custom domains)
-HOSTED_ZONE_ID=Z075275313OOZ8SQWX0VU
+HOSTED_ZONE_ID=YOUR_ROUTE53_HOSTED_ZONE_ID
 
 # Optional: Override default AWS profile
 # AWS_PROFILE=default
@@ -302,7 +302,7 @@ parallel = true
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
-parameter_overrides = "Environment=prod AllowedOrigin='https://guitarhelp.click' ApiDomainName='api.guitarhelp.click' ImagesDomainName='images.guitarhelp.click' HostedZoneId='Z075275313OOZ8SQWX0VU' BucketPrefix='guitarhelp' FrontendDomain='guitarhelp.click'"
+parameter_overrides = "Environment=prod AllowedOrigin='https://guitarhelp.click' ApiDomainName='api.guitarhelp.click' ImagesDomainName='images.guitarhelp.click' HostedZoneId='YOUR_ROUTE53_HOSTED_ZONE_ID' BucketPrefix='guitarhelp' FrontendDomain='guitarhelp.click'"
 s3_prefix = "guitarhelp"
 tags = "Environment=prod Project=GuitarCollection"
 ```

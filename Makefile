@@ -79,10 +79,9 @@ init:
 init-hooks:
 	@echo "[*] Installing git hooks..."
 	@if [ -f .git-hooks/pre-commit ]; then \
-		mkdir -p .git/hooks; \
-		cp .git-hooks/pre-commit .git/hooks/pre-commit; \
-		chmod +x .git/hooks/pre-commit; \
-		echo "[✓] Pre-commit hook installed"; \
+		chmod +x .git-hooks/pre-commit; \
+		git config core.hooksPath .git-hooks; \
+		echo "[✓] Pre-commit hook enabled (repo-local core.hooksPath=.git-hooks)"; \
 	else \
 		echo "[!]  .git-hooks/pre-commit not found"; \
 	fi
