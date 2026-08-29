@@ -2,6 +2,8 @@ const { BedrockRuntimeClient, ConverseCommand } = require('@aws-sdk/client-bedro
 const pdfParse = require('pdf-parse');
 const { getUserIdFromEvent } = require('../../lib/cognito');
 const logger = require('../../lib/logger');
+const { ValidationError } = require('../../lib/errors');
+const { assertUploadSize, assertTextLength } = require('../../lib/inputLimits');
 
 const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
@@ -706,6 +708,9 @@ exports.handler = async (event) => {
 
       const { filename, data } = formData.file;
 
+      // Bound raw upload size before handing it to Textract/Bedrock
+      assertUploadSize(data);
+
       // Determine file type and process accordingly
       if (filename.toLowerCase().endsWith('.pdf')) {
         // Send raw PDF to Nova for visual extraction
@@ -715,6 +720,7 @@ exports.handler = async (event) => {
         textContent = await extractTextFromPDF(data);
       } else if (filename.toLowerCase().endsWith('.txt')) {
         textContent = data.toString('utf8');
+        assertTextLength(textContent);
         extractedReceipt = await extractReceiptWithNova(textContent);
       } else {
         return {
@@ -786,8 +792,9 @@ exports.handler = async (event) => {
       errorName: error.name,
       stack: error.stack,
     });
+    const statusCode = error instanceof ValidationError ? 400 : 500;
     return {
-      statusCode: 500,
+      statusCode,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN || '*',

@@ -639,6 +639,15 @@ Resources:
       Description: Async extraction of content from uploaded documents
       Timeout: 300  # 5 minutes for Textract processing
       MemorySize: 1024
+      # The SNS (Textract-completion) event source is an async invocation;
+      # capture failures that exhaust retries so documents don't silently
+      # stay stuck in 'processing'. (The SQS source has its own redrive DLQ.)
+      EventInvokeConfig:
+        MaximumRetryAttempts: 2
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt DocumentExtractionAsyncDLQ.Arn
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref DocumentsTable
@@ -965,6 +974,17 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
 
+  # DLQ for failed async (SNS/Textract-completion) invocations of the
+  # extraction handler — distinct from the SQS source's redrive DLQ.
+  DocumentExtractionAsyncDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-document-extraction-async-dlq
+      MessageRetentionPeriod: 1209600  # 14 days
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
   DocumentExtractionQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -1115,6 +1135,8 @@ Resources:
       ClientName: !Sub ${AWS::StackName}-web
       UserPoolId: !Ref UserPool
       GenerateSecret: false
+      # Return generic errors for unknown accounts to prevent user enumeration
+      PreventUserExistenceErrors: ENABLED
       ExplicitAuthFlows:
         - ALLOW_USER_PASSWORD_AUTH
         - ALLOW_ADMIN_USER_PASSWORD_AUTH

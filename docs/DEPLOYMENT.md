@@ -299,7 +299,7 @@ cached = true
 parallel = true
 
 [default.deploy.parameters]
-capabilities = "CAPABILITY_IAM"
+capabilities = "CAPABILITY_NAMED_IAM"
 confirm_changeset = true
 resolve_s3 = true
 parameter_overrides = "Environment=prod AllowedOrigin='https://guitarhelp.click' ApiDomainName='api.guitarhelp.click' ImagesDomainName='images.guitarhelp.click' HostedZoneId='Z075275313OOZ8SQWX0VU' BucketPrefix='guitarhelp' FrontendDomain='guitarhelp.click'"

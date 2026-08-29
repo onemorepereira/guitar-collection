@@ -349,7 +349,23 @@ function validateAndFilterFields(data, allowedFields, protectedFields = []) {
  * @throws {ValidationError} If validation fails
  * @returns {object} Filtered updates
  */
+// Cap the length of user-supplied arrays to bound item size and processing.
+const MAX_ARRAY_ITEMS = 200;
+const ARRAY_CAPPED_FIELDS = ['conditionMarkers', 'notes', 'images', 'documents', 'documentIds', 'tags'];
+
+function validateGuitarArrayLimits(updates) {
+  for (const field of ARRAY_CAPPED_FIELDS) {
+    const value = updates[field];
+    if (Array.isArray(value) && value.length > MAX_ARRAY_ITEMS) {
+      throw new ValidationError(
+        `Too many items in ${field} (max ${MAX_ARRAY_ITEMS})`
+      );
+    }
+  }
+}
+
 function validateGuitarUpdateFields(updates) {
+  validateGuitarArrayLimits(updates);
   return validateAndFilterFields(
     updates,
     ALLOWED_GUITAR_FIELDS,
@@ -496,4 +512,5 @@ module.exports = {
   ALLOWED_GUITAR_FIELDS,
   ALLOWED_USER_FIELDS,
   PROTECTED_FIELDS,
+  MAX_ARRAY_ITEMS,
 };
