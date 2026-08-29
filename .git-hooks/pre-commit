@@ -18,8 +18,10 @@ PATTERNS=(
   "api[_-]?key\s*=\s*['\"][^'\"]{8,}"
 )
 
-# Files to check (staged files); the hook itself contains the patterns it scans for
-FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -v "^\.git-hooks/pre-commit$")
+# Files to check (staged files); the hook itself contains the patterns it scans
+# for, and docs/diagrams/ holds generated vector/raster art whose numeric path
+# data false-positives the 12-digit account-id check.
+FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -vE "^\.git-hooks/pre-commit$|^docs/diagrams/")
 
 if [ -z "$FILES" ]; then
   echo "✅ No files to check"

@@ -1,0 +1,198 @@
+{
+  "family": "architecture",
+  "title": "Backend Architecture",
+  "subtitle": "AWS SAM · per-domain Lambda handlers + async extraction pipeline",
+  "theme": "aws",
+  "direction": "AUTO",
+  "containers": [
+    {
+      "id": "apiL",
+      "type": "layer",
+      "label": "API & Auth"
+    },
+    {
+      "id": "computeL",
+      "type": "layer",
+      "label": "Compute"
+    },
+    {
+      "id": "dataL",
+      "type": "layer",
+      "label": "Data, Storage & AI"
+    },
+    {
+      "id": "asyncL",
+      "type": "layer",
+      "label": "Async Document Extraction"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "apigw",
+      "parent": "apiL",
+      "icon": "aws.api-gateway",
+      "label": "API Gateway",
+      "sublabel": "HTTP API · per-route throttling"
+    },
+    {
+      "id": "cognito",
+      "parent": "apiL",
+      "icon": "aws.cognito",
+      "label": "Cognito",
+      "sublabel": "JWT authorizer · User Pool"
+    },
+    {
+      "id": "handlers",
+      "parent": "computeL",
+      "icon": "aws.lambda",
+      "label": "Domain Handlers",
+      "sublabel": "Guitars · Auth · Images · User · Docs · Shares · Provenance · Specs · Receipt"
+    },
+    {
+      "id": "extract",
+      "parent": "computeL",
+      "icon": "aws.lambda",
+      "label": "Extraction Handler",
+      "sublabel": "SQS + SNS driven"
+    },
+    {
+      "id": "ddb",
+      "parent": "dataL",
+      "icon": "aws.dynamodb",
+      "label": "DynamoDB",
+      "sublabel": "Guitars · Users · Documents · Provenance · Shares"
+    },
+    {
+      "id": "s3img",
+      "parent": "dataL",
+      "icon": "aws.simple-storage-service",
+      "label": "S3 Images",
+      "sublabel": "uploads/ → images/ (magic-number check)"
+    },
+    {
+      "id": "bedrock",
+      "parent": "dataL",
+      "icon": "aws.bedrock",
+      "label": "Bedrock Nova Lite",
+      "sublabel": "spec/receipt extraction · reconstruction"
+    },
+    {
+      "id": "sqs",
+      "parent": "asyncL",
+      "icon": "aws.simple-queue-service",
+      "label": "Extraction Queue",
+      "sublabel": "SQS"
+    },
+    {
+      "id": "dlq",
+      "parent": "asyncL",
+      "icon": "aws.simple-queue-service",
+      "label": "Dead-Letter Queues",
+      "sublabel": "redrive + async on-failure"
+    },
+    {
+      "id": "textract",
+      "parent": "asyncL",
+      "icon": "aws.textract",
+      "label": "Textract",
+      "sublabel": "multi-page PDF OCR"
+    },
+    {
+      "id": "sns",
+      "parent": "asyncL",
+      "icon": "aws.simple-notification-service",
+      "label": "SNS",
+      "sublabel": "Textract completion"
+    }
+  ],
+  "edges": [
+    {
+      "from": "apigw",
+      "to": "cognito",
+      "kind": "config",
+      "label": "verify JWT"
+    },
+    {
+      "from": "apigw",
+      "to": "handlers",
+      "kind": "sync"
+    },
+    {
+      "from": "handlers",
+      "to": "ddb",
+      "kind": "data",
+      "label": "userId-scoped"
+    },
+    {
+      "from": "handlers",
+      "to": "cognito",
+      "kind": "sync",
+      "label": "auth ops"
+    },
+    {
+      "from": "handlers",
+      "to": "s3img",
+      "kind": "data",
+      "label": "presigned upload"
+    },
+    {
+      "from": "handlers",
+      "to": "bedrock",
+      "kind": "sync",
+      "label": "AI extract"
+    },
+    {
+      "from": "handlers",
+      "to": "sqs",
+      "kind": "async",
+      "label": "document uploaded"
+    },
+    {
+      "from": "sqs",
+      "to": "extract",
+      "kind": "async",
+      "label": "trigger"
+    },
+    {
+      "from": "sqs",
+      "to": "dlq",
+      "kind": "async",
+      "label": "on failure"
+    },
+    {
+      "from": "extract",
+      "to": "textract",
+      "kind": "sync",
+      "label": "start OCR"
+    },
+    {
+      "from": "textract",
+      "to": "sns",
+      "kind": "async",
+      "label": "job complete"
+    },
+    {
+      "from": "sns",
+      "to": "extract",
+      "kind": "async",
+      "label": "callback"
+    },
+    {
+      "from": "extract",
+      "to": "bedrock",
+      "kind": "sync",
+      "label": "reconstruct / image OCR"
+    },
+    {
+      "from": "extract",
+      "to": "ddb",
+      "kind": "data",
+      "label": "extractedContent"
+    }
+  ],
+  "legend": true,
+  "meta": {
+    "project": "Guitar Collection",
+    "note": "Generated with VizCharter"
+  }
+}

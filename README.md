@@ -53,46 +53,10 @@ make help             # See all available commands
 
 ## Architecture Overview
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         Frontend                            │
-│  React + TypeScript + Tailwind CSS + Vite                   │
-│  Hosted on S3, served via CloudFront CDN                    │
-└─────────────────────────────────────────────────────────────┘
-                           │ HTTPS
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      API Gateway (HTTP)                     │
-│             JWT Authorization via AWS Cognito               │
-└─────────────────────────────────────────────────────────────┘
-                           │
-            ┌──────────────┼──────────────┐
-            ▼              ▼              ▼
-    ┌──────────┐   ┌──────────┐   ┌──────────┐
-    │  Lambda  │   │  Lambda  │   │  Lambda  │
-    │  Guitars │   │   Auth   │   │  Images  │
-    └──────────┘   └──────────┘   └──────────┘
-            │              │              │
-            ▼              ▼              ▼
-    ┌──────────────────────────────────────────┐
-    │           DynamoDB Tables                │
-    │  • Guitars (encrypted with KMS)          │
-    │  • Users                                 │
-    └──────────────────────────────────────────┘
 
-    ┌──────────────────────────────────────────┐
-    │          S3 + CloudFront                 │
-    │  • Guitar images                         │
-    │  • Receipts and documents                │
-    │  • Automatic CDN distribution            │
-    └──────────────────────────────────────────┘
+![Guitar Collection — System Architecture](docs/diagrams/system-architecture/system-architecture.png)
 
-    ┌──────────────────────────────────────────┐
-    │      Amazon Bedrock (Nova Lite)          │
-    │  • AI spec extraction from PDFs/text     │
-    │  • Confidence scoring                    │
-    └──────────────────────────────────────────┘
-```
+> Full system: React SPA on CloudFront/S3, an HTTP API with a Cognito JWT authorizer, per-domain Lambda handlers, DynamoDB, an images CDN, and Bedrock for AI extraction.
 
 ## Technology Stack
 

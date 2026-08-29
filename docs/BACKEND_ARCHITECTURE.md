@@ -5,56 +5,10 @@ Serverless architecture using AWS services optimized for cost-effectiveness and 
 
 ## High-Level Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                              Users                                   │
-└───────────────────────────────┬─────────────────────────────────────┘
-                                │
-                                ↓
-┌─────────────────────────────────────────────────────────────────────┐
-│                      CloudFront (CDN)                                │
-│  ┌──────────────────────┐              ┌──────────────────────┐    │
-│  │  Origin 1: Frontend  │              │  Origin 2: Images    │    │
-│  │  (S3 Static Website) │              │  (S3 Images Bucket)  │    │
-│  └──────────────────────┘              └──────────────────────┘    │
-└─────────────────────────────────────────────────────────────────────┘
-                                │
-                                ↓
-┌─────────────────────────────────────────────────────────────────────┐
-│                    API Gateway (HTTP API)                            │
-│                    /api/* routes                                     │
-└───────────────────────────────┬─────────────────────────────────────┘
-                                │
-                                ↓
-                    ┌───────────┴───────────┐
-                    │   Lambda Authorizer   │
-                    │   (Cognito Verify)    │
-                    └───────────┬───────────┘
-                                │
-                                ↓
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Lambda Functions                             │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐           │
-│  │  Auth    │  │ Guitars  │  │ Images   │  │  User    │           │
-│  │ Handler  │  │ Handler  │  │ Handler  │  │ Handler  │           │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘           │
-└───────────────────────────────┬─────────────────────────────────────┘
-                                │
-                    ┌───────────┴───────────┐
-                    │                       │
-                    ↓                       ↓
-         ┌──────────────────┐    ┌──────────────────┐
-         │   DynamoDB       │    │   Cognito        │
-         │   - Guitars      │    │   User Pool      │
-         │   - Notes        │    └──────────────────┘
-         └──────────────────┘
-                    │
-                    ↓
-         ┌──────────────────┐
-         │   S3 Uploads     │
-         │   Bucket         │
-         └──────────────────┘
-```
+
+![Backend Architecture](diagrams/backend-architecture/backend-architecture.png)
+
+> Per-domain Lambda handlers behind an HTTP API + Cognito authorizer, plus the async document-extraction pipeline (SQS → Textract/Bedrock → DynamoDB) with dead-letter queues.
 
 ## AWS Services Breakdown
 

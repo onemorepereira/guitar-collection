@@ -1,0 +1,182 @@
+{
+  "family": "architecture",
+  "title": "Guitar Collection — System Architecture",
+  "subtitle": "React SPA + AWS serverless backend (guitarhelp.click)",
+  "theme": "aws",
+  "direction": "DOWN",
+  "containers": [
+    {
+      "id": "client",
+      "type": "layer",
+      "label": "Client"
+    },
+    {
+      "id": "edge",
+      "type": "layer",
+      "label": "Edge & Static Hosting"
+    },
+    {
+      "id": "api",
+      "type": "layer",
+      "label": "API & Auth"
+    },
+    {
+      "id": "compute",
+      "type": "layer",
+      "label": "Compute"
+    },
+    {
+      "id": "data",
+      "type": "layer",
+      "label": "Data, Storage & AI"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "users",
+      "parent": "client",
+      "label": "Users"
+    },
+    {
+      "id": "spa",
+      "parent": "client",
+      "label": "React SPA",
+      "sublabel": "TypeScript · Vite · Tailwind"
+    },
+    {
+      "id": "cf_front",
+      "parent": "edge",
+      "icon": "aws.cloudfront",
+      "label": "CloudFront",
+      "sublabel": "Frontend CDN + CSP/HSTS"
+    },
+    {
+      "id": "s3_front",
+      "parent": "edge",
+      "icon": "aws.simple-storage-service",
+      "label": "S3",
+      "sublabel": "SPA bucket (OAI, private)"
+    },
+    {
+      "id": "apigw",
+      "parent": "api",
+      "icon": "aws.api-gateway",
+      "label": "API Gateway",
+      "sublabel": "HTTP API"
+    },
+    {
+      "id": "cognito",
+      "parent": "api",
+      "icon": "aws.cognito",
+      "label": "Cognito",
+      "sublabel": "User Pool · JWT authorizer"
+    },
+    {
+      "id": "lambda",
+      "parent": "compute",
+      "icon": "aws.lambda",
+      "label": "Lambda Handlers",
+      "sublabel": "Guitars · Auth · Images · Docs · Shares · Provenance"
+    },
+    {
+      "id": "ddb",
+      "parent": "data",
+      "icon": "aws.dynamodb",
+      "label": "DynamoDB",
+      "sublabel": "5 tables · KMS · PITR"
+    },
+    {
+      "id": "s3_img",
+      "parent": "data",
+      "icon": "aws.simple-storage-service",
+      "label": "S3 Images",
+      "sublabel": "images & receipts (OAI)"
+    },
+    {
+      "id": "cf_img",
+      "parent": "data",
+      "icon": "aws.cloudfront",
+      "label": "CloudFront",
+      "sublabel": "Images CDN"
+    },
+    {
+      "id": "bedrock",
+      "parent": "data",
+      "icon": "aws.bedrock",
+      "label": "Bedrock",
+      "sublabel": "Nova Lite — AI extraction"
+    }
+  ],
+  "edges": [
+    {
+      "from": "users",
+      "to": "spa",
+      "kind": "sync",
+      "label": "loads"
+    },
+    {
+      "from": "spa",
+      "to": "cf_front",
+      "kind": "sync",
+      "label": "HTTPS"
+    },
+    {
+      "from": "cf_front",
+      "to": "s3_front",
+      "kind": "data",
+      "label": "static assets"
+    },
+    {
+      "from": "spa",
+      "to": "apigw",
+      "kind": "sync",
+      "label": "REST + JWT"
+    },
+    {
+      "from": "apigw",
+      "to": "cognito",
+      "kind": "config",
+      "label": "verify JWT"
+    },
+    {
+      "from": "apigw",
+      "to": "lambda",
+      "kind": "sync"
+    },
+    {
+      "from": "lambda",
+      "to": "ddb",
+      "kind": "data"
+    },
+    {
+      "from": "lambda",
+      "to": "cognito",
+      "kind": "sync",
+      "label": "auth ops"
+    },
+    {
+      "from": "lambda",
+      "to": "s3_img",
+      "kind": "data",
+      "label": "images/receipts"
+    },
+    {
+      "from": "s3_img",
+      "to": "cf_img",
+      "kind": "data",
+      "label": "serve via CDN"
+    },
+    {
+      "from": "lambda",
+      "to": "bedrock",
+      "kind": "sync",
+      "label": "spec extraction"
+    }
+  ],
+  "legend": true,
+  "meta": {
+    "project": "Guitar Collection",
+    "source": "guitarhelp.click",
+    "note": "Generated with VizCharter"
+  }
+}

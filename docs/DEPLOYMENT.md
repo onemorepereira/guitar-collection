@@ -140,36 +140,10 @@ make deploy-all
 
 ### Deployment Pipeline
 
-```
-┌─────────────────────┐
-│  make deploy-all    │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────────────────────────────────────┐
-│ Stage 1: Backend Deployment                        │
-│  • Run: sam build && sam deploy                    │
-│  • Extract CloudFormation outputs                  │
-│  • Save to: .env.backend.outputs                   │
-│  • Generate: .env (frontend environment vars)      │
-└──────────┬──────────────────────────────────────────┘
-           │
-           ▼
-┌─────────────────────────────────────────────────────┐
-│ Stage 2: Frontend Infrastructure                   │
-│  • Deploy: frontend-infrastructure.yaml             │
-│  • Extract CloudFormation outputs                  │
-│  • Save to: .env.frontend.outputs                  │
-└──────────┬──────────────────────────────────────────┘
-           │
-           ▼
-┌─────────────────────────────────────────────────────┐
-│ Stage 3: Frontend Application                      │
-│  • Build: npm run build (uses generated .env)      │
-│  • Upload to S3                                     │
-│  • Invalidate CloudFront cache                     │
-└─────────────────────────────────────────────────────┘
-```
+
+![Deployment Pipeline](diagrams/deployment-pipeline/deployment-pipeline.png)
+
+> `make deploy-all` runs three stages; each stage's CloudFormation outputs feed the next (backend outputs generate the frontend `.env`).
 
 ### Generated Files
 
@@ -538,52 +512,10 @@ aws cloudformation describe-stacks \
 
 ### Data Flow
 
-```
-┌─────────────┐
-│   Browser   │
-└──────┬──────┘
-       │
-       │ HTTPS (guitarhelp.click)
-       ▼
-┌─────────────────────┐
-│ CloudFront (Frontend)│
-└──────┬──────────────┘
-       │
-       │ Origin: S3
-       ▼
-┌─────────────────┐
-│  S3 Frontend    │  (React SPA, HTML/JS/CSS)
-│  Bucket         │
-└─────────────────┘
 
-Browser makes API calls:
+![Request Data Flow](diagrams/system-architecture/system-architecture.png)
 
-┌─────────────┐
-│   Browser   │
-└──────┬──────┘
-       │
-       │ HTTPS (api.guitarhelp.click)
-       │ Authorization: Bearer <JWT>
-       ▼
-┌─────────────────────┐
-│  API Gateway        │
-│  (JWT Authorizer)   │
-└──────┬──────────────┘
-       │
-       │ Invoke Lambda
-       ▼
-┌─────────────────┐       ┌─────────────────┐
-│  Lambda         │──────▶│  DynamoDB       │
-│  (Guitars, etc.)│       │  (Data)         │
-└──────┬──────────┘       └─────────────────┘
-       │
-       │ S3 presigned URLs
-       ▼
-┌─────────────────┐       ┌─────────────────┐
-│  S3 Images      │◀──────│  CloudFront     │
-│  Bucket         │       │  (Images CDN)   │
-└─────────────────┘       └─────────────────┘
-```
+> Static assets are served from the frontend CloudFront/S3 origin; API calls go to `api.guitarhelp.click` with a Bearer JWT, through the Cognito authorizer to the Lambda handlers, which read/write DynamoDB and serve images via the images CDN.
 
 ---
 
