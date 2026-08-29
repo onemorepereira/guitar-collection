@@ -14,6 +14,7 @@ const { BedrockRuntimeClient, ConverseCommand } = require('@aws-sdk/client-bedro
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 const { getItem, updateItem } = require('../../lib/dynamodb');
+const { extractOwnedKey } = require('../../lib/s3Keys');
 const { TABLES } = require('../../config/constants');
 
 // Initialize AWS clients
@@ -28,14 +29,15 @@ const SNS_TOPIC_ARN = process.env.SNS_TEXTRACT_TOPIC_ARN;
 const TEXTRACT_ROLE_ARN = process.env.TEXTRACT_SERVICE_ROLE_ARN;
 
 /**
- * Extract S3 key from CloudFront or S3 URL
+ * Extract S3 key from CloudFront or S3 URL, enforcing that it belongs
+ * to the document owner's prefix (the URL is user-supplied data)
  */
-function extractS3Key(url) {
-  const match = url.match(/\/images\/[^/]+\/[^/]+$/);
-  if (match) {
-    return match[0].substring(1); // Remove leading slash
+function extractS3Key(url, userId) {
+  const key = extractOwnedKey(url, userId);
+  if (!key) {
+    throw new Error(`Could not extract user-owned S3 key from URL: ${url}`);
   }
-  throw new Error(`Could not extract S3 key from URL: ${url}`);
+  return key;
 }
 
 /**
@@ -205,7 +207,7 @@ function getMediaType(contentType) {
 async function processImage(document) {
   const { userId, documentId, url, name } = document;
 
-  const s3Key = extractS3Key(url);
+  const s3Key = extractS3Key(url, userId);
   const { buffer, contentType } = await downloadImageFromS3(s3Key);
   const mediaType = getMediaType(contentType);
 
@@ -346,7 +348,7 @@ async function startExtraction(message) {
 
   if (isPDF) {
     // Start Textract job (async - will complete via SNS)
-    const s3Key = extractS3Key(document.url);
+    const s3Key = extractS3Key(document.url, userId);
     const jobId = await startTextractJob(s3Key, documentId);
 
     // Update status to processing with jobId at top level for GSI

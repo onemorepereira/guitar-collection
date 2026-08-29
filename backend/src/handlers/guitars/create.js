@@ -8,6 +8,7 @@ const { getUserIdFromEvent } = require('../../lib/cognito');
 const { validateGuitar, validateGuitarUpdateFields } = require('../../lib/validation');
 const { sanitizeGuitarData } = require('../../lib/sanitization');
 const { validateCSRF } = require('../../lib/csrf');
+const { assertUrlOwnership } = require('../../lib/s3Keys');
 const response = require('../../lib/response');
 const { handleError } = require('../../lib/errors');
 const { TABLES } = require('../../config/constants');
@@ -28,6 +29,12 @@ async function createGuitar(event) {
 
     // Step 3: Validate business logic
     validateGuitar(data);
+
+    // Step 4: Reject image/receipt URLs pointing into another user's storage
+    for (const image of data.images || []) {
+      assertUrlOwnership(image.url, userId);
+    }
+    assertUrlOwnership(data.privateInfo?.receiptUrl, userId);
 
     // Create guitar record - only include provided fields
     const guitar = {

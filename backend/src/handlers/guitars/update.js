@@ -7,6 +7,7 @@ const { getUserIdFromEvent } = require('../../lib/cognito');
 const { validateGuitarUpdateFields, validatePathParameter } = require('../../lib/validation');
 const { sanitizeGuitarData } = require('../../lib/sanitization');
 const { validateCSRF } = require('../../lib/csrf');
+const { assertUrlOwnership } = require('../../lib/s3Keys');
 const response = require('../../lib/response');
 const { handleError } = require('../../lib/errors');
 const { TABLES } = require('../../config/constants');
@@ -29,6 +30,12 @@ async function updateGuitar(event) {
 
     // Step 2: Sanitize all input (prevents XSS)
     const data = sanitizeGuitarData(filteredData);
+
+    // Step 3: Reject image/receipt URLs pointing into another user's storage
+    for (const image of data.images || []) {
+      assertUrlOwnership(image.url, userId);
+    }
+    assertUrlOwnership(data.privateInfo?.receiptUrl, userId);
 
     // Get existing guitar to verify ownership
     const existingGuitar = await getItem(TABLES.GUITARS, {

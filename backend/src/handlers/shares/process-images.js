@@ -6,6 +6,7 @@
 const AWS = require('aws-sdk');
 const sharp = require('sharp');
 const { updateItem } = require('../../lib/dynamodb');
+const { extractOwnedKey } = require('../../lib/s3Keys');
 const { TABLES } = require('../../config/constants');
 const logger = require('../../lib/logger');
 
@@ -80,7 +81,7 @@ async function processImages(share, guitar) {
 
   for (const image of imagesToProcess) {
     try {
-      const optimized = await processImage(image, shareId);
+      const optimized = await processImage(image, shareId, userId);
       if (optimized) {
         optimizedImages.push(optimized);
       }
@@ -118,17 +119,15 @@ async function processImages(share, guitar) {
  * Process a single image
  * @param {object} image - Image object with url and id
  * @param {string} shareId - Share ID for output path
+ * @param {string} userId - Share owner's user id (source must be theirs)
  * @returns {object} Optimized image metadata
  */
-async function processImage(image, shareId) {
-  // Extract S3 key from CloudFront URL
-  // URL format: https://d3jknizi2nswkn.cloudfront.net/images/userId/filename.jpg
-  const match = image.url.match(/\/images\/(.+)$/);
-  if (!match) {
-    throw new Error(`Invalid image URL format: ${image.url}`);
+async function processImage(image, shareId, userId) {
+  // Extract S3 key from CloudFront URL — only from the owner's own prefix
+  const sourceKey = extractOwnedKey(image.url, userId);
+  if (!sourceKey) {
+    throw new Error(`Image URL is not in the share owner's storage: ${image.url}`);
   }
-
-  const sourceKey = `images/${match[1]}`;
   const outputFilename = `${image.id}.webp`;
   const outputKey = `shared/${shareId}/${outputFilename}`;
 

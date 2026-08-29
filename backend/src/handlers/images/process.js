@@ -20,6 +20,11 @@ async function processUpload(event) {
       throw new ValidationError('key or imageKey is required');
     }
 
+    // The key is client-supplied: only allow the caller's own uploads/ prefix
+    if (typeof key !== 'string' || !key.startsWith(`uploads/${userId}/`)) {
+      throw new ValidationError('key must reference your own uploaded file');
+    }
+
     // Get content type if provided (for validation)
     const contentType = body.contentType || body.fileType;
 
