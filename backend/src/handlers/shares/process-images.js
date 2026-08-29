@@ -3,14 +3,19 @@
  * Optimizes images for public sharing (resizes and converts to WebP)
  */
 
-const AWS = require('aws-sdk');
+const {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+  DeleteObjectsCommand,
+} = require('@aws-sdk/client-s3');
 const sharp = require('sharp');
 const { updateItem } = require('../../lib/dynamodb');
 const { extractOwnedKey } = require('../../lib/s3Keys');
 const { TABLES } = require('../../config/constants');
 const logger = require('../../lib/logger');
 
-const s3 = new AWS.S3();
+const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 const BUCKET_NAME = process.env.S3_BUCKET_IMAGES;
 const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN;
 
@@ -131,14 +136,15 @@ async function processImage(image, shareId, userId) {
   const outputFilename = `${image.id}.webp`;
   const outputKey = `shared/${shareId}/${outputFilename}`;
 
-  // Download original image from S3
-  const sourceObject = await s3.getObject({
+  // Download original image from S3 (v3 Body is a stream → collect to Buffer)
+  const sourceObject = await s3.send(new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: sourceKey,
-  }).promise();
+  }));
+  const sourceBuffer = Buffer.from(await sourceObject.Body.transformToByteArray());
 
   // First pass: resize the image
-  const resizedBuffer = await sharp(sourceObject.Body)
+  const resizedBuffer = await sharp(sourceBuffer)
     .resize({
       width: MAX_WIDTH,
       height: MAX_WIDTH * 2, // Allow 2:1 aspect ratio max
@@ -174,13 +180,13 @@ async function processImage(image, shareId, userId) {
   const metadata = await sharp(processedBuffer).metadata();
 
   // Upload to S3
-  await s3.putObject({
+  await s3.send(new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: outputKey,
     Body: processedBuffer,
     ContentType: 'image/webp',
     CacheControl: 'public, max-age=31536000, immutable',
-  }).promise();
+  }));
 
   // Generate public URL
   const url = CLOUDFRONT_DOMAIN
@@ -206,12 +212,12 @@ async function deleteOptimizedImages(s3Keys) {
     return;
   }
 
-  await s3.deleteObjects({
+  await s3.send(new DeleteObjectsCommand({
     Bucket: BUCKET_NAME,
     Delete: {
       Objects: s3Keys.map(key => ({ Key: key })),
     },
-  }).promise();
+  }));
 }
 
 module.exports = {

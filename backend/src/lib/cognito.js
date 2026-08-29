@@ -2,16 +2,28 @@
  * Cognito utility functions
  */
 
-const AWS = require('aws-sdk');
+const {
+  CognitoIdentityProviderClient,
+  AdminCreateUserCommand,
+  AdminSetUserPasswordCommand,
+  AdminInitiateAuthCommand,
+  AdminGetUserCommand,
+  AdminUpdateUserAttributesCommand,
+  ForgotPasswordCommand,
+  ConfirmForgotPasswordCommand,
+} = require('@aws-sdk/client-cognito-identity-provider');
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
 const { AuthenticationError, ConflictError } = require('./errors');
 
-const cognito = new AWS.CognitoIdentityServiceProvider();
-
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID;
 const CLIENT_ID = process.env.COGNITO_CLIENT_ID;
 const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
+
+const cognito = new CognitoIdentityProviderClient({ region: AWS_REGION });
+
+// v3 exceptions surface the type via error.name; older code checked error.code
+const errorType = (error) => error.name || error.code;
 
 // JWKS client for Cognito public keys
 const client = jwksClient({
@@ -52,7 +64,7 @@ async function registerUser(email, password, name) {
       TemporaryPassword: password,
     };
 
-    const result = await cognito.adminCreateUser(params).promise();
+    const result = await cognito.send(new AdminCreateUserCommand(params));
 
     // Set permanent password
     const passwordParams = {
@@ -62,7 +74,7 @@ async function registerUser(email, password, name) {
       Permanent: true,
     };
 
-    await cognito.adminSetUserPassword(passwordParams).promise();
+    await cognito.send(new AdminSetUserPasswordCommand(passwordParams));
 
     return {
       userId: result.User.Username,
@@ -70,7 +82,7 @@ async function registerUser(email, password, name) {
       name: name,
     };
   } catch (error) {
-    if (error.code === 'UsernameExistsException') {
+    if (errorType(error) === 'UsernameExistsException') {
       throw new ConflictError('User already exists');
     }
     throw error;
@@ -95,7 +107,7 @@ async function authenticateUser(email, password) {
       },
     };
 
-    const result = await cognito.adminInitiateAuth(params).promise();
+    const result = await cognito.send(new AdminInitiateAuthCommand(params));
 
     return {
       accessToken: result.AuthenticationResult.AccessToken,
@@ -104,7 +116,7 @@ async function authenticateUser(email, password) {
       expiresIn: result.AuthenticationResult.ExpiresIn,
     };
   } catch (error) {
-    if (error.code === 'NotAuthorizedException' || error.code === 'UserNotFoundException') {
+    if (errorType(error) === 'NotAuthorizedException' || errorType(error) === 'UserNotFoundException') {
       throw new AuthenticationError('Invalid email or password');
     }
     throw error;
@@ -127,7 +139,7 @@ async function refreshTokens(refreshToken) {
       },
     };
 
-    const result = await cognito.adminInitiateAuth(params).promise();
+    const result = await cognito.send(new AdminInitiateAuthCommand(params));
 
     return {
       accessToken: result.AuthenticationResult.AccessToken,
@@ -135,7 +147,7 @@ async function refreshTokens(refreshToken) {
       expiresIn: result.AuthenticationResult.ExpiresIn,
     };
   } catch (error) {
-    if (error.code === 'NotAuthorizedException') {
+    if (errorType(error) === 'NotAuthorizedException') {
       throw new AuthenticationError('Invalid refresh token');
     }
     throw error;
@@ -153,7 +165,7 @@ async function getUserDetails(userId) {
     Username: userId,
   };
 
-  const result = await cognito.adminGetUser(params).promise();
+  const result = await cognito.send(new AdminGetUserCommand(params));
 
   const attributes = {};
   result.UserAttributes.forEach(attr => {
@@ -188,7 +200,7 @@ async function updateUserAttributes(userId, attributes) {
     UserAttributes: userAttributes,
   };
 
-  await cognito.adminUpdateUserAttributes(params).promise();
+  await cognito.send(new AdminUpdateUserAttributesCommand(params));
 }
 
 /**
@@ -202,7 +214,7 @@ async function forgotPassword(email) {
     Username: email,
   };
 
-  const result = await cognito.forgotPassword(params).promise();
+  const result = await cognito.send(new ForgotPasswordCommand(params));
 
   return {
     destination: result.CodeDeliveryDetails.Destination,
@@ -224,7 +236,7 @@ async function confirmForgotPassword(email, code, newPassword) {
     Password: newPassword,
   };
 
-  await cognito.confirmForgotPassword(params).promise();
+  await cognito.send(new ConfirmForgotPasswordCommand(params));
 }
 
 /**
