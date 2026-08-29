@@ -72,7 +72,7 @@ export const authService = {
   },
 
   // Get current user (from token)
-  async getCurrentUser(): Promise<User | null> {
+  async getCurrentUser(retriesLeft = 1): Promise<User | null> {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) {
       return null;
@@ -84,11 +84,14 @@ export const authService = {
       });
 
       if (!response.ok) {
-        // Token might be expired, try to refresh
-        const refreshed = await this.refreshToken();
-        if (refreshed) {
-          // Retry with new token
-          return await this.getCurrentUser();
+        // Only attempt a refresh+retry on auth failures, and only a bounded
+        // number of times, so a persistently failing profile endpoint (5xx)
+        // can't spin refresh→retry forever.
+        if (response.status === 401 && retriesLeft > 0) {
+          const refreshed = await this.refreshToken();
+          if (refreshed) {
+            return await this.getCurrentUser(retriesLeft - 1);
+          }
         }
         throw new Error('Failed to fetch user');
       }
@@ -188,6 +191,55 @@ export const authService = {
   // Get token
   getToken(): string | null {
     return localStorage.getItem(TOKEN_KEY);
+  },
+
+  /**
+   * Authenticated fetch with automatic 401 recovery.
+   *
+   * Attaches the stored JWT, and on a 401 attempts a single token refresh
+   * and one retry. If the refresh fails (or the retry still 401s), the
+   * session is cleared, an `auth:logout` event is dispatched (so the app
+   * can redirect to /login), and the error is surfaced to the caller.
+   */
+  async authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+      this.notifyLoggedOut();
+      throw new Error('Not authenticated');
+    }
+
+    let response = await authenticatedRequest(url, token, options);
+
+    if (response.status === 401) {
+      const refreshed = await this.refreshToken();
+      if (!refreshed) {
+        this.notifyLoggedOut();
+        throw new Error('Session expired');
+      }
+
+      const newToken = localStorage.getItem(TOKEN_KEY);
+      if (!newToken) {
+        this.notifyLoggedOut();
+        throw new Error('Session expired');
+      }
+
+      response = await authenticatedRequest(url, newToken, options);
+
+      if (response.status === 401) {
+        await this.logout();
+        this.notifyLoggedOut();
+        throw new Error('Session expired');
+      }
+    }
+
+    return response;
+  },
+
+  // Notify the app that the session ended so it can redirect to login.
+  notifyLoggedOut(): void {
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new CustomEvent('auth:logout'));
+    }
   },
 
   // Update user name
