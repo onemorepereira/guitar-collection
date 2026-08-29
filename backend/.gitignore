@@ -4,7 +4,7 @@ samconfig.toml.local
 
 # Dependencies
 node_modules/
-package-lock.json
+# package-lock.json is committed for reproducible installs (see src/)
 
 # Environment files
 env.json

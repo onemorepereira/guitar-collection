@@ -17,7 +17,15 @@ const {
 const { NotFoundError } = require('./errors');
 
 const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
-const dynamodb = DynamoDBDocumentClient.from(client);
+// v2's DocumentClient silently dropped undefined values; v3 throws unless told
+// to remove them. Preserve the v2 behavior so items with optional/undefined
+// fields (e.g. provenance reports) still write.
+const dynamodb = DynamoDBDocumentClient.from(client, {
+  marshallOptions: {
+    removeUndefinedValues: true,
+    convertClassInstanceToMap: true,
+  },
+});
 
 /**
  * Get an item from DynamoDB
