@@ -50,6 +50,6 @@ exports.handler = async (event) => {
     return response.notFound('Route not found');
   } catch (error) {
     console.error('Provenance handler error:', error);
-    return response.error('Internal server error');
+    return response.internalError('Internal server error');
   }
 };

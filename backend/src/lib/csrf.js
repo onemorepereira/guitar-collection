@@ -50,14 +50,21 @@ function validateCSRFHeaders(event) {
     throw new AuthorizationError('Missing required security header');
   }
 
-  // 2. Validate Origin header
+  // 2. Validate Origin header (mandatory for state-changing requests).
+  // A missing Origin must not be treated as trusted — require it and
+  // fall back to Referer only when the client omitted Origin entirely.
   const origin = normalizedHeaders['origin'];
-  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
-    throw new AuthorizationError(`Invalid origin: ${origin}`);
+  const referer = normalizedHeaders['referer'];
+
+  if (origin) {
+    if (!ALLOWED_ORIGINS.includes(origin)) {
+      throw new AuthorizationError(`Invalid origin: ${origin}`);
+    }
+  } else if (!referer) {
+    throw new AuthorizationError('Missing Origin header');
   }
 
   // 3. Validate Referer header (backup check)
-  const referer = normalizedHeaders['referer'];
   if (referer) {
     const isValidReferer = ALLOWED_ORIGINS.some(allowedOrigin =>
       referer.startsWith(allowedOrigin)

@@ -220,7 +220,7 @@ Generate a formal, authoritative overview paragraph for this guitar:
 - Fretboard: ${context.coreSpecs.fretboardMaterial || 'Not specified'}
 - Pickups: ${context.coreSpecs.pickupConfiguration || 'Not specified'}
 
-Context from owner notes: ${JSON.stringify(context.notes)}
+Context from owner notes: ${JSON.stringify(context.notes).substring(0, 5000)}
 ${docContext}
 
 Write a single paragraph (3-5 sentences) that:
