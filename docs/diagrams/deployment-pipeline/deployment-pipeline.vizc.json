@@ -1,0 +1,69 @@
+{
+  "family": "architecture",
+  "title": "Deployment Pipeline",
+  "subtitle": "make deploy-all — self-generating, three stages",
+  "theme": "aws",
+  "direction": "RIGHT",
+  "nodes": [
+    {
+      "id": "trigger",
+      "icon": "aws.command-line-interface",
+      "label": "make deploy-all",
+      "sublabel": "one command"
+    },
+    {
+      "id": "s1",
+      "icon": "aws.cloudformation",
+      "label": "Stage 1 · Backend",
+      "sublabel": "sam build && sam deploy → extract stack outputs → generate .env"
+    },
+    {
+      "id": "s2",
+      "icon": "aws.cloudformation",
+      "label": "Stage 2 · Frontend Infra",
+      "sublabel": "deploy frontend-infrastructure.yaml → extract outputs"
+    },
+    {
+      "id": "s3",
+      "icon": "aws.simple-storage-service",
+      "label": "Stage 3 · Frontend App",
+      "sublabel": "vite build (uses .env) → S3 sync --delete → CloudFront invalidation"
+    },
+    {
+      "id": "live",
+      "icon": "aws.cloudfront",
+      "label": "Live",
+      "sublabel": "guitarhelp.click"
+    }
+  ],
+  "edges": [
+    {
+      "from": "trigger",
+      "to": "s1",
+      "kind": "sync"
+    },
+    {
+      "from": "s1",
+      "to": "s2",
+      "kind": "data",
+      "label": "outputs → .env"
+    },
+    {
+      "from": "s2",
+      "to": "s3",
+      "kind": "data",
+      "label": "outputs"
+    },
+    {
+      "from": "s3",
+      "to": "live",
+      "kind": "sync",
+      "label": "invalidate + serve"
+    }
+  ],
+  "legend": true,
+  "meta": {
+    "project": "Guitar Collection",
+    "note": "Generated with VizCharter"
+  }
+}
