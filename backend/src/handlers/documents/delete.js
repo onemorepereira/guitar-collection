@@ -6,6 +6,7 @@ const { getItem, deleteItem, query, updateItem } = require('../../lib/dynamodb')
 const { getUserIdFromEvent } = require('../../lib/cognito');
 const { validateCSRF } = require('../../lib/csrf');
 const { deleteImages } = require('../../lib/s3');
+const { extractOwnedKey } = require('../../lib/s3Keys');
 const response = require('../../lib/response');
 const { handleError } = require('../../lib/errors');
 const { TABLES } = require('../../config/constants');
@@ -56,20 +57,11 @@ async function deleteDocument(event) {
       }
     }
 
-    // Extract S3 key from URL for deletion
-    // URL format: https://d3jknizi2nswkn.cloudfront.net/images/userId/filename.ext
-    // Extract: images/userId/filename.ext
+    // Extract S3 key from URL for deletion — only if it belongs to this user
     const s3Keys = [];
-    if (document.url) {
-      try {
-        const url = new URL(document.url);
-        const pathParts = url.pathname.split('/').filter(Boolean);
-        if (pathParts.length >= 3) {
-          s3Keys.push(pathParts.join('/'));
-        }
-      } catch (err) {
-        console.error('Error parsing document URL:', err);
-      }
+    const documentKey = extractOwnedKey(document.url, userId);
+    if (documentKey) {
+      s3Keys.push(documentKey);
     }
 
     // Delete from S3 if we have keys

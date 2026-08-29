@@ -7,6 +7,7 @@ const { getUserIdFromEvent } = require('../../lib/cognito');
 const { validatePathParameter } = require('../../lib/validation');
 const { deleteImages } = require('../../lib/s3');
 const { validateCSRF } = require('../../lib/csrf');
+const { collectGuitarImageKeys } = require('../../lib/s3Keys');
 const response = require('../../lib/response');
 const { handleError } = require('../../lib/errors');
 const { TABLES } = require('../../config/constants');
@@ -41,34 +42,21 @@ async function deleteGuitar(event) {
       return response.notFound('Guitar not found');
     }
 
-    // Delete associated images from S3
-    // Extract S3 keys from image URLs
-    const imageKeys = [];
-
-    // Extract keys from guitar images
-    if (guitar.images && guitar.images.length > 0) {
-      for (const image of guitar.images) {
-        if (image.url) {
-          // Extract S3 key from CloudFront URL
-          // URL format: https://d3jknizi2nswkn.cloudfront.net/images/userId/filename.jpg
-          const match = image.url.match(/\/images\/.+$/);
-          if (match) {
-            imageKeys.push(match[0].substring(1)); // Remove leading slash
-          }
-        }
-      }
-    }
-
-    // Extract key from receipt URL if it exists
-    if (guitar.privateInfo?.receiptUrl) {
-      const match = guitar.privateInfo.receiptUrl.match(/\/images\/.+$/);
-      if (match) {
-        imageKeys.push(match[0].substring(1)); // Remove leading slash
-      }
-    }
+    // Delete associated images from S3 — only keys under this user's prefix
+    const imageKeys = collectGuitarImageKeys(guitar, userId);
 
     if (imageKeys.length > 0) {
-      await deleteImages(imageKeys);
+      try {
+        await deleteImages(imageKeys);
+      } catch (s3Error) {
+        // Don't let S3 cleanup failure block deleting the record;
+        // orphaned objects are recoverable, a stuck delete is not
+        console.error('Failed to delete guitar images from S3', {
+          guitarId,
+          imageCount: imageKeys.length,
+          error: s3Error.message,
+        });
+      }
     }
 
     // Remove this guitar from any documents' assignedGuitars arrays

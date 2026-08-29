@@ -7,6 +7,7 @@ const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const { putItem } = require('../../lib/dynamodb');
 const { getUserIdFromEvent } = require('../../lib/cognito');
 const { validateCSRF } = require('../../lib/csrf');
+const { assertUrlOwnership } = require('../../lib/s3Keys');
 const response = require('../../lib/response');
 const { handleError } = require('../../lib/errors');
 const { TABLES } = require('../../config/constants');
@@ -31,6 +32,9 @@ async function createDocument(event) {
     if (!['pdf', 'image'].includes(body.type)) {
       return response.badRequest('Invalid type. Must be either "pdf" or "image"');
     }
+
+    // Reject URLs pointing into another user's storage prefix
+    assertUrlOwnership(body.url, userId);
 
     // Create document record
     const document = {
