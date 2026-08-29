@@ -72,7 +72,7 @@ Resources:
     Type: AWS::CloudFront::ResponseHeadersPolicy
     Properties:
       ResponseHeadersPolicyConfig:
-        Name: !Sub '${BucketPrefix}-security-headers'
+        Name: !Sub '${BucketPrefix}-frontend-security-headers'
         Comment: Security headers for the frontend SPA
         SecurityHeadersConfig:
           StrictTransportSecurity:
