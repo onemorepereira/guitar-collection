@@ -1,16 +1,35 @@
 /**
- * S3 utility functions
+ * S3 utility functions (AWS SDK v3)
  */
 
-const AWS = require('aws-sdk');
+const {
+  S3Client,
+  PutObjectCommand,
+  HeadObjectCommand,
+  GetObjectCommand,
+  CopyObjectCommand,
+  DeleteObjectCommand,
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
+} = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { v4: uuidv4 } = require('uuid');
 const { validateFileSignature } = require('./fileValidation');
 const { ValidationError } = require('./errors');
 
-const s3 = new AWS.S3();
+const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
 const BUCKET_NAME = process.env.S3_BUCKET_IMAGES;
 const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN;
+
+// A missing object surfaces as one of these on HeadObject in v3.
+function isNotFound(error) {
+  return (
+    error.name === 'NotFound' ||
+    error.name === 'NotFoundException' ||
+    error.$metadata?.httpStatusCode === 404
+  );
+}
 
 /**
  * Generate a presigned URL for uploading to S3
@@ -24,16 +43,15 @@ async function generateUploadUrl(userId, fileName, contentType = 'image/jpeg', m
   const fileExtension = fileName.split('.').pop();
   const key = `uploads/${userId}/${uuidv4()}.${fileExtension}`;
 
-  const params = {
+  const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
     ContentType: contentType,
     CacheControl: 'public, max-age=31536000, immutable', // Cache for 1 year
-    Expires: 300, // URL expires in 5 minutes
     // Note: File size limit is enforced on the client side and during processing
-  };
+  });
 
-  const uploadUrl = await s3.getSignedUrlPromise('putObject', params);
+  const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 }); // 5 minutes
 
   return {
     uploadUrl,
@@ -57,30 +75,33 @@ async function moveUploadedFile(sourceKey, userId, contentType = null) {
 
   try {
     // Get file metadata and first few bytes for validation
-    const headResponse = await s3.headObject({
+    const headResponse = await s3.send(new HeadObjectCommand({
       Bucket: BUCKET_NAME,
       Key: sourceKey,
-    }).promise();
+    }));
 
     // Get declared content type from S3 metadata or parameter
     const declaredContentType = contentType || headResponse.ContentType;
 
     // Read first 12 bytes of file (enough for all signature checks including WebP)
-    const dataResponse = await s3.getObject({
+    const dataResponse = await s3.send(new GetObjectCommand({
       Bucket: BUCKET_NAME,
       Key: sourceKey,
       Range: 'bytes=0-11', // First 12 bytes
-    }).promise();
+    }));
+
+    // v3 returns Body as a stream; collect it into a Buffer for validation
+    const fileBytes = Buffer.from(await dataResponse.Body.transformToByteArray());
 
     // Validate file signature
-    const validation = validateFileSignature(dataResponse.Body, declaredContentType);
+    const validation = validateFileSignature(fileBytes, declaredContentType);
 
     if (!validation.valid) {
       // Delete invalid file
-      await s3.deleteObject({
+      await s3.send(new DeleteObjectCommand({
         Bucket: BUCKET_NAME,
         Key: sourceKey,
-      }).promise();
+      }));
 
       throw new ValidationError(
         `File validation failed: ${validation.error}`,
@@ -94,20 +115,20 @@ async function moveUploadedFile(sourceKey, userId, contentType = null) {
     // File is valid, proceed with move
 
     // Copy object to permanent location
-    await s3.copyObject({
+    await s3.send(new CopyObjectCommand({
       Bucket: BUCKET_NAME,
       CopySource: `${BUCKET_NAME}/${sourceKey}`,
       Key: destinationKey,
       ContentType: validation.detectedType, // Use validated content type
       CacheControl: 'public, max-age=31536000, immutable', // Cache for 1 year
       MetadataDirective: 'REPLACE',
-    }).promise();
+    }));
 
     // Delete original from uploads/
-    await s3.deleteObject({
+    await s3.send(new DeleteObjectCommand({
       Bucket: BUCKET_NAME,
       Key: sourceKey,
-    }).promise();
+    }));
 
     return destinationKey;
   } catch (error) {
@@ -118,10 +139,10 @@ async function moveUploadedFile(sourceKey, userId, contentType = null) {
 
     // For other errors, try to clean up and rethrow
     try {
-      await s3.deleteObject({
+      await s3.send(new DeleteObjectCommand({
         Bucket: BUCKET_NAME,
         Key: sourceKey,
-      }).promise();
+      }));
     } catch (deleteError) {
       console.error('Failed to delete invalid file:', deleteError);
     }
@@ -148,10 +169,10 @@ function getImageUrl(key) {
  * @returns {Promise<void>}
  */
 async function deleteImage(key) {
-  await s3.deleteObject({
+  await s3.send(new DeleteObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
-  }).promise();
+  }));
 }
 
 /**
@@ -164,12 +185,12 @@ async function deleteImages(keys) {
     return;
   }
 
-  await s3.deleteObjects({
+  await s3.send(new DeleteObjectsCommand({
     Bucket: BUCKET_NAME,
     Delete: {
       Objects: keys.map(key => ({ Key: key })),
     },
-  }).promise();
+  }));
 }
 
 /**
@@ -179,13 +200,13 @@ async function deleteImages(keys) {
  */
 async function objectExists(key) {
   try {
-    await s3.headObject({
+    await s3.send(new HeadObjectCommand({
       Bucket: BUCKET_NAME,
       Key: key,
-    }).promise();
+    }));
     return true;
   } catch (error) {
-    if (error.code === 'NotFound') {
+    if (isNotFound(error)) {
       return false;
     }
     throw error;
@@ -198,10 +219,10 @@ async function objectExists(key) {
  * @returns {Promise<object>} Object metadata
  */
 async function getObjectMetadata(key) {
-  const result = await s3.headObject({
+  const result = await s3.send(new HeadObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
-  }).promise();
+  }));
 
   return {
     contentType: result.ContentType,
@@ -217,10 +238,10 @@ async function getObjectMetadata(key) {
  * @returns {Promise<array>} Array of objects
  */
 async function listObjects(prefix) {
-  const result = await s3.listObjectsV2({
+  const result = await s3.send(new ListObjectsV2Command({
     Bucket: BUCKET_NAME,
     Prefix: prefix,
-  }).promise();
+  }));
 
   return result.Contents || [];
 }

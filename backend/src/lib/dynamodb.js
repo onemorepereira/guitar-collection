@@ -1,11 +1,23 @@
 /**
- * DynamoDB utility functions
+ * DynamoDB utility functions (AWS SDK v3)
  */
 
-const AWS = require('aws-sdk');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const {
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+  UpdateCommand,
+  DeleteCommand,
+  QueryCommand,
+  ScanCommand,
+  BatchGetCommand,
+  BatchWriteCommand,
+} = require('@aws-sdk/lib-dynamodb');
 const { NotFoundError } = require('./errors');
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const dynamodb = DynamoDBDocumentClient.from(client);
 
 /**
  * Get an item from DynamoDB
@@ -14,12 +26,10 @@ const dynamodb = new AWS.DynamoDB.DocumentClient();
  * @returns {Promise<object>} Item data
  */
 async function getItem(tableName, key) {
-  const params = {
+  const result = await dynamodb.send(new GetCommand({
     TableName: tableName,
     Key: key,
-  };
-
-  const result = await dynamodb.get(params).promise();
+  }));
 
   if (!result.Item) {
     throw new NotFoundError('Item not found');
@@ -36,13 +46,11 @@ async function getItem(tableName, key) {
  * @returns {Promise<object>} Created item
  */
 async function putItem(tableName, item, options = {}) {
-  const params = {
+  await dynamodb.send(new PutCommand({
     TableName: tableName,
     Item: item,
     ...options,
-  };
-
-  await dynamodb.put(params).promise();
+  }));
   return item;
 }
 
@@ -67,16 +75,14 @@ async function updateItem(tableName, key, updates) {
     expressionAttributeValues[attrValue] = updates[field];
   });
 
-  const params = {
+  const result = await dynamodb.send(new UpdateCommand({
     TableName: tableName,
     Key: key,
     UpdateExpression: `SET ${updateExpressionParts.join(', ')}`,
     ExpressionAttributeNames: expressionAttributeNames,
     ExpressionAttributeValues: expressionAttributeValues,
     ReturnValues: 'ALL_NEW',
-  };
-
-  const result = await dynamodb.update(params).promise();
+  }));
   return result.Attributes;
 }
 
@@ -87,12 +93,10 @@ async function updateItem(tableName, key, updates) {
  * @returns {Promise<void>}
  */
 async function deleteItem(tableName, key) {
-  const params = {
+  await dynamodb.send(new DeleteCommand({
     TableName: tableName,
     Key: key,
-  };
-
-  await dynamodb.delete(params).promise();
+  }));
 }
 
 /**
@@ -104,14 +108,12 @@ async function deleteItem(tableName, key) {
  * @returns {Promise<array>} Query results
  */
 async function queryItems(tableName, keyConditionExpression, expressionAttributeValues, options = {}) {
-  const params = {
+  const result = await dynamodb.send(new QueryCommand({
     TableName: tableName,
     KeyConditionExpression: keyConditionExpression,
     ExpressionAttributeValues: expressionAttributeValues,
     ...options,
-  };
-
-  const result = await dynamodb.query(params).promise();
+  }));
   return result.Items;
 }
 
@@ -122,12 +124,10 @@ async function queryItems(tableName, keyConditionExpression, expressionAttribute
  * @returns {Promise<array>} Scan results
  */
 async function scanItems(tableName, options = {}) {
-  const params = {
+  const result = await dynamodb.send(new ScanCommand({
     TableName: tableName,
     ...options,
-  };
-
-  const result = await dynamodb.scan(params).promise();
+  }));
   return result.Items;
 }
 
@@ -158,15 +158,13 @@ async function batchGetItems(tableName, keys) {
     return [];
   }
 
-  const params = {
+  const result = await dynamodb.send(new BatchGetCommand({
     RequestItems: {
       [tableName]: {
         Keys: keys,
       },
     },
-  };
-
-  const result = await dynamodb.batchGet(params).promise();
+  }));
   return result.Responses[tableName] || [];
 }
 
@@ -188,7 +186,7 @@ async function batchWriteItems(tableName, items) {
   }
 
   for (const batch of batches) {
-    const params = {
+    await dynamodb.send(new BatchWriteCommand({
       RequestItems: {
         [tableName]: batch.map(item => ({
           PutRequest: {
@@ -196,9 +194,7 @@ async function batchWriteItems(tableName, items) {
           },
         })),
       },
-    };
-
-    await dynamodb.batchWrite(params).promise();
+    }));
   }
 }
 
