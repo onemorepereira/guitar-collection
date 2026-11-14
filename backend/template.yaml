@@ -748,12 +748,6 @@ Resources:
                 - s3:GetObject
               Resource:
                 - !Sub ${ImagesBucket.Arn}/images/*
-            # S3 write access for large extracted content
-            - Effect: Allow
-              Action:
-                - s3:PutObject
-              Resource:
-                - !Sub ${ImagesBucket.Arn}/extracted/*
             # Textract permissions
             - Effect: Allow
               Action:
