@@ -5,6 +5,9 @@
 
 const { getProfile, updateProfile } = require('./profile');
 const { updateName } = require('./update-name');
+const { requestDeletion } = require('./deletion-start');
+const { startExport } = require('./export-start');
+const { exportStatus } = require('./export-status');
 const response = require('../../lib/response');
 const logger = require('../../lib/logger');
 
@@ -35,6 +38,18 @@ exports.handler = async (event) => {
 
     if (path === '/user/name' && method === 'PUT') {
       return await updateName(event);
+    }
+
+    if (path === '/user/deletion' && method === 'POST') {
+      return await requestDeletion(event);
+    }
+
+    if (path === '/user/export' && method === 'POST') {
+      return await startExport(event);
+    }
+
+    if (path === '/user/export' && method === 'GET') {
+      return await exportStatus(event);
     }
 
     // Unknown route

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, RefreshCw, LogIn, UserPlus } from 'lucide-react';
 import { PickIcon } from './PickIcon';
 import { guitarService } from '../services/guitarService';
@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 export const Landing = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const accountDeleting = new URLSearchParams(useLocation().search).get('account') === 'deleting';
   const [guitar, setGuitar] = useState<Guitar | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -70,6 +71,12 @@ export const Landing = () => {
           </div>
         </div>
       </header>
+
+      {accountDeleting && (
+        <div role="status" className="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 text-sm text-center px-4 py-3">
+          Your account is being deleted. This usually takes a few minutes.
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">

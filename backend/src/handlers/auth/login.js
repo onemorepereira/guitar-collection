@@ -2,10 +2,12 @@
  * User login handler
  */
 
+const jwt = require('jsonwebtoken');
 const { authenticateUser } = require('../../lib/cognito');
+const { isDeleting } = require('../../lib/accountJobs');
 const { validateLogin, sanitizeObject } = require('../../lib/validation');
 const response = require('../../lib/response');
-const { handleError } = require('../../lib/errors');
+const { handleError, CodedError } = require('../../lib/errors');
 
 async function login(event) {
   try {
@@ -17,6 +19,13 @@ async function login(event) {
 
     // Authenticate with Cognito
     const tokens = await authenticateUser(data.email, data.password);
+
+    // An account being deleted can't sign in again (no tokens issued). The ID
+    // token was just issued by Cognito, so decoding (not verifying) is enough.
+    const sub = jwt.decode(tokens.idToken)?.sub;
+    if (await isDeleting(sub)) {
+      throw new CodedError(403, 'Your account is being deleted.', 'ACCOUNT_DELETION_IN_PROGRESS');
+    }
 
     return response.ok({
       message: 'Login successful',

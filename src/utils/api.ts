@@ -37,6 +37,27 @@ export async function apiRequest(url: string, options: RequestInit = {}): Promis
   });
 }
 
+/** Error code the API returns (401/403) once an account deletion is in progress. */
+export const ACCOUNT_DELETION_CODE = 'ACCOUNT_DELETION_IN_PROGRESS';
+
+let onAccountDeleting: (() => void) | null = null;
+
+/** Register the app-wide reaction to a deleting account (set by authService). */
+export function setOnAccountDeleting(handler: (() => void) | null): void {
+  onAccountDeleting = handler;
+}
+
+/** True if the response says this account is being deleted (body not consumed). */
+export async function isAccountDeletingResponse(response: Response): Promise<boolean> {
+  if (response.status !== 401 && response.status !== 403) return false;
+  try {
+    const body = await response.clone().json();
+    return body?.code === ACCOUNT_DELETION_CODE;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Make an authenticated API request
  *
@@ -55,10 +76,18 @@ export async function authenticatedRequest(
     ...options.headers,
   };
 
-  return apiRequest(url, {
+  const response = await apiRequest(url, {
     ...options,
     headers,
   });
+
+  // Single detection point for every authenticated call: once the account is
+  // being deleted, clear local data and leave (handler set by authService).
+  if (onAccountDeleting && (await isAccountDeletingResponse(response))) {
+    onAccountDeleting();
+  }
+
+  return response;
 }
 
 /**

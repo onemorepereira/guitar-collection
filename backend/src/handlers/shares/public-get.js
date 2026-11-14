@@ -3,6 +3,7 @@
  */
 
 const { queryByIndex, updateItem, getItem } = require('../../lib/dynamodb');
+const { isDeleting } = require('../../lib/accountJobs');
 const { NotFoundError } = require('../../lib/errors');
 const response = require('../../lib/response');
 const { handleError } = require('../../lib/errors');
@@ -112,8 +113,8 @@ async function getPublicShare(event) {
 
     const share = shares[0];
 
-    // Check if share is active
-    if (!share.isActive) {
+    // Check if share is active, and that its owner isn't being deleted
+    if (!share.isActive || await isDeleting(share.userId)) {
       return response.notFound('Share not found');
     }
 
@@ -214,8 +215,12 @@ async function updateViewAnalytics(share, analytics) {
       viewCount: (share.viewCount || 0) + 1,
       views,
       lastViewedAt: analytics.viewedAt,
-    }
-  );
+    },
+    // Never recreate a share deleted while this view was being recorded
+    { condition: 'attribute_exists(shareId)' }
+  ).catch((error) => {
+    if (error.name !== 'ConditionalCheckFailedException') throw error;
+  });
 }
 
 /**

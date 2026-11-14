@@ -11,10 +11,13 @@ const {
   AdminUpdateUserAttributesCommand,
   ForgotPasswordCommand,
   ConfirmForgotPasswordCommand,
+  AdminUserGlobalSignOutCommand,
+  AdminDeleteUserCommand,
 } = require('@aws-sdk/client-cognito-identity-provider');
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
-const { AuthenticationError, ConflictError } = require('./errors');
+const { AuthenticationError, ConflictError, CodedError } = require('./errors');
+const { isDeleting } = require('./accountJobs');
 
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID;
 const CLIENT_ID = process.env.COGNITO_CLIENT_ID;
@@ -300,7 +303,27 @@ async function verifyJWT(token) {
  * @param {object} event - Lambda event
  * @returns {Promise<string>} User ID
  */
-async function getUserIdFromEvent(event) {
+async function getUserIdFromEvent(event, { allowDeleting = false } = {}) {
+  const userId = await resolveUserId(event);
+
+  if (!allowDeleting) {
+    let deleting;
+    try {
+      deleting = await isDeleting(userId);
+    } catch (error) {
+      // Fail closed: never treat an unknown as "not deleting"
+      console.error('Tombstone check failed:', error.name || error.message);
+      throw new CodedError(503, 'Please try again', 'SERVICE_UNAVAILABLE');
+    }
+    if (deleting) {
+      throw new CodedError(401, 'Account deletion in progress', 'ACCOUNT_DELETION_IN_PROGRESS');
+    }
+  }
+
+  return userId;
+}
+
+async function resolveUserId(event) {
   // First, try to extract from API Gateway authorizer (primary path)
   // For HTTP API with JWT authorizer
   if (event.requestContext?.authorizer?.jwt?.claims?.sub) {
@@ -346,7 +369,78 @@ async function getUserIdFromEvent(event) {
   throw new AuthenticationError('Unable to extract user ID from token');
 }
 
+/**
+ * Re-verify the caller's password before a sensitive action (export, deletion).
+ * Calls AdminInitiateAuth directly (authenticateUser collapses every
+ * NotAuthorizedException into one generic error). Tokens returned are discarded.
+ * The password is trimmed exactly like login's sanitizeObject does.
+ *
+ * Lockout: Cognito answers attempts during a lockout with "Password attempts
+ * exceeded" (Cognito developer guide, authentication lockout behavior). If that
+ * wording changes, users see "wrong password" instead of an error.
+ */
+async function verifyPassword(userId, password) {
+  if (typeof password !== 'string' || password.trim() === '') {
+    throw new CodedError(400, 'Password is required', 'PASSWORD_REQUIRED');
+  }
+  try {
+    await cognito.send(new AdminInitiateAuthCommand({
+      UserPoolId: USER_POOL_ID,
+      ClientId: CLIENT_ID,
+      AuthFlow: 'ADMIN_USER_PASSWORD_AUTH',
+      AuthParameters: { USERNAME: userId, PASSWORD: password.trim() },
+    }));
+  } catch (error) {
+    const type = errorType(error);
+    if (type === 'NotAuthorizedException' && /Password attempts exceeded/i.test(error.message || '')) {
+      throw new CodedError(429, 'Too many attempts. Please wait a few minutes and try again.', 'TOO_MANY_ATTEMPTS');
+    }
+    if (type === 'NotAuthorizedException' || type === 'UserNotFoundException') {
+      throw new CodedError(401, "That password isn't right.", 'WRONG_PASSWORD');
+    }
+    console.error('Password verification failed', { type });
+    throw new CodedError(503, 'Please try again', 'SERVICE_UNAVAILABLE');
+  }
+}
+
+/** Revoke the user's refresh tokens (already-issued ID tokens stay valid until expiry). */
+async function globalSignOut(userId) {
+  try {
+    await cognito.send(new AdminUserGlobalSignOutCommand({ UserPoolId: USER_POOL_ID, Username: userId }));
+  } catch (error) {
+    if (errorType(error) === 'UserNotFoundException') return;
+    throw error;
+  }
+}
+
+/** Delete the Cognito user; an already-deleted user counts as success. */
+async function deleteCognitoUser(userId) {
+  try {
+    await cognito.send(new AdminDeleteUserCommand({ UserPoolId: USER_POOL_ID, Username: userId }));
+  } catch (error) {
+    if (errorType(error) === 'UserNotFoundException') return;
+    throw error;
+  }
+}
+
+/** Account attributes for the data export. */
+async function getCognitoUser(userId) {
+  const result = await cognito.send(new AdminGetUserCommand({ UserPoolId: USER_POOL_ID, Username: userId }));
+  const attrs = Object.fromEntries((result.UserAttributes || []).map((a) => [a.Name, a.Value]));
+  return {
+    userId,
+    email: attrs.email,
+    emailVerified: attrs.email_verified === 'true',
+    name: attrs.name,
+    createdAt: result.UserCreateDate ? new Date(result.UserCreateDate).toISOString() : undefined,
+  };
+}
+
 module.exports = {
+  verifyPassword,
+  globalSignOut,
+  deleteCognitoUser,
+  getCognitoUser,
   registerUser,
   authenticateUser,
   refreshTokens,

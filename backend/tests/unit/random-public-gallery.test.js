@@ -20,8 +20,12 @@ function loadHandler() {
   return handler;
 }
 
+let isDeleting;
+
 beforeEach(() => {
   jest.isolateModules(() => {
+    isDeleting = jest.fn().mockResolvedValue(false);
+    jest.doMock('../../src/lib/accountJobs', () => ({ isDeleting }));
     const lib = require('@aws-sdk/lib-dynamodb');
     ScanCommand = lib.ScanCommand;
     ddbMock = mockClient(lib.DynamoDBDocumentClient);
@@ -143,4 +147,29 @@ test('returns 500 when the scan fails', async () => {
   const res = await loadHandler()({});
   expect(res.statusCode).toBe(500);
   console.error.mockRestore();
+});
+
+test("never returns a guitar whose owner's account is being deleted, even from a warm cache", async () => {
+  ddbMock.on(ScanCommand).resolves({
+    Items: [
+      guitar('mine', { showInGallery: true, userId: 'deleting-user' }),
+      guitar('theirs', { showInGallery: true, userId: 'other-user' }),
+    ],
+  });
+  const handler = loadHandler();
+  // Warm the cache while nobody is deleting
+  await handler({});
+
+  isDeleting.mockImplementation(async (userId) => userId === 'deleting-user');
+  for (let i = 0; i < 20; i++) {
+    const body = JSON.parse((await handler({})).body);
+    expect(body.id).toBe('theirs');
+  }
+  expect(ddbMock.commandCalls(ScanCommand)).toHaveLength(1);
+});
+
+test('returns 404 when every opted-in owner is being deleted', async () => {
+  ddbMock.on(ScanCommand).resolves({ Items: [guitar('g1', { showInGallery: true })] });
+  isDeleting.mockResolvedValue(true);
+  expect((await loadHandler()({})).statusCode).toBe(404);
 });

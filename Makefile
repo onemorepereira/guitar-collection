@@ -391,6 +391,8 @@ logs:
 		echo "  - document-extraction"; \
 		echo "  - provenance"; \
 		echo "  - shares"; \
+		echo "  - account-jobs"; \
+		echo "  - log-retention"; \
 		echo ""; \
 		echo "Example: make logs FUNC=guitars"; \
 		exit 1; \

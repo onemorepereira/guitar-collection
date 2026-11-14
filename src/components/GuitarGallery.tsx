@@ -8,7 +8,7 @@ import { Footer } from './Footer';
 import { UserNameEditor } from './UserNameEditor';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Loader2, DoorOpen, User, Edit2, Grid, List, FileText, Clock, Calendar, Table } from 'lucide-react';
+import { Plus, Loader2, DoorOpen, User, Edit2, Grid, List, FileText, Clock, Calendar, Table, UserCog } from 'lucide-react';
 import { CollectionTable } from './CollectionTable';
 
 type ViewMode = 'gallery' | 'list' | 'timeline' | 'table';
@@ -227,6 +227,14 @@ export const GuitarGallery = () => {
                 title="Manage documents"
               >
                 <FileText className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => navigate('/account')}
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                title="Account: export your data or delete your account"
+              >
+                <UserCog className="w-5 h-5" />
+                <span className="sr-only">Account</span>
               </button>
               <ThemeToggle />
               <button

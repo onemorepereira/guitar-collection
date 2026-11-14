@@ -68,6 +68,7 @@ Both files are gitignored. Never commit them.
 | `BucketPrefix` | Images bucket becomes `<prefix>-<Environment>-<account-id>` |
 | `HostedZoneId` | Optional. When set, creates `ApiDomainName` and `ImagesDomainName` with certificates and DNS records |
 | `ApiDomainName`, `ImagesDomainName` | Custom domains used when `HostedZoneId` is set |
+| `AlarmEmail` | Optional. Email address notified when an account deletion gets stuck (AWS sends a confirmation email you must accept). Set it here, not with `--parameter-overrides` on the command line, which would replace the other overrides |
 
 **Values that must agree across the two files:**
 
@@ -133,7 +134,7 @@ aws cloudformation describe-stacks --stack-name "$BACKEND_STACK_NAME" --query 'S
 | `make deploy-backend` / `deploy-frontend-infra` / `deploy-frontend` | Individual stages |
 | `make build` | Frontend production build only |
 | `make test` | Frontend (Vitest) and backend (Jest) unit tests; fails if either fails |
-| `make logs FUNC=<suffix>` | Tail `/aws/lambda/<stack>-<suffix>`. Suffixes: `auth`, `guitars`, `public-guitar`, `images`, `user`, `specs`, `receipts`, `documents`, `document-extraction`, `provenance`, `shares` |
+| `make logs FUNC=<suffix>` | Tail `/aws/lambda/<stack>-<suffix>`. Suffixes: `auth`, `guitars`, `public-guitar`, `images`, `user`, `specs`, `receipts`, `documents`, `document-extraction`, `provenance`, `shares`, `account-jobs`, `log-retention` |
 | `make clean` | Remove `dist/`, `backend/.aws-sam/`, and the cached outputs (keeps `.env`) |
 | `make teardown` | **Destructive.** Empties both buckets and deletes both stacks after you type `DELETE` |
 
@@ -164,6 +165,21 @@ Then open your domain, register an account, and add a guitar.
 
 Revert the commit(s) and redeploy with the same `make` target. One exception: **never redeploy a version of `backend/src/handlers/guitars/random-public.js` that predates the gallery opt-in filter** (`showInGallery = true`). Older versions return any user's guitar on the public landing page. To roll back that endpoint, revert everything else, or replace its handler body with a 404 response.
 
+Account deletion adds a second rule: **only roll back the backend when no deletion is in progress.** Reverting removes the tombstone check, so an account whose deletion is under way would become usable again with half its data gone. Check first that the `<stack>-account-jobs` queue and its dead-letter queue are empty and that no item in the `<stack>-account-jobs` table has `job = deletion` with a status other than `completed`.
+
+**Emergency backend rollback (faster route):** after the frontend is rolled back and the checks above show nothing pending (re-run them right before deploying), you may deploy the last known-good commit directly, without first landing a revert: `git checkout <SHA> && make deploy-backend` (this deploys, it does not commit to `main`). Then open and merge the revert PR so `main` matches what is running.
+
+**Re-deploying after a backend rollback:** the `<stack>-account-jobs` table and the exports bucket are kept when a rollback removes them from the template (`DeletionPolicy: RetainExceptOnCreate`; they're only deleted automatically if the deploy that *created* them fails). Before deploying account export/deletion again, either delete them (empty the bucket first; the table holds only tombstones and export job records) or import them into the stack, otherwise the deploy fails with "already exists".
+
+## Stuck account deletion
+
+The `<stack>-account-jobs-stuck` alarm fires when a deletion or export exhausted its 5 retries and landed in the `<stack>-account-jobs-dlq` queue. The user's account stays locked (the tombstone blocks every request), but some of their data may remain until the deletion completes.
+
+1. Find the failing step: `make logs FUNC=account-jobs` and look for `{"event":"deletion_failed","step":...}`.
+2. Fix the cause (permissions, a throttled dependency, a code bug) and deploy.
+3. Move the messages back: `aws sqs start-message-move-task --source-arn <DLQ ARN>` (the queue's ARN is in the SQS console or `aws sqs get-queue-attributes --queue-url <DLQ URL> --attribute-names QueueArn`).
+4. Confirm `{"event":"deletion_completed"}` in the logs. Deletion is idempotent, so redriving a message twice is safe.
+
 ---
 
 ## Teardown
@@ -175,8 +191,8 @@ make teardown
 It empties the frontend and images buckets, deletes `<prefix>-frontend`, then runs `sam delete` on the backend stack. These may need manual cleanup:
 
 - **The images bucket**: it is versioned, and `aws s3 rm` leaves old object versions behind, so the stack deletion can fail on it. Delete all object versions, then retry `sam delete`.
-- DynamoDB tables have no retention policy, so **your data is deleted with the stack**. Export anything you want to keep first.
-- CloudWatch log groups (retained by default)
+- DynamoDB tables have no retention policy, so **your data is deleted with the stack**. Export anything you want to keep first. Exception: the `<stack>-account-jobs` table and the exports bucket are **retained** (`DeletionPolicy: RetainExceptOnCreate`, so a rollback never drops a deletion tombstone); delete them by hand after teardown.
+- CloudWatch log groups (they expire after 90 days, but are not deleted with the stack)
 - ACM certificates or Route 53 records you created outside the stacks
 
 ---
@@ -188,6 +204,7 @@ It empties the frontend and images buckets, deletes `<prefix>-frontend`, then ru
 | `make validate` fails | A required `.env.deploy` variable is missing, or `aws`/`sam`/`jq` isn't on `PATH` |
 | `Cannot find module …` in Lambda logs | Dependency missing from `backend/src/package.json`, or `make install` wasn't run before `sam build` |
 | Frontend stack stuck in `CREATE_IN_PROGRESS` | ACM DNS validation is waiting; check that `HOSTED_ZONE_ID` is the zone for `FRONTEND_DOMAIN` |
+| Every authenticated request returns 503 `SERVICE_UNAVAILABLE` (alarm `<stack>-api-5xx`) | The deletion-tombstone lookup (`<stack>-account-jobs` table) is failing; requests fail closed by design. Check the table exists and isn't throttled (`aws dynamodb describe-table --table-name <stack>-account-jobs`), and the functions' IAM read permission on it |
 | Browser CORS errors | `AllowedOrigin` in `samconfig.toml` doesn't exactly match the site origin (scheme + host, no trailing slash) |
 | 403 `Missing required security header` / `Missing Origin header` | Request didn't go through `src/utils/api.ts`, or it came from an origin other than `AllowedOrigin` |
 | 400 on save with an unknown field | Field not in `ALLOWED_GUITAR_FIELDS` (`backend/src/lib/validation.js`) |

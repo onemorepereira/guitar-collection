@@ -191,7 +191,30 @@ function logBulkOperation(event, userId, operation, count, metadata = {}) {
   });
 }
 
+/**
+ * Account export/deletion audit event (GTR-14). Deliberately records only the
+ * pseudonymous user id, action, result, time, and counts: never email, IP
+ * address, or user agent (deletion promises those aren't retained).
+ * @param {string} userId
+ * @param {string} action - EXPORT_REQUESTED | EXPORT_LINK_ISSUED | EXPORT_COMPLETED |
+ *   EXPORT_FAILED | DELETION_REQUESTED | DELETION_COMPLETED | DELETION_FAILED
+ * @param {string} result - ALLOWED | DENIED | SUCCESS | FAILURE
+ * @param {object} [details] - non-identifying fields (codes, counts)
+ */
+function logAccountEvent(userId, action, result, details = {}) {
+  const { email, ip, ipAddress, userAgent, ...safe } = details;
+  console.log(JSON.stringify({
+    type: 'ACCOUNT_EVENT',
+    userId,
+    action,
+    result,
+    timestamp: new Date().toISOString(),
+    ...safe,
+  }));
+}
+
 module.exports = {
+  logAccountEvent,
   logSecurityEvent,
   logAuthEvent,
   logResourceAccess,

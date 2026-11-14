@@ -18,6 +18,10 @@ Globals:
         DYNAMODB_TABLE_DOCUMENTS: !Ref DocumentsTable
         DYNAMODB_TABLE_PROVENANCE_REPORTS: !Ref ProvenanceReportsTable
         DYNAMODB_TABLE_SHARES: !Ref SharesTable
+        DYNAMODB_TABLE_ACCOUNT_JOBS: !Ref AccountJobsTable
+        IMAGES_DISTRIBUTION_ID: !Ref ImagesDistribution
+        S3_BUCKET_EXPORTS: !Ref ExportsBucket
+        ACCOUNT_JOBS_QUEUE_URL: !Ref AccountJobsQueue
         S3_BUCKET_IMAGES: !Ref ImagesBucket
         CLOUDFRONT_DOMAIN: !If [HasHostedZone, !Ref ImagesDomainName, !GetAtt ImagesDistribution.DomainName]
         FRONTEND_DOMAIN: !Ref FrontendDomain
@@ -64,6 +68,11 @@ Parameters:
     Description: Frontend domain for CORS validation (e.g., example.org)
     Default: "your-domain.com"
 
+  AlarmEmail:
+    Type: String
+    Description: Email address notified when an account deletion gets stuck (optional; leave empty for no subscription)
+    Default: ""
+
   BucketPrefix:
     Type: String
     Description: Prefix for the S3 images bucket name (e.g., my-app-images)
@@ -93,6 +102,12 @@ Resources:
         "POST /auth/forgot-password":
           ThrottlingBurstLimit: 3
           ThrottlingRateLimit: 1
+        "POST /user/deletion":
+          ThrottlingBurstLimit: 3
+          ThrottlingRateLimit: 1      # Password-verified, destructive
+        "POST /user/export":
+          ThrottlingBurstLimit: 3
+          ThrottlingRateLimit: 1      # Password-verified, starts an expensive job
         "POST /specs/extract":
           ThrottlingBurstLimit: 10
           ThrottlingRateLimit: 2      # Limit expensive AI operations
@@ -202,6 +217,8 @@ Resources:
       Handler: handlers/auth/index.handler
       Description: Handles user authentication
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -258,6 +275,18 @@ Resources:
       Handler: handlers/guitars/index.handler
       Description: Handles guitar CRUD operations
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${ImagesDistribution}
+        - DynamoDBReadPolicy:
+            TableName: !Ref DocumentsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ProvenanceReportsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref GuitarsTable
         - Version: '2012-10-17'
@@ -329,6 +358,8 @@ Resources:
       Handler: handlers/guitars/random-public.handler
       Description: Returns a random guitar for public display (no auth)
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -359,6 +390,8 @@ Resources:
       Handler: handlers/images/index.handler
       Description: Handles image uploads and processing
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - Version: '2012-10-17'
           Statement:
             # S3 object operations - restricted to specific prefixes
@@ -408,17 +441,30 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-user
       CodeUri: src/
       Handler: handlers/user/index.handler
-      Description: Handles user profile operations
+      Description: Handles user profile operations, account export and deletion requests
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AccountJobsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref UsersTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AccountJobsQueue.QueueName
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
               Action:
                 - cognito-idp:AdminGetUser
                 - cognito-idp:AdminUpdateUserAttributes
+                - cognito-idp:AdminInitiateAuth
+                - cognito-idp:AdminUserGlobalSignOut
               Resource: !GetAtt UserPool.Arn
+            # Presigned export download links are signed with this role
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: !Sub ${ExportsBucket.Arn}/exports/*
       Events:
         GetProfile:
           Type: HttpApi
@@ -444,6 +490,30 @@ Resources:
             Method: PUT
             Auth:
               Authorizer: CognitoAuthorizer
+        RequestDeletion:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /user/deletion
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        StartExport:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /user/export
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        ExportStatus:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /user/export
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
 
   # Specs Extractor Handler
   SpecsHandler:
@@ -458,6 +528,8 @@ Resources:
       Timeout: 60  # Increased timeout for AI processing
       MemorySize: 1024  # Increased memory for PDF processing
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -492,6 +564,8 @@ Resources:
       Timeout: 60  # Increased timeout for AI processing
       MemorySize: 1024  # Increased memory for PDF processing
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -524,6 +598,14 @@ Resources:
       Handler: handlers/documents/index.handler
       Description: Handles document CRUD operations
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${ImagesDistribution}
         - DynamoDBCrudPolicy:
             TableName: !Ref DocumentsTable
         - DynamoDBCrudPolicy:
@@ -649,6 +731,8 @@ Resources:
             Type: SQS
             Destination: !GetAtt DocumentExtractionAsyncDLQ.Arn
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref DocumentsTable
         - Version: '2012-10-17'
@@ -717,6 +801,8 @@ Resources:
       Timeout: 60
       Policies:
         - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
+        - DynamoDBReadPolicy:
             TableName: !Ref GuitarsTable
         - DynamoDBReadPolicy:
             TableName: !Ref DocumentsTable
@@ -784,6 +870,14 @@ Resources:
       Layers:
         - !Ref SharpLayer
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${ImagesDistribution}
         - DynamoDBCrudPolicy:
             TableName: !Ref SharesTable
         - DynamoDBReadPolicy:
@@ -1095,6 +1189,299 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
 
+  # Account deletion tombstones (SK 'deletion') and export jobs (SK 'export#<id>').
+  # Retained on stack delete/replace so a rollback never drops a tombstone;
+  # deleted only if the deploy that creates it rolls back (RetainExceptOnCreate).
+  AccountJobsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: RetainExceptOnCreate
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub ${AWS::StackName}-account-jobs
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: job
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: job
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProduction, true, false]
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ==================== Account deletion & export ====================
+
+  # Private, non-versioned bucket for export ZIPs (never behind a CDN).
+  # ZIPs are deleted by the app at 7 days; the lifecycle rule is the backstop.
+  ExportsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: RetainExceptOnCreate
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub ${BucketPrefix}-exports-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireExports
+            Status: Enabled
+            Prefix: exports/
+            ExpirationInDays: 7
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  AccountJobsDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-account-jobs-dlq
+      MessageRetentionPeriod: 1209600  # 14 days
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  AccountJobsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-account-jobs
+      # >= 6x the 900 s worker timeout (Lambda SQS event-source guidance)
+      VisibilityTimeout: 5400
+      SqsManagedSseEnabled: true
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AccountJobsDLQ.Arn
+        maxReceiveCount: 5
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-alarms
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  AlarmEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlarmEmail
+    Properties:
+      TopicArn: !Ref AlarmTopic
+      Protocol: email
+      Endpoint: !Ref AlarmEmail
+
+  # A deletion that exhausted its retries: data may be left behind (runbook in docs/DEPLOYMENT.md)
+  AccountJobsDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-account-jobs-stuck
+      AlarmDescription: An account deletion or export job failed all retries and is in the dead-letter queue
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AccountJobsDLQ.QueueName
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  # Fires within minutes of any failed deletion step (the DLQ alarm only
+  # fires after all retries, ~7.5 h later). The log group is created by the
+  # LogRetention custom resource, hence the DependsOn.
+  AccountDeletionFailedMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    DependsOn: LogRetention
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-account-jobs
+      FilterPattern: '{ $.event = "deletion_failed" }'
+      MetricTransformations:
+        - MetricNamespace: !Sub ${AWS::StackName}/AccountJobs
+          MetricName: DeletionFailed
+          MetricValue: '1'
+          DefaultValue: 0
+
+  AccountDeletionFailedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-account-deletion-failing
+      AlarmDescription: An account deletion step failed (it will retry; see the stuck-deletion runbook in docs/DEPLOYMENT.md)
+      Namespace: !Sub ${AWS::StackName}/AccountJobs
+      MetricName: DeletionFailed
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  # Every authenticated route now reads the AccountJobs table (fail-closed),
+  # so watch API-wide server errors.
+  ApiServerErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-api-5xx
+      AlarmDescription: API server errors (5xx) on the HTTP API; see Troubleshooting in docs/DEPLOYMENT.md
+      Namespace: AWS/ApiGateway
+      MetricName: 5xx
+      Dimensions:
+        - Name: ApiId
+          Value: !Ref GuitarCollectionApi
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  AccountJobsHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-account-jobs
+      CodeUri: src/
+      Handler: handlers/account-jobs/index.handler
+      Description: Account export and deletion jobs, plus a 15-minute sweeper
+      Timeout: 900
+      MemorySize: 3008
+      Events:
+        Jobs:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt AccountJobsQueue.Arn
+            BatchSize: 1
+            # Bounds concurrent exports/deletions (cost and S3/Cognito load)
+            ScalingConfig:
+              MaximumConcurrency: 2
+        Sweep:
+          Type: Schedule
+          Properties:
+            Schedule: rate(15 minutes)
+            Input: '{"type":"sweep"}'
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AccountJobsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GuitarsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DocumentsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProvenanceReportsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SharesTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AccountJobsQueue.QueueName
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:ListBucket
+              Resource:
+                - !GetAtt ImagesBucket.Arn
+                - !GetAtt ExportsBucket.Arn
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:DeleteObject
+              Resource:
+                - !Sub ${ImagesBucket.Arn}/images/*
+                - !Sub ${ImagesBucket.Arn}/uploads/*
+                - !Sub ${ImagesBucket.Arn}/shared/*
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:GetObject
+                - s3:DeleteObject
+                - s3:AbortMultipartUpload
+              Resource:
+                - !Sub ${ExportsBucket.Arn}/exports/*
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${ImagesDistribution}
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminGetUser
+                - cognito-idp:AdminDeleteUser
+                - cognito-idp:AdminUserGlobalSignOut
+              Resource: !GetAtt UserPool.Arn
+
+  # 90-day retention on every function's log group (incl. groups Lambda
+  # auto-created with "never expire"). Re-applied when properties change:
+  # add new functions to FunctionNames (enforced by a template test).
+  LogRetentionHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-log-retention
+      CodeUri: src/
+      Handler: handlers/log-retention/index.handler
+      Description: Custom resource that sets CloudWatch Logs retention for the stack's functions
+      Timeout: 60
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:PutRetentionPolicy
+              Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-*
+
+  LogRetention:
+    Type: Custom::LogRetention
+    Properties:
+      ServiceToken: !GetAtt LogRetentionHandler.Arn
+      RetentionInDays: 90
+      Revision: 1
+      FunctionNames:
+        - !Ref AuthHandler
+        - !Ref GuitarsHandler
+        - !Ref PublicGuitarHandler
+        - !Ref ImagesHandler
+        - !Ref UserHandler
+        - !Ref SpecsHandler
+        - !Ref ReceiptHandler
+        - !Ref DocumentsHandler
+        - !Ref DocumentExtractionHandler
+        - !Ref ProvenanceHandler
+        - !Ref SharesHandler
+        - !Ref AccountJobsHandler
+        - !Ref LogRetentionHandler
+
   # ==================== Cognito ====================
 
   UserPool:
@@ -1182,6 +1569,22 @@ Resources:
             NoncurrentVersionExpiration:
               NoncurrentDays: 1
             Prefix: uploads/
+          # Deleted photos, receipts, documents, and share renders stay
+          # recoverable for 30 days, then are permanently removed (owner-approved
+          # window). On first deploy this also purges every older noncurrent
+          # version (one-time, irreversible; approved at GTR-14 design sign-off).
+          - Id: ExpireOldImageVersions
+            Status: Enabled
+            Prefix: images/
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            ExpiredObjectDeleteMarker: true
+          - Id: ExpireOldShareVersions
+            Status: Enabled
+            Prefix: shared/
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            ExpiredObjectDeleteMarker: true
       VersioningConfiguration:
         Status: Enabled
       BucketEncryption:
@@ -1282,6 +1685,7 @@ Resources:
 Conditions:
   IsProduction: !Equals [!Ref Environment, prod]
   HasHostedZone: !Not [!Equals [!Ref HostedZoneId, ""]]
+  HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, ""]]
 
 # Outputs
 Outputs:

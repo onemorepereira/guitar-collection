@@ -9,6 +9,7 @@ const {
   PutObjectCommand,
   DeleteObjectsCommand,
 } = require('@aws-sdk/client-s3');
+const { invalidate } = require('../../lib/cdn');
 const sharp = require('sharp');
 const { updateItem } = require('../../lib/dynamodb');
 const { extractOwnedKey } = require('../../lib/s3Keys');
@@ -218,6 +219,8 @@ async function deleteOptimizedImages(s3Keys) {
       Objects: s3Keys.map(key => ({ Key: key })),
     },
   }));
+
+  await invalidate(s3Keys.map(key => `/${key}`));
 }
 
 module.exports = {

@@ -2,12 +2,13 @@
  * Update guitar handler
  */
 
-const { getItem, updateItem } = require('../../lib/dynamodb');
+const { getItem, updateItem, queryAll } = require('../../lib/dynamodb');
+const { deleteImages } = require('../../lib/s3');
 const { getUserIdFromEvent } = require('../../lib/cognito');
 const { validateGuitarUpdateFields, validatePathParameter } = require('../../lib/validation');
 const { sanitizeGuitarData } = require('../../lib/sanitization');
 const { validateCSRF } = require('../../lib/csrf');
-const { assertUrlOwnership } = require('../../lib/s3Keys');
+const { assertUrlOwnership, collectGuitarImageKeys } = require('../../lib/s3Keys');
 const response = require('../../lib/response');
 const { handleError } = require('../../lib/errors');
 const { TABLES } = require('../../config/constants');
@@ -69,6 +70,18 @@ async function updateGuitar(event) {
       updates
     );
 
+    // Photos/receipt removed by this update become real deletes, unless
+    // something else of the user's still points at the file (another guitar,
+    // a document, or a saved provenance/sales report).
+    if (data.images !== undefined || data.privateInfo?.receiptUrl !== undefined) {
+      try {
+        await deleteRemovedFiles(userId, guitarId, existingGuitar, updatedGuitar);
+      } catch (error) {
+        // The update itself succeeded; a leftover file is cleanup debt, not a failed save
+        console.error('Failed to delete removed files after guitar update', { error: error.name || error.message });
+      }
+    }
+
     // Map guitarId to id for frontend compatibility
     const guitarResponse = {
       ...updatedGuitar,
@@ -83,6 +96,25 @@ async function updateGuitar(event) {
   } catch (error) {
     return handleError(error, response);
   }
+}
+
+async function deleteRemovedFiles(userId, guitarId, before, after) {
+  const kept = new Set(collectGuitarImageKeys(after, userId));
+  const removed = collectGuitarImageKeys(before, userId).filter((key) => !kept.has(key));
+  if (removed.length === 0) return;
+
+  const byUser = [TABLES.GUITARS, TABLES.DOCUMENTS, TABLES.PROVENANCE_REPORTS].map((table) =>
+    queryAll(table, 'userId = :u', { ':u': userId })
+  );
+  const [guitars, documents, reports] = await Promise.all(byUser);
+  const others = [
+    ...guitars.filter((g) => g.guitarId !== guitarId),
+    ...documents,
+    ...reports,
+  ].map((item) => JSON.stringify(item));
+
+  const unreferenced = removed.filter((key) => !others.some((text) => text.includes(key)));
+  await deleteImages(unreferenced);
 }
 
 module.exports = { updateGuitar };

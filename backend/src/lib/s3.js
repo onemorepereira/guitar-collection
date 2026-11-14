@@ -16,6 +16,7 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { v4: uuidv4 } = require('uuid');
 const { validateFileSignature } = require('./fileValidation');
 const { ValidationError } = require('./errors');
+const { invalidate } = require('./cdn');
 const { IMAGE_CONSTRAINTS } = require('../config/constants');
 
 const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
@@ -203,16 +204,33 @@ async function deleteImage(key) {
  * @returns {Promise<void>}
  */
 async function deleteImages(keys) {
-  if (keys.length === 0) {
+  if (!keys || keys.length === 0) {
     return;
   }
 
-  await s3.send(new DeleteObjectsCommand({
-    Bucket: BUCKET_NAME,
-    Delete: {
-      Objects: keys.map(key => ({ Key: key })),
-    },
-  }));
+  // DeleteObjects accepts up to 1,000 keys and reports per-key failures in
+  // Errors[] (the call itself still succeeds), so check them explicitly.
+  const deleted = [];
+  let failure = null;
+  for (let i = 0; i < keys.length && !failure; i += 1000) {
+    const chunk = keys.slice(i, i + 1000);
+    const result = await s3.send(new DeleteObjectsCommand({
+      Bucket: BUCKET_NAME,
+      Delete: {
+        Objects: chunk.map(key => ({ Key: key })),
+      },
+    }));
+    const failed = new Set((result?.Errors || []).map((e) => e.Key));
+    deleted.push(...chunk.filter((key) => !failed.has(key)));
+    if (failed.size > 0) {
+      failure = new Error(`Failed to delete ${failed.size} object(s): ${result.Errors[0].Code}`);
+    }
+  }
+
+  // Deleted files must stop being served from the CDN edge caches too
+  // (including the ones that did delete when another key failed)
+  await invalidate(deleted.map(key => `/${key}`));
+  if (failure) throw failure;
 }
 
 /**
