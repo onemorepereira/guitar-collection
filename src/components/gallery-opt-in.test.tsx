@@ -32,7 +32,7 @@ vi.mock('../services/provenanceService', () => ({
 import { guitarService } from '../services/guitarService';
 import { GuitarForm } from './GuitarForm';
 import { GuitarDetail } from './GuitarDetail';
-import { Landing } from './Landing';
+import { Home as Landing } from '../public/pages/Home';
 
 const baseGuitar: Guitar = {
   id: 'g1',

@@ -258,7 +258,7 @@ export const Register = () => {
         {/* Features */}
         <div className="mt-6 p-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-lg border border-primary-200 dark:border-gray-700">
           <p className="text-xs text-gray-600 dark:text-gray-400 text-center mb-2 font-medium">
-            Why join Guitar Collection?
+            Why join GuitarHelp?
           </p>
           <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
             <li className="flex items-center gap-2">

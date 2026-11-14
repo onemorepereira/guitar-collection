@@ -785,7 +785,7 @@ export const GuitarForm = () => {
                       Auto-fill typical specs for {brand} {model}?
                     </h4>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
-                      We can fill in common specifications based on this model
+                      We can fill in typical specifications for this brand; adjust them to match your guitar
                     </p>
                   </div>
                 </div>
@@ -794,7 +794,7 @@ export const GuitarForm = () => {
                     type="button"
                     onClick={handleAutoFillSpecs}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
-                    title="Auto-fill common specifications for this guitar model"
+                    title="Auto-fill typical specifications for this brand"
                   >
                     Yes, auto-fill
                   </button>

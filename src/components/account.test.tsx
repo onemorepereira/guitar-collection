@@ -34,7 +34,7 @@ import { accountService, AccountApiError } from '../services/accountService';
 import { authService } from '../services/authService';
 import { authenticatedRequest } from '../utils/api';
 import { AccountPage } from './AccountPage';
-import { Landing } from './Landing';
+import { Home as Landing } from '../public/pages/Home';
 
 const assign = vi.fn();
 const deleteDatabase = vi.fn();
@@ -211,7 +211,7 @@ describe('AccountPage: retention link', () => {
     vi.mocked(accountService.getExportStatus).mockResolvedValue({ status: 'none' });
     renderAccount();
     const link = await screen.findByRole('link', { name: 'Full retention schedule', hidden: true });
-    expect(link.getAttribute('href')).toBe('/privacy.html?v=20261114#retention');
+    expect(link.getAttribute('href')).toBe('/privacy.html?v=2026111402#retention');
     expect(link.getAttribute('target')).toBe('_blank');
   });
 });
@@ -323,7 +323,7 @@ describe('Landing banner', () => {
       </MemoryRouter>
     );
     expect((await screen.findByText(/Your account is being deleted/)).textContent)
-      .toBe('Your account is being deleted. This usually takes a few minutes.');
+      .toBe('Your account is being deleted. This takes about 20 minutes.');
   });
 });
 

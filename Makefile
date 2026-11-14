@@ -1,5 +1,5 @@
 .PHONY: help init install dev build clean validate status
-.PHONY: deploy-backend deploy-frontend-infra deploy-frontend deploy-all
+.PHONY: deploy-backend deploy-frontend-infra plan-frontend-infra deploy-frontend deploy-all
 .PHONY: teardown logs test init-hooks
 .PHONY: _extract-backend-outputs _extract-frontend-outputs _generate-env
 
@@ -37,6 +37,7 @@ help:
 	@echo "Deployment (Step-by-Step):"
 	@echo "  make deploy-backend         - Deploy backend + generate outputs"
 	@echo "  make deploy-frontend-infra  - Deploy frontend infrastructure"
+	@echo "  make plan-frontend-infra    - Preview frontend infrastructure changes (change set, nothing applied)"
 	@echo "  make deploy-frontend        - Build + deploy frontend code"
 	@echo ""
 	@echo "Teardown:"
@@ -205,6 +206,16 @@ deploy-frontend-infra: validate
 	@if [ -z "$(HOSTED_ZONE_ID)" ]; then \
 		echo "[!]  Warning: HOSTED_ZONE_ID not set - deployment may fail if Route53 is required"; \
 	fi
+	@if aws cloudformation describe-stacks --stack-name $(FRONTEND_BUCKET_PREFIX)-frontend >/dev/null 2>&1; then \
+		. ./$(FRONTEND_OUTPUTS_FILE); \
+		for f in app.html 404.html; do \
+			if ! aws s3api head-object --bucket $$FRONTEND_BUCKET_NAME --key $$f >/dev/null 2>&1; then \
+				echo "[X] s3://$$FRONTEND_BUCKET_NAME/$$f is missing: the URL router would send requests to it."; \
+				echo "    Run 'make deploy-frontend' first."; \
+				exit 1; \
+			fi; \
+		done; \
+	fi
 	@aws cloudformation deploy \
 		--template-file frontend-infrastructure.yaml \
 		--stack-name $(FRONTEND_BUCKET_PREFIX)-frontend \
@@ -218,6 +229,26 @@ deploy-frontend-infra: validate
 		--no-fail-on-empty-changeset
 	@echo "[✓] Frontend infrastructure deployed"
 	@$(MAKE) _extract-frontend-outputs
+
+plan-frontend-infra: validate
+	@echo "[*] Planning frontend infrastructure changes (nothing is applied)..."
+	@CS=seo-plan-$$(date +%s); \
+	aws cloudformation create-change-set \
+		--stack-name $(FRONTEND_BUCKET_PREFIX)-frontend \
+		--change-set-name $$CS \
+		--template-body file://frontend-infrastructure.yaml \
+		--parameters \
+			ParameterKey=BucketPrefix,ParameterValue=$(FRONTEND_BUCKET_PREFIX) \
+			ParameterKey=DomainName,ParameterValue=$(FRONTEND_DOMAIN) \
+			ParameterKey=HostedZoneId,ParameterValue=$(HOSTED_ZONE_ID) \
+			ParameterKey=ApiDomainName,ParameterValue=$(if $(API_DOMAIN),$(API_DOMAIN),api.$(FRONTEND_DOMAIN)) \
+			ParameterKey=ImagesDomainName,ParameterValue=$(if $(IMAGES_DOMAIN),$(IMAGES_DOMAIN),images.$(FRONTEND_DOMAIN)) \
+		--capabilities CAPABILITY_IAM >/dev/null && \
+	aws cloudformation wait change-set-create-complete --stack-name $(FRONTEND_BUCKET_PREFIX)-frontend --change-set-name $$CS; \
+	aws cloudformation describe-change-set --stack-name $(FRONTEND_BUCKET_PREFIX)-frontend --change-set-name $$CS \
+		--query 'Changes[].ResourceChange.[Action,LogicalResourceId,ResourceType,Replacement]' --output table; \
+	echo "Change set $$CS created for review; nothing was applied. Discard it with:"; \
+	echo "  aws cloudformation delete-change-set --stack-name $(FRONTEND_BUCKET_PREFIX)-frontend --change-set-name $$CS"
 
 _extract-frontend-outputs:
 	@echo "[*] Extracting frontend infrastructure outputs..."
@@ -274,8 +305,18 @@ deploy-frontend: build
 	echo "   Bucket: $$FRONTEND_BUCKET_NAME"; \
 	echo "   CloudFront: $$FRONTEND_DISTRIBUTION_ID"; \
 	echo ""; \
+	echo "Checking the live URL router against the template..."; \
+	node scripts/check-router-live.mjs $(FRONTEND_BUCKET_PREFIX)-url-router; \
 	echo "Uploading to S3..."; \
-	aws s3 sync dist/ s3://$$FRONTEND_BUCKET_NAME --exclude "*.html" --cache-control max-age=31536000,public; \
+	aws s3 sync dist/ s3://$$FRONTEND_BUCKET_NAME --exclude "*.html" \
+		--exclude "robots.txt" --exclude "sitemap.xml" --exclude "theme-init.js" --exclude "og/*" \
+		--cache-control max-age=31536000,public; \
+	echo ""; \
+	echo "Uploading fixed-name files with a 1-hour cache..."; \
+	aws s3 cp dist/robots.txt s3://$$FRONTEND_BUCKET_NAME/robots.txt --cache-control max-age=3600,public --content-type text/plain; \
+	aws s3 cp dist/sitemap.xml s3://$$FRONTEND_BUCKET_NAME/sitemap.xml --cache-control max-age=3600,public --content-type application/xml; \
+	aws s3 cp dist/theme-init.js s3://$$FRONTEND_BUCKET_NAME/theme-init.js --cache-control max-age=3600,public --content-type text/javascript; \
+	if [ -d dist/og ]; then aws s3 cp dist/og/ s3://$$FRONTEND_BUCKET_NAME/og/ --recursive --cache-control max-age=3600,public; fi; \
 	echo ""; \
 	echo "Uploading HTML pages with no-cache..."; \
 	aws s3 cp dist/ s3://$$FRONTEND_BUCKET_NAME --recursive --exclude "*" --include "*.html" \
@@ -283,7 +324,8 @@ deploy-frontend: build
 		--content-type text/html; \
 	echo ""; \
 	echo "Removing old assets..."; \
-	aws s3 sync dist/ s3://$$FRONTEND_BUCKET_NAME --delete --exclude "*.html"; \
+	aws s3 sync dist/ s3://$$FRONTEND_BUCKET_NAME --delete --exclude "*.html" \
+		--exclude "robots.txt" --exclude "sitemap.xml" --exclude "theme-init.js" --exclude "og/*"; \
 	echo ""; \
 	echo "Invalidating CloudFront cache..."; \
 	aws cloudfront create-invalidation --distribution-id $$FRONTEND_DISTRIBUTION_ID --paths "/*"; \
@@ -303,11 +345,17 @@ deploy-all: validate
 	@echo "Stage 1/3: Backend"
 	@$(MAKE) deploy-backend
 	@echo ""
-	@echo "Stage 2/3: Frontend Infrastructure"
-	@$(MAKE) deploy-frontend-infra
-	@echo ""
-	@echo "Stage 3/3: Frontend Application"
-	@$(MAKE) deploy-frontend
+	@echo "Stage 2-3/3: Frontend infrastructure and application"
+	@if ! aws cloudformation describe-stacks --stack-name $(FRONTEND_BUCKET_PREFIX)-frontend >/dev/null 2>&1; then \
+		echo "(new environment: infrastructure, application, then infrastructure again for the URL router)"; \
+		$(MAKE) deploy-frontend-infra && $(MAKE) deploy-frontend && $(MAKE) deploy-frontend-infra; \
+	elif ! aws cloudfront describe-function --name $(FRONTEND_BUCKET_PREFIX)-url-router >/dev/null 2>&1; then \
+		echo "(first rollout of the URL router: application first, so app.html and 404.html exist)"; \
+		$(MAKE) deploy-frontend && $(MAKE) deploy-frontend-infra; \
+	else \
+		echo "(URL router exists: infrastructure first, so the application's router check passes)"; \
+		$(MAKE) deploy-frontend-infra && $(MAKE) deploy-frontend; \
+	fi
 	@echo ""
 	@echo "========================================"
 	@echo "  [*] All deployments complete!"
