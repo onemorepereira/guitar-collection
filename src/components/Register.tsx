@@ -3,8 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, User, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { PickIcon } from './PickIcon';
-import { TermsModal } from './TermsModal';
-import { PrivacyModal } from './PrivacyModal';
+import { PRIVACY_URL, TERMS_URL } from './LegalLinks';
 
 export const Register = () => {
   const navigate = useNavigate();
@@ -17,8 +16,6 @@ export const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showTerms, setShowTerms] = useState(false);
-  const [showPrivacy, setShowPrivacy] = useState(false);
 
   // Password strength validation
   const getPasswordStrength = (pass: string) => {
@@ -209,21 +206,23 @@ export const Register = () => {
               />
               <label htmlFor="terms" className="text-sm text-gray-700 dark:text-gray-300">
                 I agree to the{' '}
-                <button
-                  type="button"
-                  onClick={() => setShowTerms(true)}
+                <a
+                  href={TERMS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium underline"
                 >
                   Terms of Service
-                </button>{' '}
+                </a>{' '}
                 and{' '}
-                <button
-                  type="button"
-                  onClick={() => setShowPrivacy(true)}
+                <a
+                  href={PRIVACY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium underline"
                 >
                   Privacy Policy
-                </button>
+                </a>
               </label>
             </div>
 
@@ -279,8 +278,6 @@ export const Register = () => {
       </div>
 
       {/* Modals */}
-      <TermsModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
-      <PrivacyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
     </div>
   );
 };

@@ -106,3 +106,7 @@ If you discover a security vulnerability:
 ## License
 
 By contributing, you agree that your contributions will be licensed under the [MIT License](../LICENSE).
+
+## Privacy policy
+
+`public/privacy.html` describes what the app collects, logs, shares and sends to AI services. A change that alters any of that (new log fields, new third parties, new AI calls, sharing behaviour, retention) updates the policy in the same PR, and bumps `LEGAL_VERSION` in `src/components/LegalLinks.tsx`.

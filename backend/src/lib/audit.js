@@ -1,3 +1,5 @@
+/* Privacy: public/privacy.html §2 tells users what the logs record. Logging new
+ * personal data (IP, user agent, names, document text, ...) means updating it. */
 /**
  * Security audit logging library
  * Provides standardized logging for security-sensitive events
