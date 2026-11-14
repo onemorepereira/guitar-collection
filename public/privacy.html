@@ -45,10 +45,10 @@
             background: #f0f9ff;
             font-weight: 600;
         }
-            a { overflow-wrap: anywhere; }
+        a { overflow-wrap: anywhere; }
         td, th { overflow-wrap: anywhere; vertical-align: top; }
         table { table-layout: fixed; }
-</style>
+    </style>
 </head>
 <body>
     <h1>Privacy Policy</h1>
@@ -90,7 +90,7 @@
         <li><strong>Server logs</strong> (kept 90 days) record technical details of requests and errors.</li>
         <li>For security, they record your <strong>IP address and browser user agent</strong> when some requests are refused as unauthorized and when you delete a guitar or revoke a share link. A guitar deletion also logs its brand, model and year and how many photos, documents and shares it had. Our application logs don't record email addresses.</li>
         <li>When AI processing runs, file and document names may be logged; when an AI response can't be read, excerpts of the response and of the error (which can contain text from your document) are logged.</li>
-        <li><strong>Share-link views:</strong> each view of a share link is recorded on that share (time, browser family, and the referring page, which is normally this site; no IP address) and shown to the share owner, so they can see how often the link is opened. The newest 1,000 views are kept until the share is revoked or the account is deleted. Each view also writes a server log line with the share and the referring page (no IP address).</li>
+        <li><strong>Share-link views:</strong> each view of a share link is recorded on that share (time, browser family, and the referring page, which is normally this site; no IP address) and shown to the share owner, so they can see how often the link is opened. The newest 1,000 views are kept until the share is revoked, its guitar is deleted, or the account is deleted. Each view also writes a server log line with the share and the referring page (no IP address).</li>
         <li><strong>Sign-in security history:</strong> Amazon Cognito keeps a security history of sign-in attempts. Sign-in goes through our server without device or browser data, so Cognito doesn't receive your IP address or device details.</li>
     </ul>
 
@@ -107,7 +107,7 @@
     <p>Some features send your content to AI services on AWS:</p>
     <ul>
         <li><strong>Automatically, when you upload a document:</strong> PDFs are read by Amazon Textract, and the text is cleaned up by the Amazon Nova model on Amazon Bedrock. Images are read by Amazon Bedrock, which extracts their text and writes a description.</li>
-        <li><strong>When you ask:</strong> receipt extraction (the receipt file goes to Amazon Bedrock); specs import (the text or file you give it goes to Amazon Bedrock); provenance and sales reports (the guitar's details, private info such as purchase price, place and serial number, notes, condition-report notes, your name, and for each linked document its name, notes, AI description and up to 2,000 characters of its extracted text go to Amazon Bedrock).</li>
+        <li><strong>When you ask:</strong> receipt extraction (the receipt file or text you give it goes to Amazon Bedrock); specs import (the text or file you give it goes to Amazon Bedrock); provenance and sales reports (the guitar's details, private info such as purchase price, place and serial number, notes, condition-report notes, your name (provenance reports only), and for each linked document its name, notes, AI description and up to 2,000 characters of its extracted text go to Amazon Bedrock).</li>
     </ul>
     <p>How AWS treats that content:</p>
     <ul>
@@ -205,7 +205,7 @@
         <li>Questions and requests: open an issue on <a href="https://github.com/onemorepereira/guitar-collection/issues">GitHub</a>. Issues are public, so don't include personal details there.</li>
         <li>Anything personal or security-related: use GitHub's <a href="https://github.com/onemorepereira/guitar-collection/security/advisories/new">private reporting</a> (needs a GitHub account).</li>
     </ul>
-    <p>We read every request, but this is a hobby project and we can't promise a response time.</p>
+    <p>We read requests, but this is a hobby project and we can't promise a response time.</p>
 
     <h2>15. Your California Privacy Rights</h2>
     <p>(If applicable) If you're a California resident, you have additional rights under CCPA:</p>

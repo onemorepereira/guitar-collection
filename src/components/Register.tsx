@@ -276,8 +276,6 @@ export const Register = () => {
           </ul>
         </div>
       </div>
-
-      {/* Modals */}
     </div>
   );
 };

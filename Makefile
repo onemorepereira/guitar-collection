@@ -262,7 +262,7 @@ deploy-frontend: build
 		echo "   Run 'make deploy-frontend-infra' first to create frontend infrastructure."; \
 		exit 1; \
 	fi
-	@. ./$(FRONTEND_OUTPUTS_FILE); \
+	@set -e; . ./$(FRONTEND_OUTPUTS_FILE); \
 	if [ -z "$$FRONTEND_BUCKET_NAME" ]; then \
 		echo "[X] Error: FRONTEND_BUCKET_NAME not set in $(FRONTEND_OUTPUTS_FILE)"; \
 		exit 1; \
