@@ -157,7 +157,7 @@ What stays where, and for how long, after something is deleted (an item, or a wh
 | Amazon Textract async job results | 7 days (AWS-managed) |
 | Lambda logs | 90 days |
 
-AWS AI services (Textract, Bedrock) may store and use content for service improvement unless an AWS Organizations AI services opt-out policy is set; this deployment does not set one.
+Amazon Textract is covered by the AWS AI services opt-out policy: AWS may store and use its content for service improvement, and this deployment does not set an opt-out. Amazon Bedrock isn't on that list; under its default data-retention mode AWS may retain prompts and responses for abuse detection.
 
 ---
 
@@ -175,7 +175,7 @@ AWS AI services (Textract, Bedrock) may store and use content for service improv
 | Rate limiting | Per-route API Gateway throttling (table above) | `template.yaml` |
 | Encryption | DynamoDB with KMS (AWS-managed key); S3 with SSE-S3; TLS in transit (TLS 1.2+ on CloudFront) | `template.yaml`, `frontend-infrastructure.yaml` |
 | Browser hardening | CloudFront response headers: HSTS, `X-Frame-Options: DENY`, `nosniff`, referrer policy; CSP in **Report-Only** mode | `frontend-infrastructure.yaml` |
-| Audit | Security events (sign-ins, password resets, unauthorized access, resource changes) logged as structured CloudWatch entries | `lib/audit.js` |
+| Audit | Security events (some refused requests, guitar and share deletion) logged as structured CloudWatch entries with IP address and user agent | `lib/audit.js` |
 | IAM | Per-function policies scoped to that function's tables, bucket prefixes, and Bedrock models | `template.yaml` |
 | Secrets | No credentials in code; deploy config lives in gitignored `.env.deploy` / `samconfig.toml`; a pre-commit hook scans for secrets | `.gitignore`, `.git-hooks/pre-commit` |
 
@@ -188,5 +188,5 @@ Known trade-offs and open items. Report anything not listed here through [SECURI
 - **No WAF** in front of CloudFront or the API; protection relies on API Gateway throttling.
 - **Upload size is checked after upload, not during it**: a presigned PUT URL can't cap the object size, so an oversized file can sit in `uploads/` until `upload-complete` rejects and deletes it (or the 1-day lifecycle rule expires it). It never reaches `images/`.
 - **Cognito advanced security** runs in `AUDIT` mode (it logs risky sign-ins but doesn't block them).
-- **Existing audit logs carry email and IP:** sign-in events record the email, and every security event records IP address and user agent; they are kept 90 days (Lambda log retention). Account export/deletion events record only the user id.
+- **Audit logs carry IP and user agent:** security events (some refused requests, guitar and share deletion) record IP address and user agent; application logs don't record email addresses (`logAuthEvent` has no callers). Kept 90 days (Lambda log retention). Account export/deletion events record only the user id. What the logs hold is published in `public/privacy.html` §2; keep it in sync.
 - **Throttled requests aren't audited:** API Gateway rejects over-limit requests before the function runs.

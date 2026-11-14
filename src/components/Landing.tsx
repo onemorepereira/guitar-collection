@@ -6,6 +6,7 @@ import { guitarService } from '../services/guitarService';
 import { Guitar } from '../types/guitar';
 import { useImageUrls } from '../hooks/useImageUrl';
 import { useAuth } from '../context/AuthContext';
+import { LegalLinks } from './LegalLinks';
 
 export const Landing = () => {
   const navigate = useNavigate();
@@ -255,6 +256,7 @@ export const Landing = () => {
           <p className="text-center text-gray-600 dark:text-gray-400 text-sm">
             Guitar Collection Manager • Keep your instruments organized
           </p>
+          <LegalLinks className="mt-2" />
         </div>
       </footer>
     </div>

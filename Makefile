@@ -262,7 +262,7 @@ deploy-frontend: build
 		echo "   Run 'make deploy-frontend-infra' first to create frontend infrastructure."; \
 		exit 1; \
 	fi
-	@. ./$(FRONTEND_OUTPUTS_FILE); \
+	@set -e; . ./$(FRONTEND_OUTPUTS_FILE); \
 	if [ -z "$$FRONTEND_BUCKET_NAME" ]; then \
 		echo "[X] Error: FRONTEND_BUCKET_NAME not set in $(FRONTEND_OUTPUTS_FILE)"; \
 		exit 1; \
@@ -275,12 +275,15 @@ deploy-frontend: build
 	echo "   CloudFront: $$FRONTEND_DISTRIBUTION_ID"; \
 	echo ""; \
 	echo "Uploading to S3..."; \
-	aws s3 sync dist/ s3://$$FRONTEND_BUCKET_NAME --delete --cache-control max-age=31536000,public; \
+	aws s3 sync dist/ s3://$$FRONTEND_BUCKET_NAME --exclude "*.html" --cache-control max-age=31536000,public; \
 	echo ""; \
-	echo "Updating index.html with no-cache..."; \
-	aws s3 cp dist/index.html s3://$$FRONTEND_BUCKET_NAME/index.html \
+	echo "Uploading HTML pages with no-cache..."; \
+	aws s3 cp dist/ s3://$$FRONTEND_BUCKET_NAME --recursive --exclude "*" --include "*.html" \
 		--cache-control no-cache,no-store,must-revalidate \
 		--content-type text/html; \
+	echo ""; \
+	echo "Removing old assets..."; \
+	aws s3 sync dist/ s3://$$FRONTEND_BUCKET_NAME --delete --exclude "*.html"; \
 	echo ""; \
 	echo "Invalidating CloudFront cache..."; \
 	aws cloudfront create-invalidation --distribution-id $$FRONTEND_DISTRIBUTION_ID --paths "/*"; \

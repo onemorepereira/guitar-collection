@@ -15,6 +15,7 @@ import { PickIcon } from './PickIcon';
 import { PublicShareData } from '../types/guitar';
 import { shareService } from '../services/shareService';
 import { ConditionReport } from './condition';
+import { LegalLinks } from './LegalLinks';
 
 export const SharedGuitarView = () => {
   const { shareId } = useParams<{ shareId: string }>();
@@ -474,6 +475,7 @@ export const SharedGuitarView = () => {
               GuitarHelp
             </a>
           </div>
+          <LegalLinks className="mt-2" />
         </div>
       </footer>
     </div>

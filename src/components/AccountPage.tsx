@@ -6,6 +6,7 @@ import { accountService, AccountApiError, ExportJob } from '../services/accountS
 import { UserNameEditor } from './UserNameEditor';
 import { DeleteAccountDialog } from './DeleteAccountDialog';
 import { Footer } from './Footer';
+import { PRIVACY_URL } from './LegalLinks';
 
 const POLL_MS = 5000;
 const NEW_EXPORT_AFTER_READY_MS = 60 * 60 * 1000;
@@ -256,7 +257,7 @@ export const AccountPage = () => {
                 <li>browser caches of shared photos</li>
               </ul>
               <p>
-                <a href="/privacy.html" className="underline">Full retention schedule</a>
+                <a href={`${PRIVACY_URL}#retention`} target="_blank" rel="noopener noreferrer" className="underline">Full retention schedule</a>
               </p>
             </div>
           </details>

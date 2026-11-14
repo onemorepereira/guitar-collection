@@ -45,239 +45,180 @@
             background: #f0f9ff;
             font-weight: 600;
         }
+        a { overflow-wrap: anywhere; }
+        td, th { overflow-wrap: anywhere; vertical-align: top; }
+        table { table-layout: fixed; }
     </style>
 </head>
 <body>
     <h1>Privacy Policy</h1>
-    <p class="last-updated">Last Updated: January 2025</p>
+    <p class="last-updated">Last updated: November 14, 2026</p>
 
     <div class="friendly-note">
         <strong>🔒 Privacy in Plain English</strong><br>
-        We believe privacy should be simple and transparent. This policy explains what data we collect, why we collect it, and what we do (and don't do) with it. No hidden surprises, no fine print tricks.
+        Guitar Collection is a free hobby project run by the owner of the GitHub repository
+        <a href="https://github.com/onemorepereira/guitar-collection">onemorepereira/guitar-collection</a>.
+        This page explains what we collect, who can see it, and how long it's kept. It describes how the app works today.
     </div>
 
     <h2>1. The Short Version</h2>
-    <p>
-        <strong>What we collect:</strong> Your email, name, and the guitar collection data you choose to enter.
-    </p>
-    <p>
-        <strong>What we don't do:</strong> Sell your data, track you around the web, or spam you with emails.
-    </p>
-    <p>
-        <strong>Your control:</strong> You can export or delete your data anytime.
-    </p>
-
-    <h2>2. Information We Collect</h2>
-
-    <h3>Information You Give Us</h3>
-    <table>
-        <tr>
-            <th>What</th>
-            <th>Why</th>
-        </tr>
-        <tr>
-            <td>Email address</td>
-            <td>To create your account, send password resets, and contact you about important account stuff</td>
-        </tr>
-        <tr>
-            <td>Name</td>
-            <td>To personalize your experience (e.g., "Welcome back, John!")</td>
-        </tr>
-        <tr>
-            <td>Password</td>
-            <td>To secure your account (we store this encrypted/hashed, never in plain text!)</td>
-        </tr>
-        <tr>
-            <td>Guitar collection data</td>
-            <td>That's literally what the app is for – to track your guitars!</td>
-        </tr>
-        <tr>
-            <td>Photos you upload</td>
-            <td>To display your guitar images in your collection</td>
-        </tr>
-    </table>
-
-    <h3>Information We Collect Automatically</h3>
     <ul>
-        <li><strong>Basic usage data:</strong> When you log in, what features you use (helps us fix bugs and improve the app)</li>
-        <li><strong>Device info:</strong> Browser type, device type (helps us ensure the app works on your device)</li>
-        <li><strong>IP address:</strong> For security and to prevent abuse</li>
+        <li><strong>What we collect:</strong> your email, name, and the guitars, photos and documents you add.</li>
+        <li><strong>Who can see your guitars:</strong> only you, unless you create a share link or put a guitar in the public gallery (both are off until you turn them on).</li>
+        <li><strong>AI:</strong> uploaded documents are read automatically by AI services on Amazon Web Services (AWS); some features you choose also use AI. See <a href="#ai">section 4</a>.</li>
+        <li><strong>Your control:</strong> export everything or delete your account yourself, on the Account page.</li>
+        <li><strong>What we don't do:</strong> sell your data, use cookies, run analytics or ad trackers, or send marketing email.</li>
     </ul>
 
+    <h2>2. Information We Collect</h2>
+    <h3>Information You Give Us</h3>
+    <table>
+        <thead>
+            <tr><th>What</th><th>Why</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Email address</td><td>To sign you in and send password-reset codes. Password-reset codes are the only emails we send; they come from Amazon Cognito's default sender.</td></tr>
+            <tr><td>Name</td><td>Shown in the app, and included when you generate a provenance or sales report.</td></tr>
+            <tr><td>Password</td><td>Sign-in is handled by Amazon Cognito. The app passes your password to Cognito to sign you in and never stores it.</td></tr>
+            <tr><td>Guitar details</td><td>Brand, model, specs, notes, condition reports, and private info such as purchase price, place, serial number and receipt. That's what the app is for.</td></tr>
+            <tr><td>Photos and documents</td><td>To show and organize them with your guitars, and to read documents with AI (section 4).</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Information Collected Automatically</h3>
+    <ul>
+        <li><strong>Server logs</strong> (kept 90 days) record technical details of requests and errors.</li>
+        <li>For security, they record your <strong>IP address and browser user agent</strong> when some requests are refused as unauthorized and when you delete a guitar or revoke a share link. A guitar deletion also logs its brand, model and year and how many photos, documents and shares it had. Our application logs don't record email addresses.</li>
+        <li>When AI processing runs, file and document names may be logged; when an AI response can't be read, excerpts of the response and of the error (which can contain text from your document) are logged.</li>
+        <li><strong>Share-link views:</strong> each view of a share link is recorded on that share (time, browser family, and the referring page, which is normally this site; no IP address) and shown to the share owner, so they can see how often the link is opened. The newest 1,000 views are kept until the share is revoked, its guitar is deleted, or the account is deleted. Each view also writes a server log line with the share and the referring page (no IP address).</li>
+        <li><strong>Sign-in security history:</strong> Amazon Cognito keeps a security history of sign-in attempts. Sign-in goes through our server without device or browser data, so Cognito doesn't receive your IP address or device details.</li>
+    </ul>
+
+    <h2>3. How We Use Your Information</h2>
+    <ul>
+        <li>To run the app: store and show your collection, sign you in, reset your password.</li>
+        <li>To read your documents and power the AI features (section 4).</li>
+        <li>To keep the service secure and fix problems, using the logs above.</li>
+        <li>To comply with the law if required.</li>
+    </ul>
+    <p>We never sell your data, and we never use your photos in marketing.</p>
+
+    <h2 id="ai">4. AI Processing</h2>
+    <p>Some features send your content to AI services on AWS:</p>
+    <ul>
+        <li><strong>Automatically, when you upload a document:</strong> PDFs are read by Amazon Textract, and the text is cleaned up by the Amazon Nova model on Amazon Bedrock. Images are read by Amazon Bedrock, which extracts their text and writes a description.</li>
+        <li><strong>When you ask:</strong> receipt extraction (the receipt file or text you give it goes to Amazon Bedrock); specs import (the text or file you give it goes to Amazon Bedrock); provenance and sales reports (the guitar's details, private info such as purchase price, place and serial number, notes, condition-report notes, your name (provenance reports only), and for each linked document its name, notes, AI description and up to 2,000 characters of its extracted text go to Amazon Bedrock).</li>
+    </ul>
+    <p>How AWS treats that content:</p>
+    <ul>
+        <li><strong>Amazon Textract:</strong> AWS may store and use content processed by Amazon Textract to improve the service; we haven't opted out.</li>
+        <li><strong>Amazon Bedrock:</strong> under the default setting, AWS may retain prompts and responses for abuse detection.</li>
+    </ul>
+
+    <h2>5. Who Can See Your Data</h2>
+    <p>By default, only you can see your guitars. Others see them only in these ways:</p>
+    <ul>
+        <li><strong>Share links:</strong> you create a link for a guitar and pick which fields it shows. Anyone with the link sees those fields and the photos. Revoking the link makes the page stop working.</li>
+        <li><strong>Public gallery:</strong> off by default and turned on per guitar. It shows that guitar's brand, model, year, type, color, finish, materials, pickups, scale length, frets, strings, country of origin and photos on the public landing page, never notes, private info or the serial number. Turning it off takes effect within about 5 minutes.</li>
+        <li><strong>Service providers:</strong> the companies that run the service for us (section 11).</li>
+        <li><strong>Legal requirements:</strong> if required by law or to protect rights and safety.</li>
+    </ul>
     <div class="important">
-        <strong>⚠️ What We DON'T Collect:</strong><br>
-        <ul style="margin: 10px 0 0 0;">
-            <li>Your browsing history outside our app</li>
-            <li>Your location (unless you explicitly share it)</li>
-            <li>Your contacts or other personal files</li>
-            <li>Third-party tracking cookies</li>
-            <li>Anything we don't actually need</li>
+        <strong>⚠️ About photo links:</strong>
+        <ul>
+            <li>Photos and files (including receipts and documents) are stored at public, unguessable addresses. A photo link a visitor already received from a share page or the gallery may keep working after you revoke the share or leave the gallery; it stops working when the photo is deleted (or your account is). Share links use their own copies of your photos, which are deleted when you revoke the share, remove the photo or delete the guitar. Browsers may keep showing a cached photo for a while (see <a href="#retention">Data Retention</a>).</li>
+            <li>Gallery photo links, and share photo links when a share has no copies of its own, contain a random account ID, so a visitor can tell that photos belong to the same person (but not who it is).</li>
+            <li>Photos up to 2048 pixels are stored as uploaded; larger ones are resized in your browser first. An original photo can carry metadata, such as camera details and the location if your phone recorded it, and that original is what the gallery and some share pages show. Share copies are re-encoded without it.</li>
         </ul>
     </div>
 
-    <h2>3. How We Use Your Information</h2>
-    <p>
-        We use your data to:
-    </p>
+    <h2>6. Your Rights &amp; Control</h2>
     <ul>
-        <li>Provide and maintain the service (duh!)</li>
-        <li>Send you password reset emails when you forget your password</li>
-        <li>Fix bugs and improve features</li>
-        <li>Prevent fraud and abuse</li>
-        <li>Comply with the law if required (but we'll fight unnecessary requests)</li>
-    </ul>
-    <p>
-        We will <strong>NEVER</strong>:
-    </p>
-    <ul>
-        <li>Sell your data to third parties</li>
-        <li>Use your guitar photos for advertising without permission</li>
-        <li>Share your collection with anyone else</li>
-        <li>Send you spam or marketing emails (unless you explicitly ask for updates)</li>
+        <li><strong>Edit or delete</strong> any guitar, photo or document in the app. Deleting a guitar also deletes its share links and their view history; removing a photo removes it from your share links.</li>
+        <li><strong>Export your data:</strong> on the Account page, with your password, you get a ZIP of all your data and files, usually ready within minutes and downloadable for 7 days.</li>
+        <li><strong>Delete your account:</strong> on the Account page, with your password. Deletion completes in about 20 minutes; then the <a href="#retention">retention table</a> applies.</li>
+        <li><strong>Questions or requests:</strong> see <a href="#contact">Contact Us</a>.</li>
     </ul>
 
-    <h2>4. How We Store & Protect Your Data</h2>
-
-    <h3>Security Measures</h3>
+    <h2>7. Cookies &amp; Browser Storage</h2>
+    <p>We don't use cookies, analytics, or ad or social trackers.</p>
+    <p>Your browser stores, for this site:</p>
     <ul>
-        <li><strong>Encryption:</strong> All data is encrypted in transit (HTTPS) and at rest</li>
-        <li><strong>Password security:</strong> Passwords are hashed and salted (never stored in plain text)</li>
-        <li><strong>Access control:</strong> Only authorized systems can access your data</li>
-        <li><strong>Regular backups:</strong> Your data is backed up regularly</li>
+        <li>sign-in tokens and your cached profile (removed when you sign out);</li>
+        <li>recent autocomplete entries (kept after sign-out; removed when you delete your account on that device or clear the site's data);</li>
+        <li>theme and view preferences (kept until you clear the site's data).</li>
     </ul>
-
-    <h3>Data Storage</h3>
-    <p>
-        Your data is stored on secure cloud servers. We use industry-standard hosting providers with robust security measures.
-    </p>
-
-    <div class="important">
-        <strong>⚠️ Important:</strong> No system is 100% secure. While we do our best to protect your data, we can't guarantee absolute security. That's why we recommend you keep your own backups of important information.
-    </div>
-
-    <h2>5. Sharing Your Data</h2>
-    <p>
-        We share your data only in these limited situations:
-    </p>
-    <ul>
-        <li><strong>With your consent:</strong> If you explicitly tell us to share something</li>
-        <li><strong>Service providers:</strong> Companies that help us run the service (e.g., cloud hosting, email delivery) – but they're bound by strict agreements to protect your privacy</li>
-        <li><strong>Legal requirements:</strong> If required by law or to protect rights/safety</li>
-    </ul>
-    <p>
-        We will <strong>never</strong> sell your data to advertisers, data brokers, or anyone else. Period.
-    </p>
-
-    <h2>6. Your Rights & Control</h2>
-
-    <h3>You Can:</h3>
-    <ul>
-        <li><strong>Access your data:</strong> Download all your information anytime</li>
-        <li><strong>Edit your data:</strong> Change your guitars, photos, profile info whenever</li>
-        <li><strong>Delete your data:</strong> Remove individual guitars or your entire account</li>
-        <li><strong>Export your data:</strong> Get a copy in a portable format</li>
-        <li><strong>Opt out of emails:</strong> Stop non-essential communications</li>
-    </ul>
-
-    <h3>How to Exercise Your Rights:</h3>
-    <ul>
-        <li>Most actions can be done directly in the app (Edit Profile, Delete Guitar, etc.)</li>
-        <li>For account deletion or data export, contact us or use the settings</li>
-        <li>We'll respond to requests within a reasonable time (usually within a few days)</li>
-    </ul>
-
-    <h2>7. Cookies & Tracking</h2>
-    <p>
-        We use minimal cookies to:
-    </p>
-    <ul>
-        <li>Keep you logged in</li>
-        <li>Remember your preferences</li>
-        <li>Ensure security</li>
-    </ul>
-    <p>
-        We <strong>don't use</strong>:
-    </p>
-    <ul>
-        <li>Third-party advertising cookies</li>
-        <li>Tracking pixels</li>
-        <li>Social media tracking</li>
-        <li>Any creepy surveillance stuff</li>
-    </ul>
+    <p>The app loads its fonts from Google Fonts, so Google's servers receive your IP address and browser details. This page and the Terms page don't load them.</p>
 
     <h2>8. Children's Privacy</h2>
-    <p>
-        This service is not intended for children under 13. We don't knowingly collect data from kids. If we discover we've collected data from someone under 13, we'll delete it promptly.
-    </p>
-    <p>
-        Parents: If you believe your child has used our service, please contact us and we'll remove their data.
-    </p>
+    <p>This service is not intended for children under 13. If we find an account belonging to a child under 13, we delete it. Parents can reach us as described in <a href="#contact">Contact Us</a>.</p>
 
-    <h2>9. Data Retention</h2>
-    <p>
-        We keep your data for as long as you have an account. When you delete your account:
-    </p>
-    <ul>
-        <li>Your guitars and photos are permanently deleted</li>
-        <li>Your personal info is removed from our active systems</li>
-        <li>We may keep anonymized data for analytics (with no way to identify you)</li>
-        <li>We keep some data longer if required by law (e.g., financial records)</li>
-    </ul>
+    <h2 id="retention">9. Data Retention</h2>
+    <p>While you have an account, we keep your data. After something is deleted (an item, or your whole account), these copies remain for the times shown:</p>
+    <table>
+        <thead>
+            <tr><th>Copy</th><th>Kept for</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Your records, current files and sign-in account</td><td>Removed during deletion (account deletion completes within ~20 minutes)</td></tr>
+            <tr><td>Older versions of photos, files and share copies</td><td>30 days</td></tr>
+            <tr><td>Older versions of unfinished uploads</td><td>1 day</td></tr>
+            <tr><td>Copies at CDN edge locations</td><td>Until the CDN cache clear completes</td></tr>
+            <tr><td>Copies of shared photos in visitors' browsers</td><td>Up to 1 year</td></tr>
+            <tr><td>Database point-in-time backups</td><td>35 days</td></tr>
+            <tr><td>Guitar change stream</td><td>24 hours</td></tr>
+            <tr><td>Failed document-reading jobs</td><td>14 days</td></tr>
+            <tr><td>Failed account-deletion jobs (account ID only)</td><td>14 days</td></tr>
+            <tr><td>Deletion marker (account ID and times)</td><td>Until 7 hours after deletion completes</td></tr>
+            <tr><td>Export ZIPs / export job records (no content)</td><td>7 days / 30 days</td></tr>
+            <tr><td>Amazon Textract job results</td><td>7 days (kept by AWS)</td></tr>
+            <tr><td>Server logs</td><td>90 days</td></tr>
+        </tbody>
+    </table>
+    <p>Content processed by Amazon Textract may also be kept by AWS to improve the service, and Amazon Bedrock may retain prompts and responses for abuse detection (see <a href="#ai">section 4</a>).</p>
 
-    <h2>10. International Data Transfers</h2>
-    <p>
-        If you're outside the country where we host our servers, your data may be transferred internationally. We ensure appropriate safeguards are in place to protect your data during these transfers.
-    </p>
+    <h2>10. Where Your Data Is Stored</h2>
+    <p>Your data is stored in the United States (AWS us-east-1). Public files and the app's pages may be cached at CDN locations in North America and Europe.</p>
 
     <h2>11. Third-Party Services</h2>
-    <p>
-        We may use these third-party services:
-    </p>
     <ul>
-        <li><strong>Cloud hosting:</strong> To store data securely</li>
-        <li><strong>Email service:</strong> To send password resets and notifications</li>
-        <li><strong>Analytics:</strong> Minimal, privacy-focused analytics to improve the app</li>
+        <li><strong>Amazon Web Services (AWS):</strong> hosting, storage and the CDN; Amazon Cognito for sign-in and password-reset emails; Amazon Textract and Amazon Bedrock for AI processing (section 4).</li>
+        <li><strong>Google Fonts:</strong> the app's fonts, which means Google receives your IP address and browser details.</li>
     </ul>
-    <p>
-        Each service is chosen carefully and required to protect your privacy. We don't use Google Analytics, Facebook Pixel, or other invasive tracking tools.
-    </p>
+    <p>We don't use any analytics service.</p>
 
-    <h2>12. Changes to This Policy</h2>
-    <p>
-        We may update this policy occasionally. When we do:
-    </p>
+    <h2>12. How We Protect Your Data</h2>
     <ul>
-        <li>We'll update the "Last Updated" date</li>
-        <li>For major changes, we'll notify you via email or in-app notification</li>
-        <li>We'll never reduce your privacy rights without your consent</li>
+        <li>All traffic uses HTTPS.</li>
+        <li>Database tables are encrypted at rest with AWS KMS keys; stored files are encrypted at rest by Amazon S3.</li>
+        <li>Database point-in-time backups are kept for 35 days.</li>
     </ul>
-    <p>
-        You can always find the current policy here or in the app.
-    </p>
+    <div class="important">
+        <strong>⚠️ Important:</strong> No system is perfectly secure. Please keep your own copies of important information; the export on the Account page makes that easy.
+    </div>
 
-    <h2>13. Contact Us</h2>
-    <p>
-        Questions about privacy? Concerns about your data? Just want to say hi?
-    </p>
-    <p>
-        We're real people who actually care about your privacy. Reach out anytime!
-    </p>
+    <h2>13. Changes to This Policy</h2>
+    <p>When we change this policy, we update the "Last updated" date at the top. For significant changes, we also put a note on the site's landing page.</p>
 
-    <h2>14. Your California Privacy Rights</h2>
-    <p>
-        <em>(If applicable)</em> If you're a California resident, you have additional rights under CCPA:
-    </p>
+    <h2 id="contact">14. Contact Us</h2>
+    <ul>
+        <li>Questions and requests: open an issue on <a href="https://github.com/onemorepereira/guitar-collection/issues">GitHub</a>. Issues are public, so don't include personal details there.</li>
+        <li>Anything personal or security-related: use GitHub's <a href="https://github.com/onemorepereira/guitar-collection/security/advisories/new">private reporting</a> (needs a GitHub account).</li>
+    </ul>
+    <p>We read requests, but this is a hobby project and we can't promise a response time.</p>
+
+    <h2>15. Your California Privacy Rights</h2>
+    <p>(If applicable) If you're a California resident, you have additional rights under CCPA:</p>
     <ul>
         <li>Right to know what personal data we collect and why</li>
         <li>Right to delete your personal data</li>
         <li>Right to opt-out of data "sales" (though we don't sell data anyway!)</li>
         <li>Right to non-discrimination for exercising your rights</li>
     </ul>
+    <p>Use the Account page (section 6) or <a href="#contact">Contact Us</a> to exercise them.</p>
 
-    <h2>15. GDPR Rights</h2>
-    <p>
-        <em>(If applicable)</em> If you're in the EU/EEA, you have these rights:
-    </p>
+    <h2>16. GDPR Rights</h2>
+    <p>(If applicable) If you're in the EU/EEA, you have these rights:</p>
     <ul>
         <li>Right to access your personal data</li>
         <li>Right to rectification (correct inaccurate data)</li>
@@ -288,17 +229,18 @@
         <li>Right to withdraw consent</li>
         <li>Right to lodge a complaint with a supervisory authority</li>
     </ul>
+    <p>Use the Account page (section 6) or <a href="#contact">Contact Us</a> to exercise them.</p>
 
     <div class="friendly-note">
         <strong>Our Promise:</strong><br>
-        We built this app because we love guitars, not because we want to harvest your data. Your privacy matters to us. We'll always be transparent, never sneaky, and always on your side. 🎸
+        We built this app because we love guitars, not because we want to harvest your data. 🎸
     </div>
 
     <hr style="margin: 40px 0; border: none; border-top: 1px solid #ddd;">
 
     <p style="text-align: center; color: #666; font-size: 0.9em;">
         <a href="/">Back to Guitar Collection</a> |
-        <a href="/terms.html">Terms of Service</a>
+        <a href="/terms.html?v=20261114">Terms of Service</a>
     </p>
 </body>
 </html>

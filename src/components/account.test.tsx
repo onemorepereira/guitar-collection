@@ -206,6 +206,16 @@ describe('AccountPage: Your data', () => {
   });
 });
 
+describe('AccountPage: retention link', () => {
+  test('opens the privacy policy retention section in a new tab', async () => {
+    vi.mocked(accountService.getExportStatus).mockResolvedValue({ status: 'none' });
+    renderAccount();
+    const link = await screen.findByRole('link', { name: 'Full retention schedule', hidden: true });
+    expect(link.getAttribute('href')).toBe('/privacy.html?v=20261114#retention');
+    expect(link.getAttribute('target')).toBe('_blank');
+  });
+});
+
 describe('Delete account dialog', () => {
   async function openDialog() {
     vi.mocked(accountService.getExportStatus).mockResolvedValue({ status: 'none' });

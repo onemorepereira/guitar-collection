@@ -1,3 +1,5 @@
+/* Privacy: public/privacy.html §2 tells users what the logs record. Logging new
+ * personal data (IP, user agent, names, document text, ...) means updating it. */
 /**
  * Structured logging utility
  * Provides secure, production-safe logging with automatic sanitization
