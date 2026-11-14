@@ -121,6 +121,22 @@ test('caches an empty result too (no scan storm when nothing is opted in)', asyn
   expect(ddbMock.commandCalls(ScanCommand)).toHaveLength(1);
 });
 
+test('never returns an unflagged guitar even if the scan returns one (backstop)', async () => {
+  ddbMock.on(ScanCommand).resolves({
+    Items: [guitar('leak', {}), guitar('false-flag', { showInGallery: false }), guitar('str', { showInGallery: 'true' })],
+  });
+  const res = await loadHandler()({});
+  expect(res.statusCode).toBe(404);
+});
+
+test('tolerates malformed image entries', async () => {
+  ddbMock.on(ScanCommand).resolves({
+    Items: [guitar('g1', { showInGallery: true, images: [null, { id: 'i', url: 'u', isPrimary: true, order: 0 }] })],
+  });
+  const body = JSON.parse((await loadHandler()({})).body);
+  expect(body.images).toEqual([{ id: 'i', url: 'u', isPrimary: true, order: 0 }]);
+});
+
 test('returns 500 when the scan fails', async () => {
   ddbMock.on(ScanCommand).rejects(new Error('boom'));
   jest.spyOn(console, 'error').mockImplementation(() => {});

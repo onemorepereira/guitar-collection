@@ -113,9 +113,20 @@ describe('GuitarForm gallery opt-in', () => {
     expect(vi.mocked(guitarService.updateGuitar).mock.calls[0][1].showInGallery).toBe(false);
   });
 
-  test('add: starts unchecked', () => {
+  test('add: starts unchecked and a new guitar is saved with showInGallery=false', async () => {
     renderAt('/add');
     expect(galleryCheckbox().checked).toBe(false);
+
+    fireEvent.change(screen.getByPlaceholderText('Select a model'), { target: { value: 'Telecaster' } });
+    // Brand is the first autocomplete input in the form
+    const brandInput = screen.getAllByRole('textbox')[0];
+    fireEvent.change(brandInput, { target: { value: 'Fender' } });
+    await save();
+
+    await waitFor(() => expect(guitarService.createGuitar).toHaveBeenCalled());
+    const payload = vi.mocked(guitarService.createGuitar).mock.calls[0][0];
+    expect(payload.brand).toBe('Fender');
+    expect(payload.showInGallery).toBe(false);
   });
 });
 

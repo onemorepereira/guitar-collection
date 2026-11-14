@@ -40,12 +40,9 @@ function sanitizeGuitar(guitar) {
     numberOfStrings: guitar.numberOfStrings,
     countryOfOrigin: guitar.countryOfOrigin,
     // Only what the Visibility copy promises: photos, no owner-written captions
-    images: (guitar.images || []).map(({ id, url, isPrimary, order }) => ({
-      id,
-      url,
-      isPrimary,
-      order,
-    })),
+    images: (guitar.images || [])
+      .filter((image) => image && typeof image === 'object')
+      .map(({ id, url, isPrimary, order }) => ({ id, url, isPrimary, order })),
     // Explicitly exclude private information:
     // - userId
     // - privateInfo (purchase price, receipt, etc.)
@@ -72,7 +69,8 @@ async function scanGalleryGuitars() {
       ExpressionAttributeValues: { ':t': true },
       ExclusiveStartKey: exclusiveStartKey,
     }));
-    items.push(...(response.Items || []));
+    // Backstop: never trust the filter alone on a privacy-critical path
+    items.push(...(response.Items || []).filter((item) => item.showInGallery === true));
     scannedCount += response.ScannedCount || 0;
     pages += 1;
     exclusiveStartKey = response.LastEvaluatedKey;
