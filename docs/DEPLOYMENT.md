@@ -1,603 +1,201 @@
-# Guitar Collection - Deployment Guide
+# Deployment
 
-This document provides comprehensive instructions for deploying the Guitar Collection application using the **Makefile-only deployment system**.
+Deploy your own copy of the app to an AWS account. Everything runs through the root `Makefile`, which reads `.env.deploy` and `backend/samconfig.toml`.
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [How It Works](#how-it-works)
-- [Step-by-Step Deployment](#step-by-step-deployment)
-- [Configuration](#configuration)
-- [Deployment Targets](#deployment-targets)
-- [Troubleshooting](#troubleshooting)
-- [Architecture](#architecture)
-
----
-
-## Overview
-
-The Guitar Collection application uses a **fully automated, Makefile-only deployment system** that:
-
-1. **Deploys the backend** (SAM/CloudFormation)
-2. **Extracts CloudFormation outputs** automatically
-3. **Generates frontend environment variables** from backend outputs
-4. **Deploys frontend infrastructure** (S3 + CloudFront)
-5. **Builds and deploys the frontend** application
-
-**Key Features:**
-- ✅ Zero shell scripts required - everything in Makefile
-- ✅ Self-generating configuration - outputs feed successive stages
-- ✅ Colored, user-friendly output
-- ✅ Comprehensive validation
-- ✅ Atomic teardown for cleanup
+For local development without deploying, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ---
 
 ## Prerequisites
 
-### Required Tools
+| Tool | Version | Notes |
+|------|---------|-------|
+| Node.js | 22+ (repo pins 24.11.0 in `.tool-versions`) | Lambdas run on `nodejs22.x` |
+| AWS CLI | v2 | Credentials for the target account (`aws sts get-caller-identity` should work) |
+| AWS SAM CLI | current | [Install guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) |
+| jq | any | Parses CloudFormation outputs |
+| make | any | |
 
-1. **AWS CLI** (v2 recommended)
-   ```bash
-   aws --version
-   # Should output: aws-cli/2.x.x or higher
-   ```
+You also need:
 
-2. **AWS SAM CLI** (v1.146.0+)
-   ```bash
-   sam --version
-   # Should output: SAM CLI, version 1.146.0 or higher
-   ```
-
-3. **jq** (JSON processor)
-   ```bash
-   jq --version
-   # Should output: jq-1.6 or higher
-   ```
-
-4. **Node.js** (v20+) and npm
-   ```bash
-   node --version  # v20.x.x or higher
-   npm --version   # 10.x.x or higher
-   ```
-
-5. **Make** (GNU Make)
-   ```bash
-   make --version
-   # Should output: GNU Make 4.x or higher
-   ```
-
-### Installation (Ubuntu/Debian)
-
-```bash
-# AWS CLI
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
-
-# SAM CLI
-pip install aws-sam-cli
-
-# jq
-sudo apt-get install jq
-
-# Node.js via asdf (recommended)
-asdf install nodejs 20.11.0
-asdf global nodejs 20.11.0
-```
-
-### AWS Configuration
-
-1. **Configure AWS credentials**:
-   ```bash
-   aws configure
-   ```
-
-2. **Required AWS resources** (created once manually or via IaC):
-   - Route53 Hosted Zone (if using custom domains)
-   - ACM Certificate validation access
+- **A domain in a Route 53 hosted zone.** The frontend stack issues an ACM certificate and points the domain at CloudFront, so it requires a hosted zone ID. The backend's custom API/images domains are optional.
+- **Region `us-east-1`** (required as shipped). The frontend stack creates its CloudFront certificate in the stack's own region, and CloudFront only accepts certificates from us-east-1; the Bedrock permissions in `template.yaml` also reference US inference profiles. Other regions need template changes.
+- **Amazon Bedrock model access** to **Nova Lite** (specs, receipts, document extraction) and **Nova Pro** (provenance reports) in your region. Without it, the AI features return errors; everything else works.
+- **IAM permissions** to create CloudFormation stacks with named IAM roles (`CAPABILITY_NAMED_IAM`), plus Lambda, API Gateway, DynamoDB, S3, CloudFront, Cognito, SQS, SNS, ACM, and Route 53 resources.
 
 ---
 
-## Quick Start
-
-### First-Time Setup
+## Quick start
 
 ```bash
-# 1. Clone repository
-git clone <repository-url>
-cd guitar-collection
-
-# 2. Initialize configuration files
-make init
-
-# 3. Edit configuration (see Configuration section)
-nano .env.deploy
-nano backend/samconfig.toml
-
-# 4. Install dependencies
-make install
-
-# 5. Validate configuration
-make validate
-
-# 6. Deploy everything
-make deploy-all
+make init        # copies .env.deploy.example → .env.deploy and samconfig.toml.example → backend/samconfig.toml
+# edit both files (see Configuration below)
+make install     # npm install for the frontend and backend/src
+make deploy-all  # backend → frontend infrastructure → frontend app
 ```
 
-**That's it!** The Makefile will:
-- Deploy backend via SAM
-- Extract API URL, Cognito IDs, CloudFront domain
-- Generate `.env` file automatically
-- Deploy frontend infrastructure
-- Build and deploy frontend
-
----
-
-## How It Works
-
-### Deployment Pipeline
-
-
-![Deployment Pipeline](diagrams/deployment-pipeline/deployment-pipeline.png)
-
-> `make deploy-all` runs three stages; each stage's CloudFormation outputs feed the next (backend outputs generate the frontend `.env`).
-
-### Generated Files
-
-The Makefile creates these files automatically:
-
-| File | Purpose | Source |
-|------|---------|--------|
-| `.env.backend.outputs` | Backend CloudFormation outputs | AWS CloudFormation API |
-| `.env.frontend.outputs` | Frontend infrastructure outputs | AWS CloudFormation API |
-| `.env` | Vite environment variables | Generated from backend outputs |
-
-**Example `.env.backend.outputs`**:
-```bash
-# Auto-generated backend outputs (do not edit manually)
-# Generated at: Fri Nov 15 10:30:00 PST 2025
-
-BACKEND_API_URL=https://api.guitarhelp.click
-BACKEND_USER_POOL_ID=us-east-1_abc123xyz
-BACKEND_USER_POOL_CLIENT_ID=7k2jp5prpkubsbbujgkajsutf0
-BACKEND_CLOUDFRONT_DOMAIN=d3jknizi2nswkn.cloudfront.net
-BACKEND_IMAGES_BUCKET=guitarhelp-prod-123456789012
-```
-
-**Example `.env` (auto-generated for frontend)**:
-```bash
-# Auto-generated frontend environment variables
-# Generated at: Fri Nov 15 10:30:01 PST 2025
-# Source: Backend CloudFormation stack outputs
-
-# API Configuration
-VITE_API_URL=https://api.guitarhelp.click
-
-# AWS Cognito Configuration (currently unused in code)
-VITE_COGNITO_USER_POOL_ID=us-east-1_abc123xyz
-VITE_COGNITO_CLIENT_ID=7k2jp5prpkubsbbujgkajsutf0
-VITE_COGNITO_REGION=us-east-1
-
-# CloudFront Domain for images (currently unused in code)
-VITE_CLOUDFRONT_DOMAIN=d3jknizi2nswkn.cloudfront.net
-```
-
----
-
-## Step-by-Step Deployment
-
-### Option 1: Full Automated Deployment
-
-```bash
-make deploy-all
-```
-
-This runs all three stages automatically.
-
-### Option 2: Manual Step-by-Step
-
-```bash
-# Stage 1: Deploy backend
-make deploy-backend
-# ✅ Backend deployed
-# ✅ .env.backend.outputs created
-# ✅ .env generated
-
-# Stage 2: Deploy frontend infrastructure
-make deploy-frontend-infra
-# ✅ S3 bucket created
-# ✅ CloudFront distribution created
-# ✅ .env.frontend.outputs created
-
-# Stage 3: Deploy frontend application
-make deploy-frontend
-# ✅ Frontend built
-# ✅ Uploaded to S3
-# ✅ CloudFront cache invalidated
-```
-
-### Option 3: Frontend-Only Update
-
-If you only changed frontend code:
-
-```bash
-make deploy-frontend
-```
-
-This rebuilds and redeploys the frontend without touching the backend.
+The first deploy takes roughly 10–20 minutes, mostly ACM certificate validation and CloudFront distribution creation.
 
 ---
 
 ## Configuration
 
-### `.env.deploy` (Manual Configuration)
+Both files are gitignored. Never commit them.
 
-This file contains **deployment configuration** (not secrets, just resource identifiers).
+### `.env.deploy`
 
-```bash
-# AWS Configuration
-AWS_ACCOUNT_ID=123456789012
-AWS_REGION=us-east-1
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `AWS_ACCOUNT_ID` | yes | Checked by `make validate` |
+| `AWS_REGION` | yes | e.g. `us-east-1` |
+| `BACKEND_STACK_NAME` | yes | **Must equal `stack_name` in `samconfig.toml`**. Used to read stack outputs and log groups |
+| `FRONTEND_BUCKET_PREFIX` | yes | Frontend stack is named `<prefix>-frontend`; bucket is `<prefix>-<account-id>` |
+| `FRONTEND_DOMAIN` | yes | e.g. `example.com` |
+| `HOSTED_ZONE_ID` | yes | Route 53 hosted zone ID for `FRONTEND_DOMAIN`. The frontend stack needs it for its certificate and DNS records |
+| `API_DOMAIN` | no | Defaults to `api.$FRONTEND_DOMAIN`. Used in the frontend CSP |
+| `IMAGES_DOMAIN` | no | Defaults to `images.$FRONTEND_DOMAIN`. Used in the frontend CSP |
+| `AWS_PROFILE` | no | Exported to every `aws`/`sam` call |
+| `CLOUDFRONT_DISTRIBUTION_ID` | no | Only read by the legacy `scripts/deploy-frontend.sh`. `make` gets the ID from stack outputs |
 
-# Domain Configuration
-FRONTEND_DOMAIN=guitarhelp.click
-API_DOMAIN=api.guitarhelp.click
+### `backend/samconfig.toml`
 
-# Stack and Bucket Names
-BACKEND_STACK_NAME=guitarhelp
-FRONTEND_BUCKET_PREFIX=guitarhelp-click-frontend
+`make deploy-backend` runs `sam deploy` with the `[default]` environment. In `[default.global.parameters]`, set `stack_name` (must equal `BACKEND_STACK_NAME`) and `region` (must equal `AWS_REGION`). Then set these in `[default.deploy.parameters]` → `parameter_overrides`:
 
-# Route53 (optional - leave empty if not using custom domains)
-HOSTED_ZONE_ID=YOUR_ROUTE53_HOSTED_ZONE_ID
+| Parameter | Purpose |
+|-----------|---------|
+| `Environment` | `prod`, `staging`, or `dev`. Becomes the API stage name and part of the images bucket name |
+| `AllowedOrigin` | Your frontend origin, e.g. `https://example.com` (CORS + CSRF) |
+| `FrontendDomain` | Same domain, used to build share links |
+| `BucketPrefix` | Images bucket becomes `<prefix>-<Environment>-<account-id>` |
+| `HostedZoneId` | Optional. When set, creates `ApiDomainName` and `ImagesDomainName` with certificates and DNS records |
+| `ApiDomainName`, `ImagesDomainName` | Custom domains used when `HostedZoneId` is set |
 
-# Optional: Override default AWS profile
-# AWS_PROFILE=default
-```
+**Values that must agree across the two files:**
 
-### `backend/samconfig.toml` (SAM Configuration)
+| `.env.deploy` | `samconfig.toml` |
+|---------------|------------------|
+| `BACKEND_STACK_NAME` | `stack_name` |
+| `AWS_REGION` | `region` |
+| `FRONTEND_DOMAIN` | `FrontendDomain`, and `AllowedOrigin` = `https://<FRONTEND_DOMAIN>` |
+| `HOSTED_ZONE_ID` | `HostedZoneId` (if you use backend custom domains) |
+| `API_DOMAIN`, `IMAGES_DOMAIN` | `ApiDomainName`, `ImagesDomainName` (the frontend CSP allows only these) |
 
-This file contains **SAM deployment parameters**.
-
-```toml
-version = 0.1
-
-[default.global.parameters]
-stack_name = "guitarhelp"
-region = "us-east-1"
-
-[default.build.parameters]
-cached = true
-parallel = true
-
-[default.deploy.parameters]
-capabilities = "CAPABILITY_NAMED_IAM"
-confirm_changeset = true
-resolve_s3 = true
-parameter_overrides = "Environment=prod AllowedOrigin='https://guitarhelp.click' ApiDomainName='api.guitarhelp.click' ImagesDomainName='images.guitarhelp.click' HostedZoneId='YOUR_ROUTE53_HOSTED_ZONE_ID' BucketPrefix='guitarhelp' FrontendDomain='guitarhelp.click'"
-s3_prefix = "guitarhelp"
-tags = "Environment=prod Project=GuitarCollection"
-```
-
-**Important**: The `stack_name` in `samconfig.toml` must match `BACKEND_STACK_NAME` in `.env.deploy`.
+The example file also has `[dev]`, `[staging]`, and `[prod]` sections for `sam deploy --config-env <env>` (`npm run deploy:<env>` in `backend/`). Each is a **separate stack**. `make` only uses `[default]`, so don't mix the two approaches for the same environment.
 
 ---
 
-## Deployment Targets
+## What `make deploy-all` does
 
-### Core Targets
+![Deployment Pipeline](diagrams/deployment-pipeline/deployment-pipeline.png)
 
-| Command | Description |
-|---------|-------------|
-| `make help` | Show all available commands |
-| `make init` | Initialize configuration from templates |
-| `make install` | Install frontend and backend dependencies |
-| `make validate` | Validate configuration and check for required tools |
-| `make status` | Show current configuration and cached outputs |
+> Three stages. Each stage's CloudFormation outputs feed the next; the backend outputs generate the frontend `.env`.
 
-### Deployment Targets
+| Stage | Target | What happens | Writes |
+|-------|--------|--------------|--------|
+| 1 | `make deploy-backend` | `sam build && sam deploy` with `backend/template.yaml`, then reads the stack outputs | `.env.backend.outputs`, `.env` |
+| 2 | `make deploy-frontend-infra` | `aws cloudformation deploy` of `frontend-infrastructure.yaml` (S3, CloudFront, ACM, Route 53, security headers) | `.env.frontend.outputs` |
+| 3 | `make deploy-frontend` | `npm run build`, `aws s3 sync dist/ --delete` (long cache), re-upload `index.html` with `no-cache`, CloudFront invalidation of `/*` | — |
 
-| Command | Description |
-|---------|-------------|
-| `make deploy-all` | Deploy everything (backend → infra → frontend) |
-| `make deploy-backend` | Deploy backend + extract outputs + generate .env |
-| `make deploy-frontend-infra` | Deploy S3 bucket + CloudFront distribution |
-| `make deploy-frontend` | Build and deploy frontend code |
+Each target can be run on its own. After the first deploy, a typical update is `make deploy-backend` and/or `make deploy-frontend`.
 
-### Development Targets
+### Generated files
 
-| Command | Description |
-|---------|-------------|
-| `make dev` | Start frontend development server |
-| `make build` | Build frontend for production |
-| `make test` | Run tests |
+All gitignored; regenerated on every deploy.
 
-### Utility Targets
+| File | Contents | Used by |
+|------|----------|---------|
+| `.env.backend.outputs` | API URL (custom domain if set), user pool and client IDs, images CloudFront domain, images bucket | `_generate-env`, `teardown`, `status` |
+| `.env` | `VITE_API_URL` (the only variable the frontend reads) plus informational values | `vite build` |
+| `.env.frontend.outputs` | Frontend bucket, distribution ID and domain, website URL | `deploy-frontend`, `teardown` |
 
-| Command | Description | Example |
-|---------|-------------|---------|
-| `make logs` | Tail backend Lambda logs | `make logs FUNC=guitars` |
-| `make clean` | Clean build artifacts and generated files | - |
-| `make teardown` | Delete all deployed resources (DESTRUCTIVE) | - |
+`VITE_API_URL` is baked into the bundle at build time. Rebuild (`make deploy-frontend` always does) whenever the API URL changes.
+
+### Backend stack outputs
+
+`ApiUrl`, `CustomDomainUrl` (when a custom domain is set), `UserPoolId`, `UserPoolClientId`, `ImagesBucketName`, `CloudFrontDomain`, `ImagesCdnUrl`, table names, and `CertificateArn`. Inspect them with:
+
+```bash
+aws cloudformation describe-stacks --stack-name "$BACKEND_STACK_NAME" --query 'Stacks[0].Outputs'
+```
+
+---
+
+## Make targets
+
+| Target | Description |
+|--------|-------------|
+| `make help` | List targets |
+| `make init` | Create `.env.deploy` and `backend/samconfig.toml` from the examples (won't overwrite) |
+| `make init-hooks` | Enable the secret-scanning pre-commit hook (`core.hooksPath=.git-hooks`) |
+| `make install` | `npm install` in the repo root and `backend/src` |
+| `make validate` | Check config values and that `aws`, `sam`, `jq` are installed |
+| `make status` | Show configuration and cached outputs |
+| `make deploy-all` | All three stages |
+| `make deploy-backend` / `deploy-frontend-infra` / `deploy-frontend` | Individual stages |
+| `make build` | Frontend production build only |
+| `make logs FUNC=<suffix>` | Tail `/aws/lambda/<stack>-<suffix>`. Suffixes: `auth`, `guitars`, `public-guitar`, `images`, `user`, `specs`, `receipts`, `documents`, `document-extraction`, `provenance`, `shares` |
+| `make clean` | Remove `dist/`, `backend/.aws-sam/`, and the cached outputs (keeps `.env`) |
+| `make teardown` | **Destructive.** Empties both buckets and deletes both stacks after you type `DELETE` |
+
+### Dry run
+
+Preview changes without touching the deployed environment:
+
+```bash
+cd backend && sam build && sam deploy --no-execute-changeset --no-fail-on-empty-changeset
+aws s3 sync dist/ "s3://<frontend-bucket>" --delete --dryrun
+```
+
+---
+
+## Verifying a deployment
+
+```bash
+make status
+curl -s "$(grep BACKEND_API_URL .env.backend.outputs | cut -d= -f2)/public/guitars/random"   # 200 or 404 = API reachable
+aws s3 cp "s3://<frontend-bucket>/index.html" - | grep -o 'index-[^"]*\.js'                 # should match dist/assets/
+```
+
+Then open your domain, register an account, and add a guitar.
+
+---
+
+## Teardown
+
+```bash
+make teardown
+```
+
+It empties the frontend and images buckets, deletes `<prefix>-frontend`, then runs `sam delete` on the backend stack. These may need manual cleanup:
+
+- **The images bucket**: it is versioned, and `aws s3 rm` leaves old object versions behind, so the stack deletion can fail on it. Delete all object versions, then retry `sam delete`.
+- DynamoDB tables have no retention policy, so **your data is deleted with the stack**. Export anything you want to keep first.
+- CloudWatch log groups (retained by default)
+- ACM certificates or Route 53 records you created outside the stacks
 
 ---
 
 ## Troubleshooting
 
-### Common Issues
-
-#### 1. **"jq not found"**
-
-**Error**:
-```
-❌ jq not found - please install it (required for parsing CloudFormation outputs)
-```
-
-**Solution**:
-```bash
-# Ubuntu/Debian
-sudo apt-get install jq
-
-# macOS
-brew install jq
-
-# Fedora
-sudo dnf install jq
-```
-
-#### 2. **"BACKEND_STACK_NAME not set"**
-
-**Error**:
-```
-❌ Error: BACKEND_STACK_NAME not set in .env.deploy
-```
-
-**Solution**:
-```bash
-# Edit .env.deploy and set:
-BACKEND_STACK_NAME=your-stack-name
-```
-
-#### 3. **Backend outputs not found**
-
-**Error**:
-```
-❌ Error: .env.backend.outputs not found. Run 'make deploy-backend' first.
-```
-
-**Solution**:
-```bash
-# Deploy backend first to generate outputs
-make deploy-backend
-```
-
-#### 4. **Frontend infrastructure not deployed**
-
-**Error**:
-```
-❌ Error: .env.frontend.outputs not found.
-   Run 'make deploy-frontend-infra' first to create frontend infrastructure.
-```
-
-**Solution**:
-```bash
-# Deploy frontend infrastructure
-make deploy-frontend-infra
-```
-
-#### 5. **AWS CLI not configured**
-
-**Error**:
-```
-Unable to locate credentials. You can configure credentials by running "aws configure".
-```
-
-**Solution**:
-```bash
-aws configure
-# Enter:
-#   AWS Access Key ID
-#   AWS Secret Access Key
-#   Default region name: us-east-1
-#   Default output format: json
-```
-
-#### 6. **SAM build fails**
-
-**Error**:
-```
-Error: PythonPipBuilder:ResolveDependencies - {error message}
-```
-
-**Solution**:
-```bash
-# Clean SAM cache and rebuild
-cd backend
-rm -rf .aws-sam
-sam build --use-container
-```
-
-#### 7. **CloudFront invalidation takes too long**
-
-**Behavior**: CloudFront invalidation can take 1-3 minutes.
-
-**Solution**: This is normal. Wait for the invalidation to complete before testing:
-
-```bash
-# Check invalidation status
-aws cloudfront list-invalidations --distribution-id <DIST_ID>
-```
-
-### Debugging
-
-#### Check Configuration
-
-```bash
-# Show current configuration and cached outputs
-make status
-```
-
-#### Validate Configuration
-
-```bash
-# Validate all configuration files and required tools
-make validate
-```
-
-#### View Backend Logs
-
-```bash
-# Tail logs for specific Lambda function
-make logs FUNC=guitars     # Guitars CRUD
-make logs FUNC=auth        # Authentication
-make logs FUNC=images      # Image uploads
-make logs FUNC=specs       # AI spec extraction
-```
-
-#### Manual CloudFormation Outputs
-
-```bash
-# Query backend stack outputs manually
-aws cloudformation describe-stacks \
-  --stack-name guitarhelp \
-  --query 'Stacks[0].Outputs' \
-  --output table
-
-# Query frontend stack outputs manually
-aws cloudformation describe-stacks \
-  --stack-name guitarhelp-click-frontend-frontend \
-  --query 'Stacks[0].Outputs' \
-  --output table
-```
+| Symptom | Likely cause / fix |
+|---------|-------------------|
+| `make validate` fails | A required `.env.deploy` variable is missing, or `aws`/`sam`/`jq` isn't on `PATH` |
+| `Cannot find module …` in Lambda logs | Dependency missing from `backend/src/package.json`, or `make install` wasn't run before `sam build` |
+| Frontend stack stuck in `CREATE_IN_PROGRESS` | ACM DNS validation is waiting; check that `HOSTED_ZONE_ID` is the zone for `FRONTEND_DOMAIN` |
+| Browser CORS errors | `AllowedOrigin` in `samconfig.toml` doesn't exactly match the site origin (scheme + host, no trailing slash) |
+| 403 `Missing required security header` / `Missing Origin header` | Request didn't go through `src/utils/api.ts`, or it came from an origin other than `AllowedOrigin` |
+| 400 on save with an unknown field | Field not in `ALLOWED_GUITAR_FIELDS` (`backend/src/lib/validation.js`) |
+| AI import returns 500 | Bedrock model access not enabled for Nova Lite/Pro in the region; check `make logs FUNC=specs` |
+| Site shows old version | `index.html` cached. `make deploy-frontend` re-uploads it with `no-cache` and invalidates `/*`; wait for the invalidation to complete |
 
 ---
 
-## Architecture
+## Costs
 
-### AWS Resources Created
-
-#### Backend Stack (`guitarhelp`)
-
-| Resource Type | Resource | Purpose |
-|---------------|----------|---------|
-| **Lambda** | AuthHandler | User authentication (register, login, refresh) |
-| **Lambda** | GuitarsHandler | Guitar CRUD operations |
-| **Lambda** | ImagesHandler | Image upload (presigned URLs) |
-| **Lambda** | UserHandler | User profile management |
-| **Lambda** | SpecsHandler | AI-powered spec extraction (Bedrock Nova) |
-| **Lambda** | DocumentsHandler | Document management |
-| **Lambda** | ProvenanceHandler | Guitar provenance reports |
-| **Lambda** | PublicGuitarHandler | Public random guitar endpoint |
-| **DynamoDB** | GuitarsTable | Guitar data storage |
-| **DynamoDB** | UsersTable | User profiles |
-| **DynamoDB** | DocumentsTable | Documents metadata |
-| **DynamoDB** | ProvenanceReportsTable | Provenance reports |
-| **S3** | ImagesBucket | Guitar images and receipts |
-| **CloudFront** | ImagesDistribution | CDN for images |
-| **Cognito** | UserPool | User authentication |
-| **API Gateway** | GuitarCollectionApi | HTTP API with JWT auth |
-| **Route53** | ApiDnsRecord | DNS for api.guitarhelp.click |
-| **ACM** | ApiCertificate | SSL certificate for custom domains |
-
-#### Frontend Stack (`guitarhelp-click-frontend-frontend`)
-
-| Resource Type | Resource | Purpose |
-|---------------|----------|---------|
-| **S3** | FrontendBucket | Static website hosting |
-| **CloudFront** | FrontendDistribution | CDN for frontend assets |
-| **Route53** | FrontendDnsRecord | DNS for guitarhelp.click |
-| **ACM** | FrontendCertificate | SSL certificate |
-
-### Data Flow
-
-
-![Request Data Flow](diagrams/system-architecture/system-architecture.png)
-
-> Static assets are served from the frontend CloudFront/S3 origin; API calls go to `api.guitarhelp.click` with a Bearer JWT, through the Cognito authorizer to the Lambda handlers, which read/write DynamoDB and serve images via the images CDN.
+Pay-per-use. A personal deployment with light traffic typically costs a few dollars a month. CloudFront, S3 storage, and DynamoDB (on-demand billing; point-in-time recovery is enabled when `Environment=prod`) dominate; Lambda and Cognito usually stay in the free tier. AI calls are per request (fractions of a cent each; Textract bills per page). Use the [AWS Pricing Calculator](https://calculator.aws/) for your expected usage.
 
 ---
 
-## Cost Estimate
+## Legacy scripts
 
-**Monthly AWS Costs** (low-medium traffic):
-
-| Service | Estimated Cost |
-|---------|---------------|
-| Lambda | ~$5-10 (within free tier for low traffic) |
-| DynamoDB | ~$0-5 (on-demand, low traffic) |
-| S3 | ~$1-3 (storage + requests) |
-| CloudFront | ~$1-10 (data transfer) |
-| API Gateway | ~$3-10 (requests) |
-| Cognito | ~$0 (within free tier for <50k MAU) |
-| Route53 | ~$1 (hosted zone) |
-| **Total** | **~$10-40/month** |
-
-**Note**: Bedrock Nova Micro is extremely cheap (~$0.0001 per spec extraction).
-
----
-
-## Security Considerations
-
-1. **Environment Variables**:
-   - `.env.deploy` contains resource IDs (not secrets) but should not be committed
-   - `.env.backend.outputs` and `.env.frontend.outputs` are auto-generated and excluded from git
-   - `.env` is auto-generated and excluded from git
-
-2. **IAM Permissions**:
-   - Lambda functions use least-privilege IAM roles
-   - S3 buckets are private with CloudFront OAI access only
-
-3. **Authentication**:
-   - JWT-based authentication via Cognito
-   - All protected endpoints require valid JWT token
-
-4. **HTTPS**:
-   - All traffic encrypted via ACM certificates
-   - TLS 1.2 minimum
-
----
-
-## Next Steps
-
-After successful deployment:
-
-1. **Test the Application**:
-   ```bash
-   # Visit your frontend
-   open https://guitarhelp.click
-
-   # Test API endpoint
-   curl https://api.guitarhelp.click/public/guitars/random
-   ```
-
-2. **Monitor Logs**:
-   ```bash
-   # Watch backend logs
-   make logs FUNC=guitars
-   ```
-
-3. **Make Changes**:
-   - Edit frontend code in `src/`
-   - Redeploy: `make deploy-frontend`
-
-4. **Tear Down** (if needed):
-   ```bash
-   make teardown
-   # Type 'DELETE' to confirm
-   ```
-
----
-
-## Support
-
-- **Documentation**: See `README.md`, `CLAUDE.md`, `DEVELOPMENT.md`
-- **API Contract**: See `backend/API_CONTRACT.md`
-- **Issues**: Check CloudWatch logs via `make logs FUNC=<function-name>`
-
----
-
-## License
-
-[Your License Here]
+`scripts/*.sh`, `deploy-frontend-infra.sh`, and `backend/scripts/*.sh` predate the Makefile and use hard-coded stack names that differ from it. Prefer the `make` targets.
