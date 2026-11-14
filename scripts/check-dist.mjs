@@ -99,6 +99,16 @@ if (!/^\d{4}-\d{2}-\d{2}$/.test(sitemap.match(/<lastmod>([^<]+)<\/lastmod>/)?.[1
 if (!read('robots.txt').includes('Sitemap: https://guitarhelp.click/sitemap.xml')) fail('robots.txt: sitemap line');
 if (/Disallow:\s*\/\S/.test(read('robots.txt'))) fail('robots.txt must not block pages (noindex must stay visible)');
 
+// Share image (AC7): 1200x630 PNG
+{
+  const f = join(DIST, 'og/guitarhelp-1200x630.png');
+  if (!existsSync(f)) fail('og image missing');
+  else {
+    const b = readFileSync(f);
+    if (b.readUInt32BE(16) !== 1200 || b.readUInt32BE(20) !== 630) fail('og image is not 1200x630');
+  }
+}
+
 // Homepage JS budget (AC13): entry + modulepreloads, gzip, at most half of the old 165 KB
 {
   const { gzipSync } = await import('node:zlib');

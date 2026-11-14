@@ -31,7 +31,7 @@ You also need:
 make init        # copies .env.deploy.example → .env.deploy and samconfig.toml.example → backend/samconfig.toml
 # edit both files (see Configuration below)
 make install     # npm install for the frontend, backend/src, and backend test tooling
-make deploy-all  # backend → frontend infrastructure → frontend app
+make deploy-all  # backend, then frontend infrastructure and app in the order below
 ```
 
 The first deploy takes roughly 10–20 minutes, mostly ACM certificate validation and CloudFront distribution creation.
@@ -94,7 +94,7 @@ The example file also has `[dev]` and `[staging]` sections, each a **separate, s
 |-------|--------|--------------|--------|
 | 1 | `make deploy-backend` | `sam build && sam deploy` with `backend/template.yaml`, then reads the stack outputs | `.env.backend.outputs`, `.env` |
 | 2 | `make deploy-frontend-infra` | `aws cloudformation deploy` of `frontend-infrastructure.yaml` (S3, CloudFront, ACM, Route 53, security headers) | `.env.frontend.outputs` |
-| 3 | `make deploy-frontend` | `npm run build`, `aws s3 sync dist/ --delete` (long cache), re-upload `index.html` with `no-cache`, CloudFront invalidation of `/*` | — |
+| 3 | `make deploy-frontend` | `npm run build` (client build, SSR build, pre-render of the public pages, `404.html`, `app.html`, `sitemap.xml`), a check that the live URL router matches the template, upload of hashed assets (1-year cache), `robots.txt`/`sitemap.xml`/`theme-init.js`/`og/` (1-hour cache) and every `*.html` (`no-cache`), pruning of old assets, CloudFront invalidation of `/*` | — |
 
 Each target can be run on its own. After the first deploy, a typical update is `make deploy-backend` and/or `make deploy-frontend`.
 
@@ -130,7 +130,8 @@ aws cloudformation describe-stacks --stack-name "$BACKEND_STACK_NAME" --query 'S
 | `make install` | `npm install` in the repo root, `backend/src` (Lambda runtime), and `backend` (Jest) |
 | `make validate` | Check config values and that `aws`, `sam`, `jq` are installed |
 | `make status` | Show configuration and cached outputs |
-| `make deploy-all` | All three stages |
+| `make deploy-all` | All three stages. Frontend order: a new environment runs infrastructure, app, infrastructure; the first rollout of the URL router runs app then infrastructure (the router needs `app.html` and `404.html`); after that, infrastructure then app (the app deploy checks the live router) |
+| `make plan-frontend-infra` | Create and show a CloudFormation change set for the frontend stack without applying it |
 | `make deploy-backend` / `deploy-frontend-infra` / `deploy-frontend` | Individual stages |
 | `make build` | Frontend production build only |
 | `make test` | Frontend (Vitest) and backend (Jest) unit tests; fails if either fails |
@@ -171,6 +172,8 @@ Account deletion adds a second rule: **only roll back the backend when no deleti
 
 **Re-deploying after a backend rollback:** the `<stack>-account-jobs` table and the exports bucket are kept when a rollback removes them from the template (`DeletionPolicy: RetainExceptOnCreate`; they're only deleted automatically if the deploy that *created* them fails). Before deploying account export/deletion again, either delete them (empty the bucket first; the table holds only tombstones and export job records) or import them into the stack, otherwise the deploy fails with "already exists".
 
+**Frontend and the URL router.** The CloudFront Function `<prefix>-url-router` sends app routes to `app.html` and public pages to their pre-rendered files. **Roll back the frontend infrastructure first** (`git checkout <SHA> -- frontend-infrastructure.yaml && make deploy-frontend-infra`, which removes the function and restores the old error pages), **then** the frontend app. The other order leaves the router pointing at `app.html`, `404.html` and `features/*` files whose JavaScript the older build has deleted, so every app deep link breaks. After both, delete the leftover files: `aws s3 rm s3://<frontend-bucket>/app.html`, `404.html`, and `--recursive` on `features/` and `faq/`.
+
 ## Stuck account deletion
 
 The `<stack>-account-jobs-stuck` alarm fires when a deletion or export exhausted its 5 retries and landed in the `<stack>-account-jobs-dlq` queue. The user's account stays locked (the tombstone blocks every request), but some of their data may remain until the deletion completes.
@@ -209,7 +212,8 @@ It empties the frontend and images buckets, deletes `<prefix>-frontend`, then ru
 | 403 `Missing required security header` / `Missing Origin header` | Request didn't go through `src/utils/api.ts`, or it came from an origin other than `AllowedOrigin` |
 | 400 on save with an unknown field | Field not in `ALLOWED_GUITAR_FIELDS` (`backend/src/lib/validation.js`) |
 | AI import returns 500 | Bedrock model access not enabled for Nova Lite/Pro in the region; check `make logs FUNC=specs` |
-| Site shows old version | `index.html` cached. `make deploy-frontend` re-uploads it with `no-cache` and invalidates `/*`; wait for the invalidation to complete |
+| Site shows old version | HTML cached. `make deploy-frontend` uploads every `*.html` with `no-cache` and invalidates `/*`; wait for the invalidation to complete |
+| `make deploy-frontend` stops: "live URL router differs" | The router in `frontend-infrastructure.yaml` changed. Run `make plan-frontend-infra`, then `make deploy-frontend-infra`, then deploy the frontend again |
 
 ---
 
