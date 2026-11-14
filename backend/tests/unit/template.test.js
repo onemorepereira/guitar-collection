@@ -158,3 +158,20 @@ test('alarms: failed deletion steps (log metric filter) and API 5xx notify the a
   expect(R.ApiServerErrorsAlarm.Properties).toMatchObject({ Namespace: 'AWS/ApiGateway', MetricName: '5xx' });
   expect(R.ApiServerErrorsAlarm.Properties.Dimensions[0].Value).toEqual({ Ref: 'GuitarCollectionApi' });
 });
+
+test('monthly cost budget: $15, actual and forecast alerts to the alarm email', () => {
+  const b = R.MonthlyCostBudget;
+  expect(b.Condition).toBe('HasAlarmEmail');
+  expect(b.Properties.Budget).toMatchObject({
+    BudgetType: 'COST', TimeUnit: 'MONTHLY', BudgetLimit: { Amount: 15, Unit: 'USD' },
+  });
+  const types = b.Properties.NotificationsWithSubscribers.map((n) => n.Notification.NotificationType).sort();
+  expect(types).toEqual(['ACTUAL', 'FORECASTED']);
+  for (const n of b.Properties.NotificationsWithSubscribers) {
+    expect(n.Subscribers).toEqual([{ SubscriptionType: 'EMAIL', Address: { Ref: 'AlarmEmail' } }]);
+  }
+});
+
+test('DocumentExtractionHandler has no S3 write access (results go to DynamoDB)', () => {
+  expect(policyJson(R.DocumentExtractionHandler)).not.toMatch(/s3:PutObject/);
+});

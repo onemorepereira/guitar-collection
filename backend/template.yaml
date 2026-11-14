@@ -1291,6 +1291,38 @@ Resources:
       Protocol: email
       Endpoint: !Ref AlarmEmail
 
+  # Monthly cost guardrail for the whole AWS account. Baseline is ~$10/month
+  # (WAF + Route 53 fixed costs); $15 leaves ~$5 of headroom for runaway usage.
+  # Emails AlarmEmail directly (an SNS subscriber would need a topic policy for budgets.amazonaws.com).
+  MonthlyCostBudget:
+    Type: AWS::Budgets::Budget
+    Condition: HasAlarmEmail
+    Properties:
+      Budget:
+        BudgetName: !Sub ${AWS::StackName}-monthly-cost
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: 15
+          Unit: USD
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref AlarmEmail
+        - Notification:
+            NotificationType: FORECASTED
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref AlarmEmail
+
   # A deletion that exhausted its retries: data may be left behind (runbook in docs/DEPLOYMENT.md)
   AccountJobsDLQAlarm:
     Type: AWS::CloudWatch::Alarm
