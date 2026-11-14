@@ -25,7 +25,7 @@ vi.mock('../services/shareService', () => ({
 }));
 
 import { Register } from './Register';
-import { Landing } from './Landing';
+import { Home as Landing } from '../public/pages/Home';
 import { SharedGuitarView } from './SharedGuitarView';
 import { PRIVACY_URL, TERMS_URL } from './LegalLinks';
 

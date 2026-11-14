@@ -34,7 +34,7 @@ import { accountService, AccountApiError } from '../services/accountService';
 import { authService } from '../services/authService';
 import { authenticatedRequest } from '../utils/api';
 import { AccountPage } from './AccountPage';
-import { Landing } from './Landing';
+import { Home as Landing } from '../public/pages/Home';
 
 const assign = vi.fn();
 const deleteDatabase = vi.fn();

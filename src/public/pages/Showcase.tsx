@@ -1,33 +1,24 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Loader2, RefreshCw, LogIn, UserPlus } from 'lucide-react';
-import { PickIcon } from './PickIcon';
-import { guitarService } from '../services/guitarService';
-import { Guitar } from '../types/guitar';
-import { useImageUrls } from '../hooks/useImageUrl';
-import { useAuth } from '../context/AuthContext';
-import { LegalLinks } from './LegalLinks';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { PickIcon } from '../../components/PickIcon';
+import { guitarService } from '../../services/guitarService';
+import { Guitar } from '../../types/guitar';
+import { useImageUrls } from '../../hooks/useImageUrl';
 
-export const Landing = () => {
-  const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
-  const accountDeleting = new URLSearchParams(useLocation().search).get('account') === 'deleting';
+/**
+ * A random guitar from the community gallery (owners opt in per guitar).
+ * Fetched after hydration; the pre-rendered HTML shows the loading card in the
+ * same box as the loaded card, so nothing shifts.
+ */
+export const Showcase = () => {
   const [guitar, setGuitar] = useState<Guitar | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // If authenticated, redirect to collection
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/collection');
-    }
-  }, [isAuthenticated, navigate]);
-
-  // Fetch random public guitar
   const fetchRandomGuitar = async () => {
     setLoading(true);
     try {
-      const randomGuitar = await guitarService.getRandomPublicGuitar();
-      setGuitar(randomGuitar);
+      setGuitar(await guitarService.getRandomPublicGuitar());
     } catch (error) {
       console.error('Error fetching random guitar:', error);
       setGuitar(null);
@@ -40,50 +31,14 @@ export const Landing = () => {
     fetchRandomGuitar();
   }, []);
 
-  const primaryImage = guitar?.images.find(img => img.isPrimary) || guitar?.images[0];
+  const primaryImage = guitar?.images.find((img) => img.isPrimary) || guitar?.images[0];
   const imageUrls = useImageUrls(primaryImage ? [primaryImage.url] : []);
   const imageUrl = imageUrls[0];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col">
-      {/* Header */}
-      <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary-600 dark:bg-primary-500 rounded-full flex items-center justify-center">
-                <PickIcon className="w-10 h-10 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Guitar Collection Manager</h1>
-                <p className="text-xs text-gray-400 dark:text-gray-500 tracking-wide">guitarhelp.click</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link to="/login" className="btn-secondary flex items-center gap-2" title="Sign in to your account">
-                <LogIn className="w-4 h-4" />
-                <span className="hidden sm:inline">Sign In</span>
-              </Link>
-              <Link to="/register" className="btn-primary flex items-center gap-2" title="Create new account">
-                <UserPlus className="w-4 h-4" />
-                <span className="hidden sm:inline">Sign Up</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {accountDeleting && (
-        <div role="status" className="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 text-sm text-center px-4 py-3">
-          Your account is being deleted. This usually takes a few minutes.
-        </div>
-      )}
-
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className="max-w-6xl w-full">
+    <div className="min-h-[480px]">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20">
+            <div className="flex flex-col items-center justify-center min-h-[480px]">
               <Loader2 className="w-12 h-12 animate-spin text-primary-600 mb-4" />
               <p className="text-gray-600 dark:text-gray-400">Loading showcase guitar...</p>
             </div>
@@ -91,12 +46,12 @@ export const Landing = () => {
             <div className="space-y-6">
               {/* Title Section */}
               <div className="text-center space-y-2">
-                <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-gray-100">
-                  {guitar.year} {guitar.brand} {guitar.model}
-                </h2>
-                <p className="text-lg text-gray-600 dark:text-gray-400">
-                  Featured from our community collection
+                <p className="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">
+                  From the community gallery
                 </p>
+                <h3 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100">
+                  {guitar.year} {guitar.brand} {guitar.model}
+                </h3>
               </div>
 
               {/* Guitar Card */}
@@ -213,24 +168,6 @@ export const Landing = () => {
                 </div>
               </div>
 
-              {/* Call to Action */}
-              <div className="text-center space-y-4 py-8">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  Start Your Own Collection
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                  Track your guitar collection, document specifications, upload photos,
-                  and keep notes about your instruments all in one place.
-                </p>
-                <div className="flex items-center justify-center gap-4 pt-4">
-                  <Link to="/register" className="btn-primary px-8" title="Create new account">
-                    Get Started Free
-                  </Link>
-                  <Link to="/login" className="btn-secondary" title="Sign in to your account">
-                    Sign In
-                  </Link>
-                </div>
-              </div>
             </div>
           ) : (
             <div className="text-center py-20">
@@ -247,18 +184,6 @@ export const Landing = () => {
               </Link>
             </div>
           )}
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-gray-600 dark:text-gray-400 text-sm">
-            Guitar Collection Manager • Keep your instruments organized
-          </p>
-          <LegalLinks className="mt-2" />
-        </div>
-      </footer>
     </div>
   );
 };

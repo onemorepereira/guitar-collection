@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { PUBLIC_PAGES } from './public/pages';
+import { isAppRoute } from './routes';
 import './styles/index.css';
 
 const root = document.getElementById('root')!;
@@ -10,10 +12,16 @@ const app = (
   </React.StrictMode>
 );
 
-// Pre-rendered pages record the route they were rendered for. Hydrate only
-// when it matches this URL; otherwise (HTML served for another path) render fresh.
+// Pre-rendered pages record the route they were rendered for ("*" = the 404
+// page). Hydrate only HTML that was rendered for this URL; anything else (HTML
+// served for another path during a deploy, a local fallback) renders fresh.
+const pathname = window.location.pathname;
 const renderedFor = root.dataset.route;
-if (root.hasChildNodes() && renderedFor && (renderedFor === window.location.pathname || renderedFor === '*')) {
+const isKnownRoute = PUBLIC_PAGES.some((p) => !p.static && p.path === pathname) || isAppRoute(pathname);
+const canHydrate =
+  root.hasChildNodes() && (renderedFor === pathname || (renderedFor === '*' && !isKnownRoute));
+
+if (canHydrate) {
   ReactDOM.hydrateRoot(root, app, {
     // Surface hydration mismatches (React otherwise recovers silently in production)
     onRecoverableError: (error) => console.error('Hydration error:', error),

@@ -38,12 +38,6 @@ export const GuitarGallery = () => {
     localStorage.setItem('guitarViewMode', viewMode);
   }, [viewMode]);
 
-  useEffect(() => {
-    if (user?.name) {
-      document.title = `Guitar Collection Manager - ${user.name}`;
-    }
-  }, [user]);
-
   const loadGuitars = async () => {
     setLoading(true);
     try {

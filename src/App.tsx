@@ -4,8 +4,12 @@ import { Loader2 } from 'lucide-react';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { Landing } from './components/Landing';
+import { Home } from './public/pages/Home';
+import { FeaturePage } from './public/pages/features';
+import { Faq } from './public/pages/Faq';
 import { NotFound } from './components/NotFound';
+import { usePageTitle } from './public/useDocumentHead';
+import { ChunkErrorBoundary, ClearReloadFlag } from './components/ChunkErrorBoundary';
 
 // Public pages are static imports (pre-rendered at build time); everything
 // else loads on demand so the public pages ship a small bundle.
@@ -34,26 +38,45 @@ const Spinner = () => (
     <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
   </div>
 );
-const Lazy = ({ children }: { children: ReactNode }) => <Suspense fallback={<Spinner />}>{children}</Suspense>;
+const Lazy = ({ children }: { children: ReactNode }) => (
+  <ChunkErrorBoundary>
+    <Suspense fallback={<Spinner />}>
+      <ClearReloadFlag />
+      {children}
+    </Suspense>
+  </ChunkErrorBoundary>
+);
+/** Tab title for app screens: "<Screen> | GuitarHelp". */
+const Titled = ({ title, children }: { title: string; children: ReactNode }) => {
+  usePageTitle(title);
+  return <>{children}</>;
+};
 /** The route tree without a router, so the build can render it with StaticRouter. */
 export function AppRoutes() {
   return (
     <AuthProvider>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Lazy><Login /></Lazy>} />
-          <Route path="/register" element={<Lazy><Register /></Lazy>} />
-          <Route path="/forgot-password" element={<Lazy><ForgotPassword /></Lazy>} />
-          <Route path="/reset-password" element={<Lazy><ResetPassword /></Lazy>} />
-          <Route path="/s/:shareId" element={<Lazy><SharedGuitarView /></Lazy>} />
+          <Route path="/" element={<Home />} />
+          {/* Feature pages are listed one by one (not /features/:slug) so the router,
+              the pre-render list and the CloudFront router stay explicit. */}
+          <Route path="/features/insurance-inventory" element={<FeaturePage slug="insurance-inventory" />} />
+          <Route path="/features/condition-reports" element={<FeaturePage slug="condition-reports" />} />
+          <Route path="/features/selling" element={<FeaturePage slug="selling" />} />
+          <Route path="/features/ai-import" element={<FeaturePage slug="ai-import" />} />
+          <Route path="/faq" element={<Faq />} />
+          <Route path="/login" element={<Titled title="Sign in"><Lazy><Login /></Lazy></Titled>} />
+          <Route path="/register" element={<Titled title="Create account"><Lazy><Register /></Lazy></Titled>} />
+          <Route path="/forgot-password" element={<Titled title="Reset password"><Lazy><ForgotPassword /></Lazy></Titled>} />
+          <Route path="/reset-password" element={<Titled title="Reset password"><Lazy><ResetPassword /></Lazy></Titled>} />
+          <Route path="/s/:shareId" element={<Titled title="Shared guitar"><Lazy><SharedGuitarView /></Lazy></Titled>} />
 
           {/* Protected routes */}
           <Route
             path="/collection"
             element={
               <ProtectedRoute>
-                <Lazy><GuitarGallery /></Lazy>
+                <Titled title="Collection"><Lazy><GuitarGallery /></Lazy></Titled>
               </ProtectedRoute>
             }
           />
@@ -61,7 +84,7 @@ export function AppRoutes() {
             path="/account"
             element={
               <ProtectedRoute>
-                <Lazy><AccountPage /></Lazy>
+                <Titled title="Account"><Lazy><AccountPage /></Lazy></Titled>
               </ProtectedRoute>
             }
           />
@@ -69,7 +92,7 @@ export function AppRoutes() {
             path="/guitar/:id"
             element={
               <ProtectedRoute>
-                <Lazy><GuitarDetail /></Lazy>
+                <Titled title="Guitar details"><Lazy><GuitarDetail /></Lazy></Titled>
               </ProtectedRoute>
             }
           />
@@ -77,7 +100,7 @@ export function AppRoutes() {
             path="/add"
             element={
               <ProtectedRoute>
-                <Lazy><GuitarForm /></Lazy>
+                <Titled title="Add guitar"><Lazy><GuitarForm /></Lazy></Titled>
               </ProtectedRoute>
             }
           />
@@ -85,7 +108,7 @@ export function AppRoutes() {
             path="/edit/:id"
             element={
               <ProtectedRoute>
-                <Lazy><GuitarForm /></Lazy>
+                <Titled title="Edit guitar"><Lazy><GuitarForm /></Lazy></Titled>
               </ProtectedRoute>
             }
           />
@@ -93,7 +116,7 @@ export function AppRoutes() {
             path="/documents"
             element={
               <ProtectedRoute>
-                <Lazy><Documents /></Lazy>
+                <Titled title="Documents"><Lazy><Documents /></Lazy></Titled>
               </ProtectedRoute>
             }
           />
@@ -101,7 +124,7 @@ export function AppRoutes() {
             path="/timeline"
             element={
               <ProtectedRoute>
-                <Lazy><Timeline /></Lazy>
+                <Titled title="Timeline"><Lazy><Timeline /></Lazy></Titled>
               </ProtectedRoute>
             }
           />
@@ -109,7 +132,7 @@ export function AppRoutes() {
             path="/guitar/:guitarId/provenance/:reportId"
             element={
               <ProtectedRoute>
-                <Lazy><ProvenanceReport /></Lazy>
+                <Titled title="Provenance report"><Lazy><ProvenanceReport /></Lazy></Titled>
               </ProtectedRoute>
             }
           />
@@ -117,7 +140,7 @@ export function AppRoutes() {
             path="/guitar/:guitarId/sales/:reportId"
             element={
               <ProtectedRoute>
-                <Lazy><SalesAd /></Lazy>
+                <Titled title="Sales listing"><Lazy><SalesAd /></Lazy></Titled>
               </ProtectedRoute>
             }
           />
