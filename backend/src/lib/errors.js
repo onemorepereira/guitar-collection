@@ -51,6 +51,20 @@ class ExternalServiceError extends AppError {
 }
 
 /**
+ * Error with a stable, machine-readable `code` for clients.
+ * `code` and `publicFields` are always serialized (even in prod, where
+ * `details` are stripped), so only put non-sensitive, client-facing data in
+ * them.
+ */
+class CodedError extends AppError {
+  constructor(statusCode, message, code, publicFields = {}) {
+    super(message, statusCode);
+    this.code = code;
+    this.publicFields = publicFields;
+  }
+}
+
+/**
  * Sanitize error details for safe exposure to clients
  * @param {object} details - Error details object
  * @returns {object} Sanitized details (only in dev mode)
@@ -84,6 +98,13 @@ function handleError(error, response) {
 
   if (error instanceof AppError) {
     const sanitizedDetails = sanitizeErrorDetails(error.details);
+    if (error instanceof CodedError) {
+      return response.error(error.statusCode, error.message, {
+        ...(sanitizedDetails || {}),
+        code: error.code,
+        ...(error.publicFields || {}),
+      });
+    }
     return response.error(error.statusCode, error.message, sanitizedDetails);
   }
 
@@ -130,5 +151,6 @@ module.exports = {
   NotFoundError,
   ConflictError,
   ExternalServiceError,
+  CodedError,
   handleError,
 };

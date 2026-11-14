@@ -5,6 +5,7 @@
 
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const { isDeleting } = require('../../lib/accountJobs');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -99,7 +100,20 @@ exports.handler = async (event) => {
       cacheExpiry = now + CACHE_TTL_MS;
     }
 
-    if (guitars.length === 0) {
+    // Pick a random guitar, checked per request (not only on cache refresh):
+    // an owner whose account is being deleted is dropped from the cache.
+    let randomGuitar = null;
+    while (guitars.length > 0) {
+      const candidate = guitars[Math.floor(Math.random() * guitars.length)];
+      if (!(await isDeleting(candidate.userId))) {
+        randomGuitar = candidate;
+        break;
+      }
+      guitars = guitars.filter((g) => g.userId !== candidate.userId);
+      cachedGuitars = guitars;
+    }
+
+    if (!randomGuitar) {
       return {
         statusCode: 404,
         headers: {
@@ -109,10 +123,6 @@ exports.handler = async (event) => {
         body: JSON.stringify({ error: 'No guitars found' }),
       };
     }
-
-    // Pick a random guitar
-    const randomIndex = Math.floor(Math.random() * guitars.length);
-    const randomGuitar = guitars[randomIndex];
 
     // Sanitize the guitar data
     const publicGuitar = sanitizeGuitar(randomGuitar);

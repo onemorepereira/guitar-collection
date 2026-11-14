@@ -67,9 +67,12 @@ async function putItem(tableName, item, options = {}) {
  * @param {string} tableName - Table name
  * @param {object} key - Item key
  * @param {object} updates - Fields to update
+ * @param {object} [options]
+ * @param {string} [options.condition] - ConditionExpression (e.g. 'attribute_exists(documentId)')
+ *   so async writers can't recreate an item deleted in the meantime
  * @returns {Promise<object>} Updated item
  */
-async function updateItem(tableName, key, updates) {
+async function updateItem(tableName, key, updates, { condition } = {}) {
   const updateExpressionParts = [];
   const expressionAttributeNames = {};
   const expressionAttributeValues = {};
@@ -89,6 +92,7 @@ async function updateItem(tableName, key, updates) {
     UpdateExpression: `SET ${updateExpressionParts.join(', ')}`,
     ExpressionAttributeNames: expressionAttributeNames,
     ExpressionAttributeValues: expressionAttributeValues,
+    ...(condition ? { ConditionExpression: condition } : {}),
     ReturnValues: 'ALL_NEW',
   }));
   return result.Attributes;

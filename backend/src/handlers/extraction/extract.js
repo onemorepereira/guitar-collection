@@ -14,8 +14,44 @@ const { BedrockRuntimeClient, ConverseCommand } = require('@aws-sdk/client-bedro
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 const { getItem, updateItem } = require('../../lib/dynamodb');
+const { isDeleting } = require('../../lib/accountJobs');
+
 const { extractOwnedKey } = require('../../lib/s3Keys');
 const { TABLES } = require('../../config/constants');
+
+/** Read a document; null when missing (lib getItem throws NotFoundError). */
+async function loadDocument(userId, documentId) {
+  try {
+    return await getItem(TABLES.DOCUMENTS, { userId, documentId });
+  } catch (error) {
+    if (error.name === 'NotFoundError') return null;
+    throw error;
+  }
+}
+
+/**
+ * Write extraction results only if the owner isn't being deleted and the
+ * document still exists (never recreate a deleted document). Returns false
+ * when the write was skipped.
+ */
+async function writeDocument(userId, documentId, updates) {
+  if (await isDeleting(userId)) {
+    console.log('Skipping extraction write: account deletion in progress', { documentId });
+    return false;
+  }
+  try {
+    await updateItem(TABLES.DOCUMENTS, { userId, documentId }, updates, {
+      condition: 'attribute_exists(documentId)',
+    });
+    return true;
+  } catch (error) {
+    if (error.name === 'ConditionalCheckFailedException') {
+      console.log('Skipping extraction write: document no longer exists', { documentId });
+      return false;
+    }
+    throw error;
+  }
+}
 
 // Initialize AWS clients
 const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
@@ -324,14 +360,12 @@ async function startExtraction(message) {
     throw new Error('Missing required fields: userId, documentId');
   }
 
-  // Fetch document from DynamoDB
-  const document = await getItem(TABLES.DOCUMENTS, {
-    userId,
-    documentId,
-  });
+  // Fetch document; stop quietly if it was deleted or its owner is being deleted
+  const document = await loadDocument(userId, documentId);
 
-  if (!document) {
-    throw new Error(`Document not found: ${documentId}`);
+  if (!document || await isDeleting(userId)) {
+    console.log('Skipping extraction: document missing or account being deleted', { documentId });
+    return { documentId, status: 'skipped' };
   }
 
   console.log('Starting extraction', {
@@ -352,9 +386,7 @@ async function startExtraction(message) {
     const jobId = await startTextractJob(s3Key, documentId);
 
     // Update status to processing with jobId at top level for GSI
-    await updateItem(
-      TABLES.DOCUMENTS,
-      { userId, documentId },
+    await writeDocument(userId, documentId,
       {
         jobId,  // Top-level for GSI lookup
         extractedContent: {
@@ -378,9 +410,7 @@ async function startExtraction(message) {
     };
   } else if (isImage) {
     // Process image synchronously (no Textract needed)
-    await updateItem(
-      TABLES.DOCUMENTS,
-      { userId, documentId },
+    await writeDocument(userId, documentId,
       {
         extractedContent: {
           extractionStatus: 'processing',
@@ -392,9 +422,7 @@ async function startExtraction(message) {
     try {
       const result = await processImage(document);
 
-      await updateItem(
-        TABLES.DOCUMENTS,
-        { userId, documentId },
+      await writeDocument(userId, documentId,
         {
           extractedContent: {
             extractionStatus: 'completed',
@@ -420,9 +448,7 @@ async function startExtraction(message) {
         textLength: result.text.length,
       };
     } catch (error) {
-      await updateItem(
-        TABLES.DOCUMENTS,
-        { userId, documentId },
+      await writeDocument(userId, documentId,
         {
           extractedContent: {
             extractionStatus: 'failed',
@@ -435,9 +461,7 @@ async function startExtraction(message) {
     }
   } else {
     // Unknown type
-    await updateItem(
-      TABLES.DOCUMENTS,
-      { userId, documentId },
+    await writeDocument(userId, documentId,
       {
         extractedContent: {
           extractionStatus: 'failed',
@@ -472,18 +496,22 @@ async function handleTextractComplete(snsMessage) {
   const document = await findDocumentByJobId(JobId);
 
   if (!document) {
-    console.error('Document not found for Textract job', { jobId: JobId });
-    throw new Error(`Document not found for job: ${JobId}`);
+    // Deleted (or its account deleted) while Textract ran: nothing to write
+    console.log('Skipping Textract completion: document not found', { jobId: JobId });
+    return { status: 'skipped', jobId: JobId };
   }
 
   const { userId, documentId, name } = document;
 
+  if (await isDeleting(userId)) {
+    console.log('Skipping Textract completion: account deletion in progress', { documentId });
+    return { documentId, status: 'skipped', jobId: JobId };
+  }
+
   if (Status === 'FAILED') {
     console.error('Textract job failed', { jobId: JobId, documentId });
 
-    await updateItem(
-      TABLES.DOCUMENTS,
-      { userId, documentId },
+    await writeDocument(userId, documentId,
       {
         extractedContent: {
           extractionStatus: 'failed',
@@ -506,9 +534,7 @@ async function handleTextractComplete(snsMessage) {
   if (!rawText || rawText.trim().length === 0) {
     console.warn('Textract returned empty text', { documentId, jobId: JobId });
 
-    await updateItem(
-      TABLES.DOCUMENTS,
-      { userId, documentId },
+    await writeDocument(userId, documentId,
       {
         extractedContent: {
           extractionStatus: 'completed',
@@ -531,9 +557,7 @@ async function handleTextractComplete(snsMessage) {
   const reconstructedText = await reconstructWithNovaLite(rawText, name);
 
   // Update document with extracted content
-  await updateItem(
-    TABLES.DOCUMENTS,
-    { userId, documentId },
+  await writeDocument(userId, documentId,
     {
       extractedContent: {
         extractionStatus: 'completed',

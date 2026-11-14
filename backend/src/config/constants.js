@@ -10,6 +10,7 @@ module.exports = {
     DOCUMENTS: process.env.DYNAMODB_TABLE_DOCUMENTS || 'guitar-collection-documents-dev',
     PROVENANCE_REPORTS: process.env.DYNAMODB_TABLE_PROVENANCE_REPORTS || 'guitar-collection-provenance-reports-dev',
     SHARES: process.env.DYNAMODB_TABLE_SHARES || 'guitar-collection-shares-dev',
+    ACCOUNT_JOBS: process.env.DYNAMODB_TABLE_ACCOUNT_JOBS || 'guitar-collection-account-jobs-dev',
   },
 
   // HTTP Status Codes

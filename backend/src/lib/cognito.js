@@ -14,7 +14,8 @@ const {
 } = require('@aws-sdk/client-cognito-identity-provider');
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
-const { AuthenticationError, ConflictError } = require('./errors');
+const { AuthenticationError, ConflictError, CodedError } = require('./errors');
+const { isDeleting } = require('./accountJobs');
 
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID;
 const CLIENT_ID = process.env.COGNITO_CLIENT_ID;
@@ -300,7 +301,27 @@ async function verifyJWT(token) {
  * @param {object} event - Lambda event
  * @returns {Promise<string>} User ID
  */
-async function getUserIdFromEvent(event) {
+async function getUserIdFromEvent(event, { allowDeleting = false } = {}) {
+  const userId = await resolveUserId(event);
+
+  if (!allowDeleting) {
+    let deleting;
+    try {
+      deleting = await isDeleting(userId);
+    } catch (error) {
+      // Fail closed: never treat an unknown as "not deleting"
+      console.error('Tombstone check failed:', error.name || error.message);
+      throw new CodedError(503, 'Please try again', 'SERVICE_UNAVAILABLE');
+    }
+    if (deleting) {
+      throw new CodedError(401, 'Account deletion in progress', 'ACCOUNT_DELETION_IN_PROGRESS');
+    }
+  }
+
+  return userId;
+}
+
+async function resolveUserId(event) {
   // First, try to extract from API Gateway authorizer (primary path)
   // For HTTP API with JWT authorizer
   if (event.requestContext?.authorizer?.jwt?.claims?.sub) {

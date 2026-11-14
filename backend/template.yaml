@@ -18,6 +18,7 @@ Globals:
         DYNAMODB_TABLE_DOCUMENTS: !Ref DocumentsTable
         DYNAMODB_TABLE_PROVENANCE_REPORTS: !Ref ProvenanceReportsTable
         DYNAMODB_TABLE_SHARES: !Ref SharesTable
+        DYNAMODB_TABLE_ACCOUNT_JOBS: !Ref AccountJobsTable
         S3_BUCKET_IMAGES: !Ref ImagesBucket
         CLOUDFRONT_DOMAIN: !If [HasHostedZone, !Ref ImagesDomainName, !GetAtt ImagesDistribution.DomainName]
         FRONTEND_DOMAIN: !Ref FrontendDomain
@@ -202,6 +203,8 @@ Resources:
       Handler: handlers/auth/index.handler
       Description: Handles user authentication
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -258,6 +261,8 @@ Resources:
       Handler: handlers/guitars/index.handler
       Description: Handles guitar CRUD operations
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref GuitarsTable
         - Version: '2012-10-17'
@@ -329,6 +334,8 @@ Resources:
       Handler: handlers/guitars/random-public.handler
       Description: Returns a random guitar for public display (no auth)
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -359,6 +366,8 @@ Resources:
       Handler: handlers/images/index.handler
       Description: Handles image uploads and processing
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - Version: '2012-10-17'
           Statement:
             # S3 object operations - restricted to specific prefixes
@@ -410,6 +419,8 @@ Resources:
       Handler: handlers/user/index.handler
       Description: Handles user profile operations
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref UsersTable
         - Version: '2012-10-17'
@@ -458,6 +469,8 @@ Resources:
       Timeout: 60  # Increased timeout for AI processing
       MemorySize: 1024  # Increased memory for PDF processing
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -492,6 +505,8 @@ Resources:
       Timeout: 60  # Increased timeout for AI processing
       MemorySize: 1024  # Increased memory for PDF processing
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
@@ -524,6 +539,8 @@ Resources:
       Handler: handlers/documents/index.handler
       Description: Handles document CRUD operations
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref DocumentsTable
         - DynamoDBCrudPolicy:
@@ -649,6 +666,8 @@ Resources:
             Type: SQS
             Destination: !GetAtt DocumentExtractionAsyncDLQ.Arn
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref DocumentsTable
         - Version: '2012-10-17'
@@ -717,6 +736,8 @@ Resources:
       Timeout: 60
       Policies:
         - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
+        - DynamoDBReadPolicy:
             TableName: !Ref GuitarsTable
         - DynamoDBReadPolicy:
             TableName: !Ref DocumentsTable
@@ -784,6 +805,8 @@ Resources:
       Layers:
         - !Ref SharpLayer
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AccountJobsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref SharesTable
         - DynamoDBReadPolicy:
@@ -1089,6 +1112,37 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProduction, true, false]
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Account deletion tombstones (SK 'deletion') and export jobs (SK 'export#<id>').
+  # Retained on stack delete/replace so a rollback never drops a tombstone.
+  AccountJobsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub ${AWS::StackName}-account-jobs
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: job
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: job
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: !If [IsProduction, true, false]
       Tags:
