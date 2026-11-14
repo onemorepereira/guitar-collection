@@ -73,6 +73,28 @@ test('functions that delete files can invalidate the images CDN', () => {
   }
 });
 
+test('functions that delete files can delete under the prefixes they own', () => {
+  // DeleteObjects reports AccessDenied per key, not as a thrown error, so a
+  // missing grant here fails silently in prod (see guitars/update.js cleanup)
+  const owns = {
+    GuitarsHandler: ['images/*'],
+    DocumentsHandler: ['images/*'],
+    SharesHandler: ['shared/*'],
+    AccountJobsHandler: ['images/*', 'shared/*', 'uploads/*'],
+  };
+  for (const [name, prefixes] of Object.entries(owns)) {
+    const statements = (R[name].Properties.Policies || []).flatMap((p) => p.Statement || []);
+    const deletable = statements
+      .filter((s) => s.Effect === 'Allow' && [].concat(s.Action).includes('s3:DeleteObject'))
+      .flatMap((s) => [].concat(s.Resource))
+      .map((r) => JSON.stringify(r));
+    for (const prefix of prefixes) {
+      const ok = deletable.some((r) => r.includes('ImagesBucket') && r.includes(`/${prefix}`));
+      expect({ name, prefix, ok }).toEqual({ name, prefix, ok: true });
+    }
+  }
+});
+
 test('Globals expose the new resources to functions', () => {
   const env = t.Globals.Function.Environment.Variables;
   expect(env.DYNAMODB_TABLE_ACCOUNT_JOBS).toEqual({ Ref: 'AccountJobsTable' });

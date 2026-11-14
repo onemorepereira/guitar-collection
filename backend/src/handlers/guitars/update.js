@@ -78,7 +78,7 @@ async function updateGuitar(event) {
         await deleteRemovedFiles(userId, guitarId, existingGuitar, updatedGuitar);
       } catch (error) {
         // The update itself succeeded; a leftover file is cleanup debt, not a failed save
-        console.error('Failed to delete removed files after guitar update', { error: error.name || error.message });
+        console.error('Failed to delete removed files after guitar update', { error: error.message || error.name });
       }
     }
 
