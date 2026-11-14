@@ -1,5 +1,11 @@
 version = 0.1
 
+# Each environment below is self-contained: SAM does not inherit settings
+# from [default] when you pass --config-env.
+
+# Production. `make deploy-backend` uses this environment.
+# stack_name must equal BACKEND_STACK_NAME in .env.deploy, and region must
+# equal AWS_REGION.
 [default]
 [default.global.parameters]
 stack_name = "my-app-backend-prod"
@@ -17,27 +23,40 @@ parameter_overrides = "Environment=prod AllowedOrigin='https://your-domain.com' 
 s3_prefix = "my-app-prod"
 tags = "Environment=prod Project=MyApp"
 
-# Development environment
+# Development: a separate stack for local frontend work (`make dev`).
+# Deploy with: sam build && sam deploy --config-env dev
+# No custom domain; the API allows the Vite dev server origin.
 [dev]
-[dev.deploy.parameters]
+[dev.global.parameters]
 stack_name = "my-app-backend-dev"
-parameter_overrides = "Environment=dev AllowedOrigin='http://localhost:5173'"
+region = "us-east-1"
+
+[dev.build.parameters]
+cached = true
+parallel = true
+
+[dev.deploy.parameters]
+capabilities = "CAPABILITY_NAMED_IAM"
+confirm_changeset = false
+resolve_s3 = true
+parameter_overrides = "Environment=dev AllowedOrigin='http://localhost:5173' BucketPrefix='my-app-images' FrontendDomain='localhost:5173'"
 s3_prefix = "my-app-dev"
 tags = "Environment=dev Project=MyApp"
 
-# Staging environment
+# Staging: a separate stack. Deploy with: sam build && sam deploy --config-env staging
 [staging]
-[staging.deploy.parameters]
+[staging.global.parameters]
 stack_name = "my-app-backend-staging"
-parameter_overrides = "Environment=staging AllowedOrigin='https://staging.your-domain.com'"
+region = "us-east-1"
+
+[staging.build.parameters]
+cached = true
+parallel = true
+
+[staging.deploy.parameters]
+capabilities = "CAPABILITY_NAMED_IAM"
+confirm_changeset = true
+resolve_s3 = true
+parameter_overrides = "Environment=staging AllowedOrigin='https://staging.your-domain.com' BucketPrefix='my-app-images' FrontendDomain='staging.your-domain.com'"
 s3_prefix = "my-app-staging"
 tags = "Environment=staging Project=MyApp"
-
-# Production environment
-[prod]
-[prod.deploy.parameters]
-stack_name = "my-app-backend-prod"
-parameter_overrides = "Environment=prod AllowedOrigin='https://your-domain.com'"
-s3_prefix = "my-app-prod"
-tags = "Environment=prod Project=MyApp"
-confirm_changeset = true  # Require manual confirmation for prod

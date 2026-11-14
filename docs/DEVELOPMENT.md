@@ -11,9 +11,8 @@ Requirements: Node.js 22+ (`.tool-versions` pins 24.11.0 for asdf/mise), npm, an
 ```bash
 git clone https://github.com/onemorepereira/guitar-collection.git
 cd guitar-collection
-make install      # npm install in the repo root and backend/src
+make install      # npm install in the repo root, backend/src (Lambda runtime), and backend (Jest)
 make init-hooks   # optional: enable the secret-scanning pre-commit hook
-cd backend && npm install && cd ..   # test tooling (jest) for the backend
 ```
 
 ---
@@ -36,15 +35,13 @@ To create a dev backend (one-time, needs the AWS prerequisites from [DEPLOYMENT.
 
 ```bash
 make init                    # if you don't have backend/samconfig.toml yet
-# backend/samconfig.toml's [dev] section sets the stack name (my-app-backend-dev)
-# and Environment=dev AllowedOrigin='http://localhost:5173'; other parameters
-# fall back to the template defaults, which are fine for local work
+# the [dev] section of backend/samconfig.toml defines a stack (my-app-backend-dev)
+# with Environment=dev and AllowedOrigin='http://localhost:5173'
 make install
-cd backend && sam build && sam deploy --config-env dev \
-  --capabilities CAPABILITY_NAMED_IAM --resolve-s3 && cd ..
+cd backend && npm run deploy:dev && cd ..
 
 # point the frontend at it
-echo "VITE_API_URL=$(aws cloudformation describe-stacks --stack-name <dev-stack-name> \
+echo "VITE_API_URL=$(aws cloudformation describe-stacks --stack-name my-app-backend-dev \
   --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)" > .env
 ```
 
@@ -52,7 +49,7 @@ Note that `make deploy-backend` (production) **overwrites `.env`** with the prod
 
 ### Running Lambda handlers locally
 
-`cd backend && npm run local:api` runs `sam local start-api` on port 3001. The handlers still use real AWS resources (DynamoDB tables, Cognito, S3), so you need a deployed dev stack and an `env.json` with its resource names. `backend/scripts/local-setup.sh` generates one, but it assumes a stack named `guitar-collection-backend-dev`; edit `STACK_NAME` to match yours. Sample events are in `backend/events/`.
+`cd backend && npm run local:api` runs `sam local start-api` on port 3001. The handlers still use real AWS resources (DynamoDB tables, Cognito, S3), so point them at a deployed dev stack: pass `--env-vars env.json` with values for the variables in the `Globals.Function.Environment` section of `template.yaml` (table names are `<stack>-guitars`, `<stack>-users`, and so on). Sample events are in `backend/events/`.
 
 ---
 
@@ -65,11 +62,10 @@ Note that `make deploy-backend` (production) **overwrites `.env`** with the prod
 | Production build | `npm run build` | yes |
 | Lint (ESLint, zero warnings allowed) | `npm run lint` | yes, informational |
 | Backend unit tests (Jest) | `cd backend && npm test` | yes |
+| Both unit test suites | `make test` | — |
 | CloudFormation lint ([cfn-lint](https://github.com/aws-cloudformation/cfn-lint), `pip install cfn-lint`) | `cfn-lint backend/template.yaml frontend-infrastructure.yaml` | yes |
 
 Frontend tests live next to the code (`src/**/*.test.ts(x)`); backend tests live in `backend/tests/unit/`. CI is defined in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) and runs on every pull request to `main`.
-
-`make test` runs the frontend suite only and does not fail on test failures; use the commands above for a real pass/fail result.
 
 ---
 

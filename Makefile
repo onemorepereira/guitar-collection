@@ -24,12 +24,12 @@ help:
 	@echo "Setup:"
 	@echo "  make init              - Initialize configuration from templates"
 	@echo "  make init-hooks        - Install git pre-commit hook"
-	@echo "  make install           - Install dependencies (frontend + backend)"
+	@echo "  make install           - Install dependencies (frontend, backend runtime, backend tests)"
 	@echo ""
 	@echo "Development:"
 	@echo "  make dev               - Run frontend development server"
 	@echo "  make build             - Build frontend for production"
-	@echo "  make test              - Run tests"
+	@echo "  make test              - Run frontend (vitest) and backend (jest) tests"
 	@echo ""
 	@echo "Deployment (Automated):"
 	@echo "  make deploy-all        - Deploy everything (backend → frontend infra → frontend)"
@@ -45,7 +45,7 @@ help:
 	@echo "Utilities:"
 	@echo "  make status            - Show current configuration"
 	@echo "  make validate          - Validate configuration files"
-	@echo "  make logs              - Tail backend logs (specify FUNC=guitars|auth|images|...)"
+	@echo "  make logs              - Tail backend logs (FUNC=guitars|auth|images|...; run without FUNC for the list)"
 	@echo "  make clean             - Clean build artifacts and generated files"
 	@echo ""
 	@echo "Configuration:"
@@ -93,8 +93,10 @@ init-hooks:
 install:
 	@echo "[*] Installing frontend dependencies..."
 	@npm install
-	@echo "[*] Installing backend dependencies..."
+	@echo "[*] Installing backend runtime dependencies..."
 	@cd backend/src && npm install
+	@echo "[*] Installing backend test tooling..."
+	@cd backend && npm install
 	@echo "[✓] Dependencies installed"
 
 #============================================================================
@@ -106,9 +108,11 @@ dev:
 	@npm run dev
 
 test:
-	@echo "[*] Running tests..."
-	@npm run test || echo "No tests configured yet"
-	@echo "[✓] Tests complete"
+	@echo "[*] Running frontend tests..."
+	@npm test
+	@echo "[*] Running backend tests..."
+	@cd backend && npm test
+	@echo "[✓] All tests passed"
 
 #============================================================================
 # Backend Deployment (with output extraction)
@@ -376,14 +380,17 @@ logs:
 		echo "Usage: make logs FUNC=<function-name>"; \
 		echo ""; \
 		echo "Available functions:"; \
-		echo "  - guitars"; \
 		echo "  - auth"; \
+		echo "  - guitars"; \
+		echo "  - public-guitar"; \
 		echo "  - images"; \
-		echo "  - specs"; \
-		echo "  - documents"; \
-		echo "  - provenance"; \
 		echo "  - user"; \
-		echo "  - public-guitars"; \
+		echo "  - specs"; \
+		echo "  - receipts"; \
+		echo "  - documents"; \
+		echo "  - document-extraction"; \
+		echo "  - provenance"; \
+		echo "  - shares"; \
 		echo ""; \
 		echo "Example: make logs FUNC=guitars"; \
 		exit 1; \
@@ -447,7 +454,7 @@ status:
 		echo "[!]  No frontend infrastructure outputs cached"; \
 	fi
 	@echo ""
-	@if [ -f .git/hooks/pre-commit ]; then \
+	@if [ "$$(git config --get core.hooksPath)" = ".git-hooks" ] || [ -f .git/hooks/pre-commit ]; then \
 		echo "[✓] Git pre-commit hook installed"; \
 	else \
 		echo "[!]  Git pre-commit hook not installed (run 'make init-hooks')"; \
