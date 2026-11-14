@@ -11,13 +11,32 @@ interface Section {
   body: ReactNode;
 }
 
+interface Shot {
+  /** File in src/assets/features/ (1200×750 WebP, metadata stripped). */
+  file: string;
+  alt: string;
+  caption: string;
+  /** Shown after this section index. */
+  after: number;
+}
+
 interface Feature {
   slug: FeatureSlug;
   breadcrumb: string;
   h1: string;
   intro: string;
   sections: Section[];
+  shots: Shot[];
 }
+
+// Screenshots, fingerprinted by Vite; a shot renders only once its file exists.
+const SHOT_URLS = Object.fromEntries(
+  Object.entries(import.meta.glob('../../assets/features/*.webp', { eager: true, import: 'default' })).map(
+    ([path, url]) => [path.split('/').pop() as string, url as string]
+  )
+);
+const SHOT_WIDTH = 1200;
+const SHOT_HEIGHT = 750;
 
 const p = 'mt-3 text-gray-700 dark:text-gray-300 leading-relaxed';
 const ul = 'mt-3 list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300';
@@ -29,6 +48,10 @@ const FEATURES: Record<FeatureSlug, Feature> = {
     h1: 'A guitar inventory you can hand to your insurer',
     intro:
       'If a guitar is stolen or damaged, an insurer will ask what it was, what it was worth and how you can prove it. GuitarHelp keeps those answers for every guitar in your collection in one place, so you are not hunting through drawers, inboxes and old phones when it matters.',
+    shots: [
+      { file: 'insurance-guitar-record.webp', alt: 'A guitar record in GuitarHelp with photos, specs and purchase details', caption: 'One record per guitar: photos, specs and purchase details together.', after: 0 },
+      { file: 'insurance-documents.webp', alt: 'The documents list with a receipt and a manual linked to a guitar', caption: 'Receipts and manuals linked to the guitars they belong to.', after: 1 },
+    ],
     sections: [
       {
         heading: 'What you can record for each guitar',
@@ -96,6 +119,10 @@ const FEATURES: Record<FeatureSlug, Feature> = {
     h1: 'Document every scratch with a condition report',
     intro:
       'Words like “excellent” or “some playwear” mean different things to different people. A condition report in GuitarHelp shows exactly where each mark is, what it is and how serious it is, on a drawing of your guitar’s body.',
+    shots: [
+      { file: 'condition-diagram.webp', alt: 'A condition diagram of a guitar body with coloured markers for each issue', caption: 'Each marker is an issue; the colour shows how serious it is.', after: 0 },
+      { file: 'condition-report.webp', alt: 'A condition report showing the score, its label and the list of issues', caption: 'The score and every issue, grouped by severity.', after: 1 },
+    ],
     sections: [
       {
         heading: 'Mark issues on a diagram of your guitar',
@@ -174,6 +201,10 @@ const FEATURES: Record<FeatureSlug, Feature> = {
     h1: 'Sell a guitar with a share link and a ready-made listing',
     intro:
       'When you sell a guitar, buyers want photos, specs and an honest account of its condition. GuitarHelp already has all of that, so you can share it in a link and draft the listing text from it.',
+    shots: [
+      { file: 'selling-share-options.webp', alt: 'The share dialog with checkboxes for the fields a share link shows', caption: 'Choose exactly what a share link shows.', after: 0 },
+      { file: 'selling-share-page.webp', alt: 'A shared guitar page as a buyer sees it, with watermarked photos', caption: 'What the buyer sees, without an account.', after: 1 },
+    ],
     sections: [
       {
         heading: 'A share link that shows only what you choose',
@@ -246,6 +277,10 @@ const FEATURES: Record<FeatureSlug, Feature> = {
     h1: 'Fill in specs, receipts and documents with AI',
     intro:
       'Typing in every spec of every guitar is the part that makes people give up on an inventory. GuitarHelp does as much of it for you as it can, and shows you what it filled in before anything is saved.',
+    shots: [
+      { file: 'ai-autofill.webp', alt: 'Model suggestions while typing a guitar name, with specs ready to fill in', caption: 'Suggestions as you type, with typical specs for known models.', after: 0 },
+      { file: 'ai-receipt-review.webp', alt: 'Purchase details read from a sample receipt, shown for review before applying', caption: 'Receipt details are shown for review before anything is applied (sample receipt).', after: 2 },
+    ],
     sections: [
       {
         heading: 'Specs that fill in as you type',
@@ -328,11 +363,28 @@ export const FeaturePage = ({ slug }: { slug: FeatureSlug }) => {
         </nav>
         <h1 className="mt-4 text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100">{f.h1}</h1>
         <p className="mt-4 text-lg text-gray-700 dark:text-gray-300 leading-relaxed">{f.intro}</p>
-        {f.sections.map((s) => (
-          <section key={s.heading} className="mt-10">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{s.heading}</h2>
-            {s.body}
-          </section>
+        {f.sections.map((s, i) => (
+          <div key={s.heading}>
+            <section className="mt-10">
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{s.heading}</h2>
+              {s.body}
+            </section>
+            {f.shots
+              .filter((shot) => shot.after === i && SHOT_URLS[shot.file])
+              .map((shot) => (
+                <figure key={shot.file} className="mt-8">
+                  <img
+                    src={SHOT_URLS[shot.file]}
+                    alt={shot.alt}
+                    width={SHOT_WIDTH}
+                    height={SHOT_HEIGHT}
+                    loading={i === 0 ? 'eager' : 'lazy'}
+                    className="w-full h-auto rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
+                  />
+                  <figcaption className="mt-2 text-sm text-gray-500 dark:text-gray-400 text-center">{shot.caption}</figcaption>
+                </figure>
+              ))}
+          </div>
         ))}
         <section className="mt-12 rounded-xl bg-primary-50 dark:bg-gray-800 p-6 text-center">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Try it with your own guitars</h2>
