@@ -167,6 +167,8 @@ Revert the commit(s) and redeploy with the same `make` target. One exception: **
 
 Account deletion adds a second rule: **only roll back the backend when no deletion is in progress.** Reverting removes the tombstone check, so an account whose deletion is under way would become usable again with half its data gone. Check first that the `<stack>-account-jobs` queue and its dead-letter queue are empty and that no item in the `<stack>-account-jobs` table has `job = deletion` with a status other than `completed`.
 
+**Emergency backend rollback (faster route):** after the frontend is rolled back and the checks above show nothing pending (re-run them right before deploying), you may deploy the last known-good commit directly, without first landing a revert: `git checkout <SHA> && make deploy-backend` (this deploys, it does not commit to `main`). Then open and merge the revert PR so `main` matches what is running.
+
 **Re-deploying after a backend rollback:** the `<stack>-account-jobs` table and the exports bucket are kept when a rollback removes them from the template (`DeletionPolicy: RetainExceptOnCreate`; they're only deleted automatically if the deploy that *created* them fails). Before deploying account export/deletion again, either delete them (empty the bucket first; the table holds only tombstones and export job records) or import them into the stack, otherwise the deploy fails with "already exists".
 
 ## Stuck account deletion
