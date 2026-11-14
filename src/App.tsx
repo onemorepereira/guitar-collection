@@ -1,42 +1,59 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { lazy, Suspense, type ReactNode } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Landing } from './components/Landing';
-import { GuitarGallery } from './components/GuitarGallery';
-import { GuitarDetail } from './components/GuitarDetail';
-import { GuitarForm } from './components/GuitarForm';
-import { Documents } from './components/Documents';
-import { Timeline } from './components/Timeline';
-import ProvenanceReport from './components/ProvenanceReport';
-import SalesAd from './components/SalesAd';
-import { SharedGuitarView } from './components/SharedGuitarView';
-import { Login } from './components/Login';
-import { Register } from './components/Register';
-import { ForgotPassword } from './components/ForgotPassword';
-import { ResetPassword } from './components/ResetPassword';
-import { AccountPage } from './components/AccountPage';
+import { NotFound } from './components/NotFound';
 
-function App() {
+// Public pages are static imports (pre-rendered at build time); everything
+// else loads on demand so the public pages ship a small bundle.
+const named = <T extends Record<string, unknown>>(load: () => Promise<T>, name: keyof T) =>
+  lazy(() => load().then((m) => ({ default: m[name] as React.ComponentType })));
+
+const GuitarGallery = named(() => import('./components/GuitarGallery'), 'GuitarGallery');
+const GuitarDetail = named(() => import('./components/GuitarDetail'), 'GuitarDetail');
+const GuitarForm = named(() => import('./components/GuitarForm'), 'GuitarForm');
+const Documents = named(() => import('./components/Documents'), 'Documents');
+const Timeline = named(() => import('./components/Timeline'), 'Timeline');
+const ProvenanceReport = lazy(() => import('./components/ProvenanceReport'));
+const SalesAd = lazy(() => import('./components/SalesAd'));
+const SharedGuitarView = named(() => import('./components/SharedGuitarView'), 'SharedGuitarView');
+const Login = named(() => import('./components/Login'), 'Login');
+const Register = named(() => import('./components/Register'), 'Register');
+const ForgotPassword = named(() => import('./components/ForgotPassword'), 'ForgotPassword');
+const ResetPassword = named(() => import('./components/ResetPassword'), 'ResetPassword');
+const AccountPage = named(() => import('./components/AccountPage'), 'AccountPage');
+
+// Only lazy routes sit inside a Suspense boundary: a boundary around the
+// pre-rendered public pages would switch them to client rendering when the
+// auth check updates state during hydration.
+const Spinner = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+  </div>
+);
+const Lazy = ({ children }: { children: ReactNode }) => <Suspense fallback={<Spinner />}>{children}</Suspense>;
+/** The route tree without a router, so the build can render it with StaticRouter. */
+export function AppRoutes() {
   return (
-    <ThemeProvider>
-      <Router>
-        <AuthProvider>
+    <AuthProvider>
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/s/:shareId" element={<SharedGuitarView />} />
+          <Route path="/login" element={<Lazy><Login /></Lazy>} />
+          <Route path="/register" element={<Lazy><Register /></Lazy>} />
+          <Route path="/forgot-password" element={<Lazy><ForgotPassword /></Lazy>} />
+          <Route path="/reset-password" element={<Lazy><ResetPassword /></Lazy>} />
+          <Route path="/s/:shareId" element={<Lazy><SharedGuitarView /></Lazy>} />
 
           {/* Protected routes */}
           <Route
             path="/collection"
             element={
               <ProtectedRoute>
-                <GuitarGallery />
+                <Lazy><GuitarGallery /></Lazy>
               </ProtectedRoute>
             }
           />
@@ -44,7 +61,7 @@ function App() {
             path="/account"
             element={
               <ProtectedRoute>
-                <AccountPage />
+                <Lazy><AccountPage /></Lazy>
               </ProtectedRoute>
             }
           />
@@ -52,7 +69,7 @@ function App() {
             path="/guitar/:id"
             element={
               <ProtectedRoute>
-                <GuitarDetail />
+                <Lazy><GuitarDetail /></Lazy>
               </ProtectedRoute>
             }
           />
@@ -60,7 +77,7 @@ function App() {
             path="/add"
             element={
               <ProtectedRoute>
-                <GuitarForm />
+                <Lazy><GuitarForm /></Lazy>
               </ProtectedRoute>
             }
           />
@@ -68,7 +85,7 @@ function App() {
             path="/edit/:id"
             element={
               <ProtectedRoute>
-                <GuitarForm />
+                <Lazy><GuitarForm /></Lazy>
               </ProtectedRoute>
             }
           />
@@ -76,7 +93,7 @@ function App() {
             path="/documents"
             element={
               <ProtectedRoute>
-                <Documents />
+                <Lazy><Documents /></Lazy>
               </ProtectedRoute>
             }
           />
@@ -84,7 +101,7 @@ function App() {
             path="/timeline"
             element={
               <ProtectedRoute>
-                <Timeline />
+                <Lazy><Timeline /></Lazy>
               </ProtectedRoute>
             }
           />
@@ -92,7 +109,7 @@ function App() {
             path="/guitar/:guitarId/provenance/:reportId"
             element={
               <ProtectedRoute>
-                <ProvenanceReport />
+                <Lazy><ProvenanceReport /></Lazy>
               </ProtectedRoute>
             }
           />
@@ -100,13 +117,22 @@ function App() {
             path="/guitar/:guitarId/sales/:reportId"
             element={
               <ProtectedRoute>
-                <SalesAd />
+                <Lazy><SalesAd /></Lazy>
               </ProtectedRoute>
             }
           />
-          </Routes>
-        </AuthProvider>
-      </Router>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+    </AuthProvider>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
     </ThemeProvider>
   );
 }
