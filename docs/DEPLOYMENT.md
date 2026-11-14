@@ -68,6 +68,7 @@ Both files are gitignored. Never commit them.
 | `BucketPrefix` | Images bucket becomes `<prefix>-<Environment>-<account-id>` |
 | `HostedZoneId` | Optional. When set, creates `ApiDomainName` and `ImagesDomainName` with certificates and DNS records |
 | `ApiDomainName`, `ImagesDomainName` | Custom domains used when `HostedZoneId` is set |
+| `AlarmEmail` | Optional. Email address notified when an account deletion gets stuck (AWS sends a confirmation email you must accept). Set it here, not with `--parameter-overrides` on the command line, which would replace the other overrides |
 
 **Values that must agree across the two files:**
 
@@ -133,7 +134,7 @@ aws cloudformation describe-stacks --stack-name "$BACKEND_STACK_NAME" --query 'S
 | `make deploy-backend` / `deploy-frontend-infra` / `deploy-frontend` | Individual stages |
 | `make build` | Frontend production build only |
 | `make test` | Frontend (Vitest) and backend (Jest) unit tests; fails if either fails |
-| `make logs FUNC=<suffix>` | Tail `/aws/lambda/<stack>-<suffix>`. Suffixes: `auth`, `guitars`, `public-guitar`, `images`, `user`, `specs`, `receipts`, `documents`, `document-extraction`, `provenance`, `shares` |
+| `make logs FUNC=<suffix>` | Tail `/aws/lambda/<stack>-<suffix>`. Suffixes: `auth`, `guitars`, `public-guitar`, `images`, `user`, `specs`, `receipts`, `documents`, `document-extraction`, `provenance`, `shares`, `account-jobs`, `log-retention` |
 | `make clean` | Remove `dist/`, `backend/.aws-sam/`, and the cached outputs (keeps `.env`) |
 | `make teardown` | **Destructive.** Empties both buckets and deletes both stacks after you type `DELETE` |
 
@@ -164,6 +165,17 @@ Then open your domain, register an account, and add a guitar.
 
 Revert the commit(s) and redeploy with the same `make` target. One exception: **never redeploy a version of `backend/src/handlers/guitars/random-public.js` that predates the gallery opt-in filter** (`showInGallery = true`). Older versions return any user's guitar on the public landing page. To roll back that endpoint, revert everything else, or replace its handler body with a 404 response.
 
+Account deletion adds a second rule: **only roll back the backend when no deletion is in progress.** Reverting removes the tombstone check, so an account whose deletion is under way would become usable again with half its data gone. Check first that the `<stack>-account-jobs` queue and its dead-letter queue are empty and that no item in the `<stack>-account-jobs` table has `job = deletion` with a status other than `completed`.
+
+## Stuck account deletion
+
+The `<stack>-account-jobs-stuck` alarm fires when a deletion or export exhausted its 5 retries and landed in the `<stack>-account-jobs-dlq` queue. The user's account stays locked (the tombstone blocks every request), but some of their data may remain until the deletion completes.
+
+1. Find the failing step: `make logs FUNC=account-jobs` and look for `{"event":"deletion_failed","step":...}`.
+2. Fix the cause (permissions, a throttled dependency, a code bug) and deploy.
+3. Move the messages back: `aws sqs start-message-move-task --source-arn <DLQ ARN>` (the queue's ARN is in the SQS console or `aws sqs get-queue-attributes --queue-url <DLQ URL> --attribute-names QueueArn`).
+4. Confirm `{"event":"deletion_completed"}` in the logs. Deletion is idempotent, so redriving a message twice is safe.
+
 ---
 
 ## Teardown
@@ -175,8 +187,8 @@ make teardown
 It empties the frontend and images buckets, deletes `<prefix>-frontend`, then runs `sam delete` on the backend stack. These may need manual cleanup:
 
 - **The images bucket**: it is versioned, and `aws s3 rm` leaves old object versions behind, so the stack deletion can fail on it. Delete all object versions, then retry `sam delete`.
-- DynamoDB tables have no retention policy, so **your data is deleted with the stack**. Export anything you want to keep first.
-- CloudWatch log groups (retained by default)
+- DynamoDB tables have no retention policy, so **your data is deleted with the stack**. Export anything you want to keep first. Exception: the `<stack>-account-jobs` table and the exports bucket are **retained** (`DeletionPolicy: Retain`, so a rollback never drops a deletion tombstone); delete them by hand after teardown.
+- CloudWatch log groups (they expire after 90 days, but are not deleted with the stack)
 - ACM certificates or Route 53 records you created outside the stacks
 
 ---

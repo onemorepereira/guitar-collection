@@ -11,7 +11,8 @@ The authoritative route list is the `Events` section of each function in [`backe
 - **Base URL**: the API URL from the backend stack outputs (`ApiUrl`, or `CustomDomainUrl` when a custom domain is configured).
 - **Authentication**: every route except `/auth/*` and `/public/*` requires `Authorization: Bearer <idToken>`, verified by the HTTP API's Cognito JWT authorizer.
 - **CSRF**: state-changing requests must send `X-Requested-With: XMLHttpRequest` and an `Origin` (or `Referer`) matching the allowed frontend origin (`backend/src/lib/csrf.js`). The frontend's `src/utils/api.ts` adds the header automatically.
-- **Errors**: non-2xx responses have a JSON body `{ "error": "<message>", ...details }`.
+- **Errors**: non-2xx responses have a JSON body `{ "error": "<message>", ...details }`. Some errors also carry a stable machine-readable `"code"` (always present, also in production), e.g. `ACCOUNT_DELETION_IN_PROGRESS`, `WRONG_PASSWORD`, `TOO_MANY_ATTEMPTS`, `EXPORT_RATE_LIMITED`, `SERVICE_UNAVAILABLE`.
+- **Account being deleted**: once a deletion is requested, every authenticated route returns `401 {"code":"ACCOUNT_DELETION_IN_PROGRESS"}` and `POST /auth/login` returns `403` with the same code.
 - **Ownership**: every handler scopes reads and writes to the caller's `userId`; another user's resource returns 404.
 - **Input limits**: uploads are capped at 10 MB and pasted text at 50,000 characters (`backend/src/lib/inputLimits.js`).
 
@@ -25,6 +26,8 @@ The authoritative route list is the `Events` section of each function in [`backe
 | Public gallery | `GET /public/guitars/random` | Public |
 | Images | `POST /images/upload-url` (presigned S3 PUT), `POST /images/upload-complete` | JWT |
 | User | `GET /user/profile`, `PUT /user/profile`, `PUT /user/name` | JWT |
+| Data export | `POST /user/export` (password required), `GET /user/export` | JWT |
+| Account deletion | `POST /user/deletion` (password required) | JWT |
 | AI specs import | `POST /specs/extract` | JWT |
 | AI receipt import | `POST /receipts/extract` | JWT |
 | Documents | `GET /documents`, `POST /documents` | JWT |
@@ -34,7 +37,7 @@ The authoritative route list is the `Events` section of each function in [`backe
 | Shares | `GET`, `POST /shares`; `GET`, `PATCH`, `DELETE /shares/{shareId}` | JWT |
 | Public share | `GET /public/shares/{shareId}` | Public |
 
-Detailed request/response shapes are documented below for guitars, spec extraction, and shares. For the other routes, the handler in `backend/src/handlers/<area>/` is the reference.
+Detailed request/response shapes are documented below for guitars, spec extraction, shares, and account export/deletion. For the other routes, the handler in `backend/src/handlers/<area>/` is the reference.
 
 ## Guitar Data Model
 
@@ -645,6 +648,64 @@ Returns filtered guitar data based on `sharedFields` configuration. Records view
 - `404` - Guitar no longer exists
 
 ---
+
+## Account Export and Deletion
+
+Both actions re-check the user's password. Wrong password → `401 {"code":"WRONG_PASSWORD"}`; too many attempts (Cognito lockout) → `429 {"code":"TOO_MANY_ATTEMPTS"}`. The two `POST` routes are throttled at 1 request/s (burst 3).
+
+### Start an export (POST /user/export)
+
+**Request**: `{ "password": "..." }` · **CSRF**: required
+
+**Response** (202): `{ "jobId": "lx8k2m9ab-1f2e3d4c", "status": "pending" }`
+
+**Rate limit** (429, `code: "EXPORT_RATE_LIMITED"`): while an export is pending or processing, or within 1 hour of one becoming ready. The body includes the existing `job` (same shape as the status response) and, when applicable, `retryAfter` (ISO time). Failed exports never block a new one.
+
+### Export status (GET /user/export)
+
+Returns the caller's latest export only.
+
+```json
+{
+  "jobId": "lx8k2m9ab-1f2e3d4c",
+  "status": "ready",
+  "createdAt": "2026-11-14T10:00:00.000Z",
+  "completedAt": "2026-11-14T10:01:12.000Z",
+  "sizeBytes": 12582912,
+  "availableUntil": "2026-11-21T10:00:00.000Z",
+  "downloadUrl": "https://<exports-bucket>.s3.amazonaws.com/exports/...?X-Amz-..."
+}
+```
+
+- `status`: `pending` | `processing` | `ready` | `failed` | `expired`; `404 {"status":"none"}` if there has never been one.
+- `failed` includes `reason`: `too_large` (more than 2 GiB of files), `timeout`, `cancelled` (account deletion requested), or `error`.
+- `downloadUrl` (only when `ready`) is valid for up to 1 hour and may expire sooner; request it right before downloading. The ZIP is deleted 7 days after creation, then the status is `expired`.
+
+### Export file format (`data.json`, schemaVersion 1)
+
+The ZIP contains `data.json` and, under `files/`, every file the user owns (photos, receipts, document files, share renders), at the path given by each entry's `zipPath`.
+
+```json
+{
+  "schemaVersion": 1,
+  "exportedAt": "ISO-8601",
+  "account": { "userId": "...", "email": "...", "emailVerified": true, "name": "...", "createdAt": "ISO-8601" },
+  "profile": { "...users table item as stored..." },
+  "guitars": [ { "...each guitar as stored, incl. privateInfo, notes, images[]..." } ],
+  "documents": [ { "...incl. extractedContent..." } ],
+  "provenanceReports": [ { "..." } ],
+  "shares": [ { "...incl. sharedFields and views[] (referrer, country, browser)..." } ],
+  "files": [ { "key": "images/<userId>/<file>", "zipPath": "files/images/<userId>/<file>", "sizeBytes": 123 } ]
+}
+```
+
+Records are exported exactly as stored. New fields may appear in later versions; a breaking change increments `schemaVersion`.
+
+### Delete the account (POST /user/deletion)
+
+**Request**: `{ "password": "..." }` · **CSRF**: required
+
+**Response** (202): `{ "status": "requested" }`. From this point the account is locked (see Conventions). Deletion completes within about 20 minutes; retrying the request is safe. What remains afterwards, and for how long, is listed in [ARCHITECTURE.md](ARCHITECTURE.md#data-retention-after-deletion).
 
 ## Frontend Handling Guidelines
 
