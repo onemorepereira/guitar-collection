@@ -99,7 +99,7 @@ Every item is keyed by `userId`, and every handler scopes queries to the caller'
 **Image upload**
 1. `POST /images/upload-url` checks the declared content type and returns a presigned S3 PUT URL under `uploads/{userId}/…`.
 2. The browser uploads directly to S3.
-3. `POST /images/upload-complete` checks that the key belongs to the caller, verifies the file's magic number, and moves it to `images/{userId}/…`.
+3. `POST /images/upload-complete` checks that the key belongs to the caller, rejects and deletes files over 30 MB, verifies the file's magic number, and moves it to `images/{userId}/…`.
 4. Anything left in `uploads/` expires after 1 day (bucket lifecycle rule).
 
 **Document content extraction (async)**
@@ -124,7 +124,7 @@ Every item is keyed by `userId`, and every handler scopes queries to the caller'
 | Authorization | HTTP API JWT authorizer (issuer and audience checked) plus per-item `userId` ownership checks in every handler | `template.yaml`, `handlers/*` |
 | CSRF | Required `X-Requested-With: XMLHttpRequest` plus a mandatory `Origin` (falls back to `Referer`) checked against the allowed origin | `lib/csrf.js` |
 | Input | Field whitelisting, format and size limits, recursive HTML sanitization | `lib/validation.js`, `lib/inputLimits.js`, `lib/sanitization.js` |
-| Uploads | Presigned uploads to a private, user-scoped prefix; magic-number checks before a file is moved into `images/` | `handlers/images/`, `lib/fileValidation.js` |
+| Uploads | Presigned uploads to a private, user-scoped prefix; size limit (30 MB) and magic-number checks before a file is moved into `images/` | `handlers/images/`, `lib/fileValidation.js` |
 | Rate limiting | Per-route API Gateway throttling (table above) | `template.yaml` |
 | Encryption | DynamoDB with KMS (AWS-managed key); S3 with SSE-S3; TLS in transit (TLS 1.2+ on CloudFront) | `template.yaml`, `frontend-infrastructure.yaml` |
 | Browser hardening | CloudFront response headers: HSTS, `X-Frame-Options: DENY`, `nosniff`, referrer policy; CSP in **Report-Only** mode | `frontend-infrastructure.yaml` |
@@ -139,6 +139,6 @@ Known trade-offs and open items. Report anything not listed here through [SECURI
 - **Tokens in `localStorage`**: the SPA stores ID and refresh tokens in `localStorage` (`src/services/authService.ts`), so a successful XSS could steal them. The CSP is meant to reduce that risk but still runs in Report-Only mode.
 - **CSP not yet enforced**: it is meant to be promoted to an enforcing header once real usage logs no violations.
 - **No WAF** in front of CloudFront or the API; protection relies on API Gateway throttling.
-- **Upload size not enforced server-side**: the presigned PUT URL carries no size condition, and `upload-complete` checks the file signature but not its size. Size limits are enforced only in the client.
+- **Upload size is checked after upload, not during it**: a presigned PUT URL can't cap the object size, so an oversized file can sit in `uploads/` until `upload-complete` rejects and deletes it (or the 1-day lifecycle rule expires it). It never reaches `images/`.
 - **Cognito advanced security** runs in `AUDIT` mode (it logs risky sign-ins but doesn't block them).
 - **No account deletion or data export** endpoint yet.

@@ -16,6 +16,7 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { v4: uuidv4 } = require('uuid');
 const { validateFileSignature } = require('./fileValidation');
 const { ValidationError } = require('./errors');
+const { IMAGE_CONSTRAINTS } = require('../config/constants');
 
 const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 
@@ -36,10 +37,9 @@ function isNotFound(error) {
  * @param {string} userId - User ID
  * @param {string} fileName - Original file name
  * @param {string} contentType - Content type
- * @param {number} maxSizeBytes - Maximum file size in bytes (default 30MB)
  * @returns {Promise<object>} Upload URL and key
  */
-async function generateUploadUrl(userId, fileName, contentType = 'image/jpeg', maxSizeBytes = 30 * 1024 * 1024) {
+async function generateUploadUrl(userId, fileName, contentType = 'image/jpeg') {
   const fileExtension = fileName.split('.').pop();
   const key = `uploads/${userId}/${uuidv4()}.${fileExtension}`;
 
@@ -48,7 +48,8 @@ async function generateUploadUrl(userId, fileName, contentType = 'image/jpeg', m
     Key: key,
     ContentType: contentType,
     CacheControl: 'public, max-age=31536000, immutable', // Cache for 1 year
-    // Note: File size limit is enforced on the client side and during processing
+    // A presigned PUT cannot cap the object size, so the limit is enforced
+    // when the upload is processed (moveUploadedFile) and by the client.
   });
 
   const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 }); // 5 minutes
@@ -66,10 +67,16 @@ async function generateUploadUrl(userId, fileName, contentType = 'image/jpeg', m
  * @param {string} sourceKey - Source S3 key
  * @param {string} userId - User ID
  * @param {string} contentType - Expected content type (optional)
+ * @param {number} maxSizeBytes - Reject (and delete) objects larger than this
  * @returns {Promise<string>} New S3 key
- * @throws {ValidationError} If file signature is invalid
+ * @throws {ValidationError} If the file is too large or its signature is invalid
  */
-async function moveUploadedFile(sourceKey, userId, contentType = null) {
+async function moveUploadedFile(
+  sourceKey,
+  userId,
+  contentType = null,
+  maxSizeBytes = IMAGE_CONSTRAINTS.MAX_SIZE_BYTES
+) {
   const fileName = sourceKey.split('/').pop();
   const destinationKey = `images/${userId}/${fileName}`;
 
@@ -79,6 +86,21 @@ async function moveUploadedFile(sourceKey, userId, contentType = null) {
       Bucket: BUCKET_NAME,
       Key: sourceKey,
     }));
+
+    // Enforce the size limit before reading any of the body. Fail closed if
+    // S3 doesn't report a size. Oversized objects are deleted immediately.
+    const size = headResponse.ContentLength;
+    if (typeof size !== 'number' || size > maxSizeBytes) {
+      await s3.send(new DeleteObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: sourceKey,
+      }));
+
+      throw new ValidationError(
+        `File too large (max ${Math.floor(maxSizeBytes / (1024 * 1024))} MB)`,
+        { maxSizeBytes }
+      );
+    }
 
     // Get declared content type from S3 metadata or parameter
     const declaredContentType = contentType || headResponse.ContentType;
