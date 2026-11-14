@@ -78,3 +78,26 @@ test('Globals expose the new resources to functions', () => {
   expect(env.S3_BUCKET_EXPORTS).toEqual({ Ref: 'ExportsBucket' });
   expect(env.ACCOUNT_JOBS_QUEUE_URL).toEqual({ Ref: 'AccountJobsQueue' });
 });
+
+test('POST /user/deletion: JWT-protected, throttled at 1 rps / burst 3', () => {
+  const ev = R.UserHandler.Properties.Events.RequestDeletion.Properties;
+  expect(ev).toMatchObject({ Path: '/user/deletion', Method: 'POST', Auth: { Authorizer: 'CognitoAuthorizer' } });
+  const route = R.GuitarCollectionApi.Properties.RouteSettings['POST /user/deletion'];
+  expect(route).toEqual({ ThrottlingBurstLimit: 3, ThrottlingRateLimit: 1 });
+});
+
+test('UserHandler can verify passwords, sign out, write tombstones, and enqueue jobs', () => {
+  const p = policyJson(R.UserHandler);
+  for (const needle of ['cognito-idp:AdminInitiateAuth', 'cognito-idp:AdminUserGlobalSignOut', 'SQSSendMessagePolicy']) {
+    expect(p).toContain(needle);
+  }
+  expect(p).toMatch(/DynamoDBCrudPolicy[^\]]*AccountJobsTable/);
+});
+
+test('AccountJobsHandler can delete the Cognito user and every user table', () => {
+  const p = policyJson(R.AccountJobsHandler);
+  expect(p).toContain('cognito-idp:AdminDeleteUser');
+  for (const table of ['GuitarsTable', 'UsersTable', 'DocumentsTable', 'ProvenanceReportsTable', 'SharesTable', 'AccountJobsTable']) {
+    expect(p).toContain(table);
+  }
+});

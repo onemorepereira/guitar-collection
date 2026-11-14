@@ -102,6 +102,9 @@ Resources:
         "POST /auth/forgot-password":
           ThrottlingBurstLimit: 3
           ThrottlingRateLimit: 1
+        "POST /user/deletion":
+          ThrottlingBurstLimit: 3
+          ThrottlingRateLimit: 1      # Password-verified, destructive
         "POST /specs/extract":
           ThrottlingBurstLimit: 10
           ThrottlingRateLimit: 2      # Limit expensive AI operations
@@ -435,18 +438,24 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-user
       CodeUri: src/
       Handler: handlers/user/index.handler
-      Description: Handles user profile operations
+      Description: Handles user profile operations, account export and deletion requests
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref AccountJobsTable
         - DynamoDBCrudPolicy:
+            TableName: !Ref AccountJobsTable
+        - DynamoDBCrudPolicy:
             TableName: !Ref UsersTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AccountJobsQueue.QueueName
         - Version: '2012-10-17'
           Statement:
             - Effect: Allow
               Action:
                 - cognito-idp:AdminGetUser
                 - cognito-idp:AdminUpdateUserAttributes
+                - cognito-idp:AdminInitiateAuth
+                - cognito-idp:AdminUserGlobalSignOut
               Resource: !GetAtt UserPool.Arn
       Events:
         GetProfile:
@@ -471,6 +480,14 @@ Resources:
             ApiId: !Ref GuitarCollectionApi
             Path: /user/name
             Method: PUT
+            Auth:
+              Authorizer: CognitoAuthorizer
+        RequestDeletion:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /user/deletion
+            Method: POST
             Auth:
               Authorizer: CognitoAuthorizer
 
