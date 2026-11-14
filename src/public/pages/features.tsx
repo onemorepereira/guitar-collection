@@ -49,7 +49,7 @@ const FEATURES: Record<FeatureSlug, Feature> = {
     intro:
       'If a guitar is stolen or damaged, an insurer will ask what it was, what it was worth and how you can prove it. GuitarHelp keeps those answers for every guitar in your collection in one place, so you are not hunting through drawers, inboxes and old phones when it matters.',
     shots: [
-      { file: 'insurance-guitar-record.webp', alt: 'A guitar record in GuitarHelp with photos, specs and purchase details', caption: 'One record per guitar: photos, specs and purchase details together.', after: 0 },
+      { file: 'insurance-guitar-record.webp', alt: 'A guitar record in GuitarHelp with its photos and specifications', caption: 'One record per guitar: photos and specs, with purchase details kept in a private section.', after: 0 },
       { file: 'insurance-documents.webp', alt: 'The documents list with a receipt and a manual linked to a guitar', caption: 'Receipts and manuals linked to the guitars they belong to.', after: 1 },
     ],
     sections: [

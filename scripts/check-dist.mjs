@@ -54,6 +54,14 @@ for (const p of pages) {
   if (html.includes('noindex')) fail(`${p.file}: has noindex`);
   if (!html.includes(`data-route="${p.path}"`)) fail(`${p.file}: data-route`);
   if ((html.match(/<h1[\s>]/g) || []).length !== 1) fail(`${p.file}: expected exactly one <h1>`);
+  if (p.path.startsWith('/features/')) {
+    const imgs = [...html.matchAll(/<img [^>]*src="(\/assets\/[^"]+\.webp)"[^>]*>/g)];
+    if (imgs.length < 1) fail(`${p.file}: no screenshot`);
+    for (const m of imgs) {
+      if (!/alt="[^"]{10,}"/.test(m[0]) || !/width="1200"/.test(m[0]) || !/height="750"/.test(m[0])) fail(`${p.file}: screenshot needs alt, width and height`);
+      if (!existsSync(join(DIST, m[1]))) fail(`${p.file}: screenshot file missing ${m[1]}`);
+    }
+  }
   const n = words(visibleText(html));
   if (n < p.minWords) fail(`${p.file}: ${n} words < ${p.minWords}`);
   if (p.maxWords && n > p.maxWords) fail(`${p.file}: ${n} words > ${p.maxWords}`);
