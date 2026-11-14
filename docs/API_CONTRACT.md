@@ -4,19 +4,57 @@
 
 This document defines the contract between the backend API and frontend for guitar data exchange. The API returns whatever attributes exist in the database without forcing defaults, and the frontend handles missing/null values gracefully.
 
+The authoritative route list is the `Events` section of each function in [`backend/template.yaml`](../backend/template.yaml); request validation lives in [`backend/src/lib/validation.js`](../backend/src/lib/validation.js).
+
+## Conventions
+
+- **Base URL**: the API URL from the backend stack outputs (`ApiUrl`, or `CustomDomainUrl` when a custom domain is configured).
+- **Authentication**: every route except `/auth/*` and `/public/*` requires `Authorization: Bearer <idToken>`, verified by the HTTP API's Cognito JWT authorizer.
+- **CSRF**: state-changing requests must send `X-Requested-With: XMLHttpRequest` and an `Origin` (or `Referer`) matching the allowed frontend origin (`backend/src/lib/csrf.js`). The frontend's `src/utils/api.ts` adds the header automatically.
+- **Errors**: non-2xx responses have a JSON body `{ "error": "<message>", ...details }`.
+- **Ownership**: every handler scopes reads and writes to the caller's `userId`; another user's resource returns 404.
+- **Input limits**: uploads are capped at 10 MB and pasted text at 50,000 characters (`backend/src/lib/inputLimits.js`).
+
+## Endpoint Index
+
+| Area | Method & path | Auth |
+|------|---------------|------|
+| Auth | `POST /auth/register`, `/auth/login`, `/auth/refresh`, `/auth/forgot-password`, `/auth/reset-password` | Public |
+| Guitars | `GET /guitars`, `POST /guitars`, `GET /guitars/brands` | JWT |
+| Guitars | `GET`, `PUT`, `DELETE /guitars/{id}` | JWT |
+| Public gallery | `GET /public/guitars/random` | Public |
+| Images | `POST /images/upload-url` (presigned S3 PUT), `POST /images/upload-complete` | JWT |
+| User | `GET /user/profile`, `PUT /user/profile`, `PUT /user/name` | JWT |
+| AI specs import | `POST /specs/extract` | JWT |
+| AI receipt import | `POST /receipts/extract` | JWT |
+| Documents | `GET /documents`, `POST /documents` | JWT |
+| Documents | `GET`, `PUT`, `DELETE /documents/{id}`; `POST /documents/{id}/extract` (queue content extraction) | JWT |
+| Documents ↔ guitars | `POST`, `DELETE /guitars/{guitarId}/documents/{documentId}` | JWT |
+| Provenance | `GET`, `POST /guitars/{guitarId}/provenance`; `GET`, `DELETE /guitars/{guitarId}/provenance/{reportId}` | JWT |
+| Shares | `GET`, `POST /shares`; `GET`, `PATCH`, `DELETE /shares/{shareId}` | JWT |
+| Public share | `GET /public/shares/{shareId}` | Public |
+
+Detailed request/response shapes are documented below for guitars, spec extraction, and shares. For the other routes, the handler in `backend/src/handlers/<area>/` is the reference.
+
 ## Guitar Data Model
 
 ### Required Fields
 
-These fields **MUST** always be present and non-null in API responses:
+To create a guitar, `brand`, `model`, and `year` are required. `year` must be between 1900 and the current year + 1.
 
-- `id` (string) - Unique identifier for the guitar
+The server always sets these fields, and they are present in every response:
+
+- `id` (string) - Unique identifier for the guitar (stored as `guitarId`, returned as `id`)
 - `userId` (string) - Owner's user ID
 - `brand` (string) - Guitar brand/manufacturer
 - `model` (string) - Guitar model name
 - `year` (number) - Year of manufacture
 - `createdAt` (string, ISO 8601) - Timestamp when record was created
 - `updatedAt` (string, ISO 8601) - Timestamp when record was last updated
+
+### Field Whitelist
+
+The backend rejects unknown top-level fields with a 400. The accepted set is `ALLOWED_GUITAR_FIELDS` in `backend/src/lib/validation.js`. It includes the fields below plus `tags`, `condition`, `modifications`, `documentIds`, top-level purchase/value fields (`serialNumber`, `purchaseDate`, `purchasePrice`, `purchaseLocation`, `receiptUrl`, `currentValue`, `lastValueUpdate`), and legacy aliases kept for older records (`bodyWood`, `fretCount`, `tuners`, …). **Adding a new guitar field requires adding it to that list.**
 
 ### Optional Basic Fields
 
@@ -40,7 +78,7 @@ All specification fields are optional. Frontend displays "Not specified" or hide
 - `bridge` (string) - Bridge type
 - `nut` (string) - Nut material/type
 - `electronics` (string) - Electronics description
-- `caseIncluded` (boolean) - Whether case is included (defaults to false if absent)
+- `caseIncluded` (boolean) - Whether case is included (the frontend treats absent as false)
 - `countryOfOrigin` (string) - Country where manufactured
 
 ### Optional Nested Objects
@@ -409,7 +447,7 @@ interface OptimizedImage {
 ### Creating Shares (POST /shares)
 
 **Authentication**: Required (JWT token)
-**CSRF**: Required (`x-csrf-protection` header)
+**CSRF**: Required (`X-Requested-With: XMLHttpRequest` + `Origin`)
 
 **Request**:
 ```json
@@ -440,13 +478,13 @@ interface OptimizedImage {
     "optimizedImages": [
       {
         "originalId": "img-1",
-        "url": "https://images.guitarhelp.click/shares/...",
+        "url": "https://images.your-domain.com/shares/...",
         "width": 1200,
         "height": 800
       }
     ],
     "viewCount": 0,
-    "shareUrl": "https://guitarhelp.click/s/uuid-here"
+    "shareUrl": "https://your-domain.com/s/uuid-here"
   }
 }
 ```
@@ -469,12 +507,12 @@ Returns all shares for the authenticated user with guitar summary info.
       "isActive": true,
       "viewCount": 42,
       "imageCount": 3,
-      "shareUrl": "https://guitarhelp.click/s/uuid-here",
+      "shareUrl": "https://your-domain.com/s/uuid-here",
       "guitar": {
         "brand": "Fender",
         "model": "Stratocaster",
         "year": 1965,
-        "thumbnail": "https://images.guitarhelp.click/..."
+        "thumbnail": "https://images.your-domain.com/..."
       }
     }
   ],
@@ -507,7 +545,7 @@ Returns full share details including all configuration and analytics.
         "browser": "Chrome"
       }
     ],
-    "shareUrl": "https://guitarhelp.click/s/uuid-here",
+    "shareUrl": "https://your-domain.com/s/uuid-here",
     "guitar": {
       "brand": "Fender",
       "model": "Stratocaster",
@@ -518,7 +556,7 @@ Returns full share details including all configuration and analytics.
 }
 ```
 
-### Updating Shares (PUT /shares/{shareId})
+### Updating Shares (PATCH /shares/{shareId})
 
 **Authentication**: Required (owner only)
 **CSRF**: Required
@@ -583,7 +621,7 @@ Returns filtered guitar data based on `sharedFields` configuration. Records view
   "images": [
     {
       "id": "img-1",
-      "url": "https://images.guitarhelp.click/shares/...",
+      "url": "https://images.your-domain.com/shares/...",
       "width": 1200,
       "height": 800
     }
@@ -611,7 +649,7 @@ Returns filtered guitar data based on `sharedFields` configuration. Records view
 ## Benefits of This Approach
 
 1. **Reduced coupling**: Backend doesn't need to know all possible attributes upfront
-2. **Flexible schema evolution**: New optional fields can be added without backend changes
+2. **Simple schema evolution**: A new optional field only needs adding to the backend whitelist (`ALLOWED_GUITAR_FIELDS`); no migration or default values
 3. **Storage efficiency**: Only store data that exists
 4. **Clear semantics**: null/undefined means "not provided" rather than "explicitly set to empty"
 5. **Frontend control**: Frontend decides how to handle and display missing data

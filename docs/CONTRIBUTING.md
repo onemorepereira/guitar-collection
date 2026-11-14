@@ -6,7 +6,7 @@ Thank you for your interest in contributing! This document provides guidelines f
 
 1. Fork the repository
 2. Clone your fork
-3. Follow the setup instructions in [README.md](../README.md)
+3. Follow the setup instructions in [DEVELOPMENT.md](DEVELOPMENT.md)
 4. Install the pre-commit hook (see below)
 
 ## Pre-Commit Hook Installation
@@ -16,11 +16,7 @@ We provide a pre-commit hook that detects secrets and sensitive information befo
 ### Install the Hook
 
 ```bash
-# Copy the hook to your local .git/hooks directory
-cp .git-hooks/pre-commit .git/hooks/pre-commit
-
-# Make it executable
-chmod +x .git/hooks/pre-commit
+make init-hooks   # sets the repo-local core.hooksPath to .git-hooks
 ```
 
 ### What the Hook Checks
@@ -49,10 +45,10 @@ Only use this if you're absolutely sure your commit contains no secrets.
 
 ### Before Committing
 
-1. **Test locally**: Run `npm run dev` and verify your changes work
+1. **Test locally**: Run `npm test`, `npx tsc --noEmit`, and (for backend changes) `cd backend && npm test`; then try the change with `npm run dev`
 2. **Check for secrets**: The pre-commit hook will run automatically
 3. **Update documentation**: If you change configuration or add features
-4. **Follow code style**: Use ESLint and Prettier (run `npm run lint`)
+4. **Follow code style**: Run `npm run lint` (ESLint)
 
 ### Sensitive Information
 
@@ -63,7 +59,7 @@ Only use this if you're absolutely sure your commit contains no secrets.
 - `backend/samconfig.toml` (use `backend/samconfig.toml.example`)
 - AWS resource identifiers (account IDs, distribution IDs, hosted zone IDs)
 - API keys, tokens, or credentials
-- Development notes with production details (`CLAUDE.md` is gitignored)
+- Personal notes containing production details
 
 ### Configuration Files
 
@@ -71,16 +67,8 @@ For any configuration that contains environment-specific values:
 
 1. Create a template file with `.example` suffix
 2. Add the actual file to `.gitignore`
-3. Document the configuration in README.md
-
-Example:
-```bash
-# Create template
-cp backend/samconfig.toml backend/samconfig.toml.example
-
-# Edit .example to replace real values with placeholders
-# Add actual file to .gitignore
-```
+3. Use only placeholder values in the `.example` file (never copy your real config over it)
+4. Document the configuration in [DEPLOYMENT.md](DEPLOYMENT.md#configuration)
 
 ## Code Style
 
@@ -95,7 +83,7 @@ cp backend/samconfig.toml backend/samconfig.toml.example
 1. Create a feature branch from `main`
 2. Make your changes
 3. Test thoroughly
-4. Ensure pre-commit hook passes
+4. Ensure the pre-commit hook and CI (typecheck, tests, build, cfn-lint) pass
 5. Update documentation if needed
 6. Submit a pull request with:
    - Clear description of changes
@@ -107,17 +95,14 @@ cp backend/samconfig.toml backend/samconfig.toml.example
 
 If you discover a security vulnerability:
 
-1. **DO NOT** open a public issue
-2. Email the maintainer privately
-3. Include details of the vulnerability
-4. Allow time for a fix before public disclosure
+**Do not open a public issue.** Report it privately as described in [SECURITY.md](../SECURITY.md).
 
 ## Questions?
 
-- Check existing [Issues](https://github.com/yourusername/guitar-collection/issues)
+- Check existing [Issues](https://github.com/onemorepereira/guitar-collection/issues)
 - Read the documentation in `/docs/`
 - Open a new issue for questions
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By contributing, you agree that your contributions will be licensed under the [MIT License](../LICENSE).
