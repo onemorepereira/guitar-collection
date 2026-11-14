@@ -49,6 +49,7 @@ for (const p of pages) {
     if (!html.includes(`property="${prop}"`)) fail(`${p.file}: missing ${prop}`);
   }
   if (!html.includes('name="twitter:card" content="summary_large_image"')) fail(`${p.file}: twitter card`);
+  if (!html.includes('name="twitter:image" content="https://guitarhelp.click/og/guitarhelp-1200x630.png"')) fail(`${p.file}: twitter:image`);
   if (!html.includes('content="https://guitarhelp.click/og/guitarhelp-1200x630.png"')) fail(`${p.file}: absolute og:image`);
   if (html.includes('noindex')) fail(`${p.file}: has noindex`);
   if (!html.includes(`data-route="${p.path}"`)) fail(`${p.file}: data-route`);
@@ -76,7 +77,7 @@ for (const f of ['app.html', '404.html']) {
   const html = read(f);
   if (!html.includes('<meta name="robots" content="noindex">')) fail(`${f}: missing noindex`);
   if (html.includes('rel="canonical"')) fail(`${f}: must not have a canonical`);
-  if (!html.includes('property="og:image"')) fail(`${f}: missing share card`);
+  if (!html.includes('property="og:image"') || !html.includes('name="twitter:image"')) fail(`${f}: missing share card`);
 }
 if (!read('app.html').includes('<div id="root"></div>')) fail('app.html: root must be empty');
 if (!read('404.html').includes('data-route="*"')) fail('404.html: data-route');

@@ -26,12 +26,12 @@ const FEATURES = [
   {
     icon: Sparkles,
     title: 'Less typing with AI',
-    body: 'Specs fill in as you type a model name, and AI can read a spec sheet, a receipt, or a scanned manual for you.',
+    body: 'Model suggestions as you type, typical specs filled in on request, and AI that reads a spec sheet, a receipt, or a scanned manual for you.',
   },
 ];
 
 const STEPS = [
-  ['Add a guitar', 'Type the brand and model; for about 160 popular models from 20 brands the specs fill in for you.'],
+  ['Add a guitar', 'Type the brand and model and pick from suggestions (about 160 popular models from 20 brands); GuitarHelp can fill in the brand’s typical specs for you to adjust.'],
   ['Attach the paperwork', 'Upload photos, receipts, manuals and certificates. Documents are read automatically so you can find what is in them.'],
   ['Keep it up to date', 'Write notes, record the guitar’s condition on a diagram, and see your collection’s history on a timeline.'],
   ['Use it when it matters', 'Export a ZIP of all your data and files for your insurer or your own backup, or share a guitar with a buyer.'],
@@ -65,7 +65,7 @@ export const Home = () => {
     <PublicLayout>
       {accountDeleting && (
         <div role="status" className="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-100 text-sm text-center px-4 py-3">
-          Your account is being deleted. This usually takes a few minutes.
+          Your account is being deleted. This takes about 20 minutes.
         </div>
       )}
 
@@ -100,7 +100,7 @@ export const Home = () => {
               <h3 className="mt-3 text-lg font-semibold text-gray-900 dark:text-gray-100">{f.title}</h3>
               <p className="mt-2 text-gray-600 dark:text-gray-300">{f.body}</p>
               <span className="mt-3 inline-block text-sm font-medium text-primary-600 dark:text-primary-400">
-                Learn more about {FEATURE_LINKS[i].label.toLowerCase()} →
+                Learn more: {FEATURE_LINKS[i].label} →
               </span>
             </Link>
           ))}

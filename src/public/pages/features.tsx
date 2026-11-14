@@ -283,13 +283,14 @@ const FEATURES: Record<FeatureSlug, Feature> = {
     ],
     sections: [
       {
-        heading: 'Specs that fill in as you type',
+        heading: 'Suggestions and typical specs as you type',
         body: (
           <p className={p}>
-            Start typing a brand and model and GuitarHelp suggests matches, even with a short or misspelt name
-            like “strat”. For about 160 popular models from 20 brands, including Fender, Gibson, PRS, Ibanez,
-            Gretsch, Taylor and Martin, choosing a model fills in typical specs such as woods, scale length,
-            pickups and frets. You can change anything that differs on your guitar.
+            Start typing a brand and model and GuitarHelp suggests matches from about 160 popular models from 20
+            brands, including Fender, Gibson, PRS, Ibanez, Gretsch, Taylor and Martin, even with a short or
+            misspelt name like “strat”. When you pick one, it offers to fill in typical specs for that brand,
+            such as scale length, pickups and body, neck and fretboard woods. They are a starting point: change
+            anything that differs on your guitar.
           </p>
         ),
       },
@@ -307,8 +308,9 @@ const FEATURES: Record<FeatureSlug, Feature> = {
         heading: 'Read a receipt for you',
         body: (
           <p className={p}>
-            Upload a receipt as a PDF or photo, or paste its text, and GuitarHelp extracts the purchase details,
-            such as the date, price and seller, so you can add them to the guitar’s record after checking them.
+            Upload a receipt as a PDF or text file, or paste the text of an email receipt, and GuitarHelp
+            extracts the purchase details, such as the date, price and seller, so you can add them to the
+            guitar’s record after checking them.
           </p>
         ),
       },
@@ -326,7 +328,7 @@ const FEATURES: Record<FeatureSlug, Feature> = {
         heading: 'You stay in control',
         body: (
           <ul className={ul}>
-            <li>Auto-filled specs are suggestions in the form; nothing is saved until you save the guitar.</li>
+            <li>Typical specs are only filled in when you accept the offer, and nothing is saved until you save the guitar.</li>
             <li>Imported specs and receipt details are shown for review first, and you choose what to apply.</li>
             <li>
               Each document shows whether it has been read yet: pending, processing, completed or failed, and you

@@ -51,8 +51,8 @@ const FAQ: [string, ReactNode][] = [
     'All traffic uses HTTPS, and your records and files are encrypted at rest. GuitarHelp doesn’t sell data, show ads, use cookies or run analytics. No system is perfectly secure, so keep your own export as a backup.',
   ],
   [
-    'Which guitars does the spec auto-fill know?',
-    'About 160 popular models from 20 brands, including Fender, Gibson, PRS, Ibanez, ESP, Gretsch, Rickenbacker, Taylor and Martin. You can add any guitar, though; for others you type the specs yourself or import them from a spec sheet.',
+    'Which guitars does GuitarHelp know?',
+    'As you type, it suggests about 160 popular models from 20 brands, including Fender, Gibson, PRS, Ibanez, ESP, Gretsch, Rickenbacker, Taylor and Martin, and can fill in typical specs for those brands. You can add any guitar, though; for others you type the specs yourself or import them from a spec sheet.',
   ],
   [
     'Can it help me insure my collection?',

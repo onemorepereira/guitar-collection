@@ -40,6 +40,7 @@ function headTags({ title, description, url, noindex = false, jsonLdBlocks = [] 
     `<meta property="og:image:height" content="630">`,
     `<meta property="og:image:alt" content="${esc(OG_IMAGE_ALT)}">`,
     `<meta name="twitter:card" content="summary_large_image">`,
+    `<meta name="twitter:image" content="${OG_IMAGE}">`,
     `<meta name="twitter:image:alt" content="${esc(OG_IMAGE_ALT)}">`,
     `<script src="/theme-init.js"></script>`,
     ...jsonLdBlocks.map((b) => `<script type="application/ld+json">${jsonLd(b)}</script>`),

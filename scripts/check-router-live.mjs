@@ -24,6 +24,7 @@ try {
     const stderr = String(error.stderr || '');
     if (stderr.includes('NoSuchFunctionExists')) {
       console.log(`[i] URL router ${name} doesn't exist yet (first rollout): skipping the drift check.`);
+      rmSync(dir, { recursive: true, force: true });
       process.exit(0);
     }
     console.error(`[X] Could not read the live URL router ${name}:\n${stderr}`);

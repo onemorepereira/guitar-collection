@@ -323,7 +323,7 @@ describe('Landing banner', () => {
       </MemoryRouter>
     );
     expect((await screen.findByText(/Your account is being deleted/)).textContent)
-      .toBe('Your account is being deleted. This usually takes a few minutes.');
+      .toBe('Your account is being deleted. This takes about 20 minutes.');
   });
 });
 
