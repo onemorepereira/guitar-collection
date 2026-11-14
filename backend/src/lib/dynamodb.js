@@ -130,6 +130,27 @@ async function queryItems(tableName, keyConditionExpression, expressionAttribute
 }
 
 /**
+ * Query every page (follows LastEvaluatedKey).
+ * @returns {Promise<array>} All matching items
+ */
+async function queryAll(tableName, keyConditionExpression, expressionAttributeValues, options = {}) {
+  const items = [];
+  let ExclusiveStartKey;
+  do {
+    const result = await dynamodb.send(new QueryCommand({
+      TableName: tableName,
+      KeyConditionExpression: keyConditionExpression,
+      ExpressionAttributeValues: expressionAttributeValues,
+      ExclusiveStartKey,
+      ...options,
+    }));
+    items.push(...(result.Items || []));
+    ExclusiveStartKey = result.LastEvaluatedKey;
+  } while (ExclusiveStartKey);
+  return items;
+}
+
+/**
  * Scan items from DynamoDB
  * @param {string} tableName - Table name
  * @param {object} options - Additional options
@@ -216,6 +237,7 @@ module.exports = {
   updateItem,
   deleteItem,
   queryItems,
+  queryAll,
   scanItems,
   queryByIndex,
   batchGetItems,

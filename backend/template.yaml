@@ -19,6 +19,9 @@ Globals:
         DYNAMODB_TABLE_PROVENANCE_REPORTS: !Ref ProvenanceReportsTable
         DYNAMODB_TABLE_SHARES: !Ref SharesTable
         DYNAMODB_TABLE_ACCOUNT_JOBS: !Ref AccountJobsTable
+        IMAGES_DISTRIBUTION_ID: !Ref ImagesDistribution
+        S3_BUCKET_EXPORTS: !Ref ExportsBucket
+        ACCOUNT_JOBS_QUEUE_URL: !Ref AccountJobsQueue
         S3_BUCKET_IMAGES: !Ref ImagesBucket
         CLOUDFRONT_DOMAIN: !If [HasHostedZone, !Ref ImagesDomainName, !GetAtt ImagesDistribution.DomainName]
         FRONTEND_DOMAIN: !Ref FrontendDomain
@@ -64,6 +67,11 @@ Parameters:
     Type: String
     Description: Frontend domain for CORS validation (e.g., example.org)
     Default: "your-domain.com"
+
+  AlarmEmail:
+    Type: String
+    Description: Email address notified when an account deletion gets stuck (optional; leave empty for no subscription)
+    Default: ""
 
   BucketPrefix:
     Type: String
@@ -263,6 +271,16 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref AccountJobsTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${ImagesDistribution}
+        - DynamoDBReadPolicy:
+            TableName: !Ref DocumentsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref ProvenanceReportsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref GuitarsTable
         - Version: '2012-10-17'
@@ -541,6 +559,12 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref AccountJobsTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${ImagesDistribution}
         - DynamoDBCrudPolicy:
             TableName: !Ref DocumentsTable
         - DynamoDBCrudPolicy:
@@ -807,6 +831,12 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref AccountJobsTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${ImagesDistribution}
         - DynamoDBCrudPolicy:
             TableName: !Ref SharesTable
         - DynamoDBReadPolicy:
@@ -1149,6 +1179,167 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
 
+  # ==================== Account deletion & export ====================
+
+  # Private, non-versioned bucket for export ZIPs (never behind a CDN).
+  # ZIPs are deleted by the app at 7 days; the lifecycle rule is the backstop.
+  ExportsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub ${BucketPrefix}-exports-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireExports
+            Status: Enabled
+            Prefix: exports/
+            ExpirationInDays: 7
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  AccountJobsDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-account-jobs-dlq
+      MessageRetentionPeriod: 1209600  # 14 days
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  AccountJobsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${AWS::StackName}-account-jobs
+      # >= 6x the 900 s worker timeout (Lambda SQS event-source guidance)
+      VisibilityTimeout: 5400
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AccountJobsDLQ.Arn
+        maxReceiveCount: 5
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-alarms
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+  AlarmEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasAlarmEmail
+    Properties:
+      TopicArn: !Ref AlarmTopic
+      Protocol: email
+      Endpoint: !Ref AlarmEmail
+
+  # A deletion that exhausted its retries: data may be left behind (runbook in docs/DEPLOYMENT.md)
+  AccountJobsDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-account-jobs-stuck
+      AlarmDescription: An account deletion or export job failed all retries and is in the dead-letter queue
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AccountJobsDLQ.QueueName
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  AccountJobsHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-account-jobs
+      CodeUri: src/
+      Handler: handlers/account-jobs/index.handler
+      Description: Account export and deletion jobs, plus a 15-minute sweeper
+      Timeout: 900
+      MemorySize: 3008
+      Events:
+        Jobs:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt AccountJobsQueue.Arn
+            BatchSize: 1
+        Sweep:
+          Type: Schedule
+          Properties:
+            Schedule: rate(15 minutes)
+            Input: '{"type":"sweep"}'
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AccountJobsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GuitarsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DocumentsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProvenanceReportsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SharesTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AccountJobsQueue.QueueName
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:ListBucket
+              Resource:
+                - !GetAtt ImagesBucket.Arn
+                - !GetAtt ExportsBucket.Arn
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:DeleteObject
+              Resource:
+                - !Sub ${ImagesBucket.Arn}/images/*
+                - !Sub ${ImagesBucket.Arn}/uploads/*
+                - !Sub ${ImagesBucket.Arn}/shared/*
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:GetObject
+                - s3:DeleteObject
+                - s3:AbortMultipartUpload
+              Resource:
+                - !Sub ${ExportsBucket.Arn}/exports/*
+            - Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${ImagesDistribution}
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminGetUser
+                - cognito-idp:AdminDeleteUser
+                - cognito-idp:AdminUserGlobalSignOut
+              Resource: !GetAtt UserPool.Arn
+
   # ==================== Cognito ====================
 
   UserPool:
@@ -1336,6 +1527,7 @@ Resources:
 Conditions:
   IsProduction: !Equals [!Ref Environment, prod]
   HasHostedZone: !Not [!Equals [!Ref HostedZoneId, ""]]
+  HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, ""]]
 
 # Outputs
 Outputs:
