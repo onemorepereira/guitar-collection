@@ -10,7 +10,6 @@
     "build": "sam build",
     "deploy:dev": "sam build && sam deploy --config-env dev",
     "deploy:staging": "sam build && sam deploy --config-env staging",
-    "deploy:prod": "sam build && sam deploy --config-env prod",
     "local:api": "sam local start-api --port 3001",
     "logs:auth": "sam logs -n AuthHandler --tail",
     "logs:guitars": "sam logs -n GuitarsHandler --tail"

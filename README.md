@@ -32,9 +32,9 @@ The React SPA is served from S3 through CloudFront. It calls an API Gateway HTTP
 ### Run the frontend locally
 
 ```bash
-make install   # frontend + backend/src dependencies
+make install   # frontend, backend runtime, and backend test dependencies
 make dev       # http://localhost:5173 — needs VITE_API_URL in .env pointing at a deployed non-prod API
-npm test       # frontend tests; backend: cd backend && npm install && npm test
+make test      # frontend (Vitest) + backend (Jest) unit tests
 ```
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for local setup against a dev stack, tests, and common changes.

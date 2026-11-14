@@ -30,7 +30,7 @@ You also need:
 ```bash
 make init        # copies .env.deploy.example → .env.deploy and samconfig.toml.example → backend/samconfig.toml
 # edit both files (see Configuration below)
-make install     # npm install for the frontend and backend/src
+make install     # npm install for the frontend, backend/src, and backend test tooling
 make deploy-all  # backend → frontend infrastructure → frontend app
 ```
 
@@ -55,7 +55,6 @@ Both files are gitignored. Never commit them.
 | `API_DOMAIN` | no | Defaults to `api.$FRONTEND_DOMAIN`. Used in the frontend CSP |
 | `IMAGES_DOMAIN` | no | Defaults to `images.$FRONTEND_DOMAIN`. Used in the frontend CSP |
 | `AWS_PROFILE` | no | Exported to every `aws`/`sam` call |
-| `CLOUDFRONT_DISTRIBUTION_ID` | no | Only read by the legacy `scripts/deploy-frontend.sh`. `make` gets the ID from stack outputs |
 
 ### `backend/samconfig.toml`
 
@@ -80,7 +79,7 @@ Both files are gitignored. Never commit them.
 | `HOSTED_ZONE_ID` | `HostedZoneId` (if you use backend custom domains) |
 | `API_DOMAIN`, `IMAGES_DOMAIN` | `ApiDomainName`, `ImagesDomainName` (the frontend CSP allows only these) |
 
-The example file also has `[dev]`, `[staging]`, and `[prod]` sections for `sam deploy --config-env <env>` (`npm run deploy:<env>` in `backend/`). Each is a **separate stack**. `make` only uses `[default]`, so don't mix the two approaches for the same environment.
+The example file also has `[dev]` and `[staging]` sections, each a **separate, self-contained stack** (SAM doesn't inherit settings from `[default]`). Deploy them with `sam build && sam deploy --config-env <env>` from `backend/` (or `npm run deploy:<env>`). `make` only deploys `[default]`. Don't add an environment that reuses the `[default]` stack name: deploying it would overwrite production's parameters.
 
 ---
 
@@ -127,12 +126,13 @@ aws cloudformation describe-stacks --stack-name "$BACKEND_STACK_NAME" --query 'S
 | `make help` | List targets |
 | `make init` | Create `.env.deploy` and `backend/samconfig.toml` from the examples (won't overwrite) |
 | `make init-hooks` | Enable the secret-scanning pre-commit hook (`core.hooksPath=.git-hooks`) |
-| `make install` | `npm install` in the repo root and `backend/src` |
+| `make install` | `npm install` in the repo root, `backend/src` (Lambda runtime), and `backend` (Jest) |
 | `make validate` | Check config values and that `aws`, `sam`, `jq` are installed |
 | `make status` | Show configuration and cached outputs |
 | `make deploy-all` | All three stages |
 | `make deploy-backend` / `deploy-frontend-infra` / `deploy-frontend` | Individual stages |
 | `make build` | Frontend production build only |
+| `make test` | Frontend (Vitest) and backend (Jest) unit tests; fails if either fails |
 | `make logs FUNC=<suffix>` | Tail `/aws/lambda/<stack>-<suffix>`. Suffixes: `auth`, `guitars`, `public-guitar`, `images`, `user`, `specs`, `receipts`, `documents`, `document-extraction`, `provenance`, `shares` |
 | `make clean` | Remove `dist/`, `backend/.aws-sam/`, and the cached outputs (keeps `.env`) |
 | `make teardown` | **Destructive.** Empties both buckets and deletes both stacks after you type `DELETE` |
@@ -193,9 +193,3 @@ It empties the frontend and images buckets, deletes `<prefix>-frontend`, then ru
 ## Costs
 
 Pay-per-use. A personal deployment with light traffic typically costs a few dollars a month. CloudFront, S3 storage, and DynamoDB (on-demand billing; point-in-time recovery is enabled when `Environment=prod`) dominate; Lambda and Cognito usually stay in the free tier. AI calls are per request (fractions of a cent each; Textract bills per page). Use the [AWS Pricing Calculator](https://calculator.aws/) for your expected usage.
-
----
-
-## Legacy scripts
-
-`scripts/*.sh`, `deploy-frontend-infra.sh`, and `backend/scripts/*.sh` predate the Makefile and use hard-coded stack names that differ from it. Prefer the `make` targets.
