@@ -59,7 +59,7 @@ All run Node.js 22.x (`nodejs22.x`) with a 10 s / 512 MB default. Function names
 |----------|--------|---------|-------|
 | AuthHandler | `auth` | register, login, refresh, forgot/reset password | Wraps Cognito |
 | GuitarsHandler | `guitars` | guitar CRUD, brand list | |
-| PublicGuitarHandler | `public-guitar` | random public guitar for the landing page | Strips private fields |
+| PublicGuitarHandler | `public-guitar` | random **opted-in** guitar for the landing page | Only `showInGallery = true`; strips private fields and image captions |
 | ImagesHandler | `images` | presigned upload URL, upload completion | |
 | UserHandler | `user` | profile, display name | |
 | SpecsHandler | `specs` | AI spec extraction from PDF/text | 60 s, 1024 MB, Nova Lite |
@@ -107,6 +107,12 @@ Every item is keyed by `userId`, and every handler scopes queries to the caller'
 2. The extraction function reads it. **PDFs** start an async Textract job whose completion is published to SNS, which triggers the same function again to collect the text and have Nova Lite clean it up. **Images** go straight to Nova Lite (multimodal) for OCR plus a description.
 3. The result is written to the document's `extractedContent` (`extractionStatus`: `pending → processing → completed | failed`).
 4. Failed messages land in dead-letter queues.
+
+**Public gallery (opt-in)**
+1. Owners tick "Show in the public gallery" on a guitar (`showInGallery: true`); it's off by default, and guitars without the attribute are never shown.
+2. `GET /public/guitars/random` (no auth) scans the guitars table with `FilterExpression showInGallery = :true`, following `LastEvaluatedKey` across pages, and caches the result for 5 minutes per Lambda container. Changes (opt-in, opt-out, delete) therefore take up to 5 minutes to show.
+3. It returns brand, model, year, specs, and photos (`id`, `url`, `isPrimary`, `order`) and never `userId`, private info, notes, or captions. Photo URLs have the form `images/<userId>/<uuid>`, so they do contain the owner's opaque account ID.
+4. Each scan logs `{ event: "gallery_scan", pages, scannedCount, matched }`. If `scannedCount` grows large, switch to a sparse GSI.
 
 **Share links**
 1. `POST /shares` stores which fields are visible and renders resized, watermarked copies of the selected images with `sharp`.

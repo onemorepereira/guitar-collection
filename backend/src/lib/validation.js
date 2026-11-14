@@ -278,7 +278,10 @@ const ALLOWED_GUITAR_FIELDS = [
   'detailedSpecs', 'privateInfo', 'images', 'documents',
 
   // Document references (new schema)
-  'documentIds'
+  'documentIds',
+
+  // Public landing-page gallery opt-in (absent = not shown)
+  'showInGallery'
 ];
 
 /**
@@ -366,6 +369,17 @@ function validateGuitarArrayLimits(updates) {
 
 function validateGuitarUpdateFields(updates) {
   validateGuitarArrayLimits(updates);
+
+  // Strict boolean: null, strings, numbers are rejected so the gallery
+  // filter (showInGallery = true) never sees an ambiguous value.
+  if (
+    updates && typeof updates === 'object' &&
+    'showInGallery' in updates &&
+    typeof updates.showInGallery !== 'boolean'
+  ) {
+    throw new ValidationError('showInGallery must be true or false');
+  }
+
   return validateAndFilterFields(
     updates,
     ALLOWED_GUITAR_FIELDS,

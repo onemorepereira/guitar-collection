@@ -19,6 +19,7 @@ import {
   Sparkles,
   StickyNote,
   Share2,
+  Globe,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ReceiptViewer } from './ReceiptViewer';
@@ -411,6 +412,12 @@ export const GuitarDetail = () => {
                   <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                     {guitar.brand} {guitar.model}
                   </h1>
+                  {guitar.showInGallery === true && (
+                    <span className="inline-flex items-center gap-1 mb-2 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                      <Globe className="w-3 h-3" aria-hidden="true" />
+                      In public gallery
+                    </span>
+                  )}
                   <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
                     <Calendar className="w-4 h-4" />
                     <span>{guitar.year}</span>

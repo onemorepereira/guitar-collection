@@ -16,6 +16,7 @@ import { SpecsImporter } from './SpecsImporter';
 import { ReceiptImporter } from './ReceiptImporter';
 import { DocumentLinker } from './DocumentLinker';
 import { ConditionDiagram, ConditionMarker, getAvailableShapes, GuitarShape } from './condition';
+import { GuitarVisibilityCard } from './GuitarVisibilityCard';
 
 export const GuitarForm = () => {
   const { id } = useParams<{ id: string }>();
@@ -56,6 +57,9 @@ export const GuitarForm = () => {
   const [conditionShape, setConditionShape] = useState<GuitarShape | ''>('');
   const [conditionMarkers, setConditionMarkers] = useState<ConditionMarker[]>([]);
   const [showConditionSection, setShowConditionSection] = useState(false);
+
+  // Public gallery opt-in (off by default)
+  const [showInGallery, setShowInGallery] = useState(false);
 
   // Private info
   const [serialNumber, setSerialNumber] = useState('');
@@ -243,6 +247,7 @@ export const GuitarForm = () => {
     setImages(guitar.images);
     setNotes(guitar.notes || []);
     setDocumentIds(guitar.documentIds || []);
+    setShowInGallery(guitar.showInGallery === true);
 
     // Condition data
     if (guitar.conditionShape) {
@@ -653,6 +658,8 @@ export const GuitarForm = () => {
       notes,
       conditionShape: conditionShape || undefined,
       conditionMarkers: conditionMarkers.length > 0 ? conditionMarkers : undefined,
+      // Always sent so unchecking clears it (update is a merge)
+      showInGallery,
       privateInfo: {
         serialNumber: serialNumber || undefined,
         purchaseDate: purchaseDate || undefined,
@@ -944,6 +951,9 @@ export const GuitarForm = () => {
               </div>
             )}
           </div>
+
+          {/* Visibility */}
+          <GuitarVisibilityCard showInGallery={showInGallery} onChange={setShowInGallery} />
 
           {/* Basic Information */}
           <div className="card p-6">

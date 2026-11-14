@@ -97,6 +97,9 @@ export interface Guitar {
   // Images
   images: GuitarImage[];
 
+  // Public landing-page gallery opt-in (absent = not shown)
+  showInGallery?: boolean;
+
   // Documentation (brochures, marketing materials, etc.)
   documents?: GuitarDocument[]; // Deprecated - use documentIds instead
   documentIds?: string[]; // IDs of documents in the documents table

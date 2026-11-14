@@ -128,6 +128,14 @@ Array of journal notes. May be empty array, but should not be null:
 - `content` (string) - Note text
 - `createdAt` (string, ISO 8601) - When note was created
 
+### Public Gallery Opt-in
+
+#### `showInGallery` (boolean, optional)
+
+When `true`, the guitar can appear on the public landing page via `GET /public/guitars/random`. Absent or `false` means it is never shown. Any non-boolean value (including `null`) is rejected with 400. Updates are merges, so omitting the field leaves the stored value unchanged; the frontend always sends `true` or `false`.
+
+The public response contains `id`, `brand`, `model`, `year`, `type`, `color`, `finish`, material and spec fields, `countryOfOrigin`, `serialNumber` (`"***REDACTED***"` when set), and `images` reduced to `{ id, url, isPrimary, order }`. It returns 404 when no guitar is opted in.
+
 ### Condition Documentation Fields
 
 These fields document the physical condition of the guitar using visual diagrams:
