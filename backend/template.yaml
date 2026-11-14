@@ -1256,6 +1256,7 @@ Resources:
     Properties:
       QueueName: !Sub ${AWS::StackName}-account-jobs-dlq
       MessageRetentionPeriod: 1209600  # 14 days
+      SqsManagedSseEnabled: true
       Tags:
         - Key: Environment
           Value: !Ref Environment
@@ -1266,6 +1267,7 @@ Resources:
       QueueName: !Sub ${AWS::StackName}-account-jobs
       # >= 6x the 900 s worker timeout (Lambda SQS event-source guidance)
       VisibilityTimeout: 5400
+      SqsManagedSseEnabled: true
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt AccountJobsDLQ.Arn
         maxReceiveCount: 5
@@ -1326,6 +1328,9 @@ Resources:
           Properties:
             Queue: !GetAtt AccountJobsQueue.Arn
             BatchSize: 1
+            # Bounds concurrent exports/deletions (cost and S3/Cognito load)
+            ScalingConfig:
+              MaximumConcurrency: 2
         Sweep:
           Type: Schedule
           Properties:
