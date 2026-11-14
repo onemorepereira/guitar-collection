@@ -283,11 +283,17 @@ Resources:
               Action:
                 - cloudfront:CreateInvalidation
               Resource: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${ImagesDistribution}
-            # Removed photos/receipts and deleted guitars' files (images/{userId}/...)
+            # Removed photos/receipts and deleted guitars' files (images/{userId}/...),
+            # and the share copies of deleted guitars/photos (shared/{shareId}/...)
             - Effect: Allow
               Action:
                 - s3:DeleteObject
-              Resource: !Sub ${ImagesBucket.Arn}/images/*
+              Resource:
+                - !Sub ${ImagesBucket.Arn}/images/*
+                - !Sub ${ImagesBucket.Arn}/shared/*
+        # Deleting a guitar deletes its shares; removing photos prunes them
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SharesTable
         - DynamoDBReadPolicy:
             TableName: !Ref DocumentsTable
         - DynamoDBReadPolicy:
@@ -1291,8 +1297,9 @@ Resources:
       Protocol: email
       Endpoint: !Ref AlarmEmail
 
-  # Monthly cost guardrail for the whole AWS account. Baseline is ~$10/month
-  # (WAF + Route 53 fixed costs); $15 leaves ~$5 of headroom for runaway usage.
+  # Monthly cost guardrail for the whole AWS account (shared with other apps).
+  # Baseline is ~$10/month, mostly fixed costs (another app's WAF, Route 53);
+  # $15 leaves ~$5 of headroom for runaway usage.
   # Emails AlarmEmail directly (an SNS subscriber would need a topic policy for budgets.amazonaws.com).
   MonthlyCostBudget:
     Type: AWS::Budgets::Budget

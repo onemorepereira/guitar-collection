@@ -148,8 +148,12 @@ async function getPublicShare(event) {
 
     // Get images - prefer optimized images, fall back to originals
     let images = [];
-    if (share.optimizedImages && share.optimizedImages.length > 0) {
-      images = share.optimizedImages.map(img => ({
+    // Only photos still on the guitar (shares made before photo removal
+    // pruned them can still list removed photos)
+    const currentIds = new Set((guitar.images || []).map(img => img && img.id));
+    const optimized = (share.optimizedImages || []).filter(img => currentIds.has(img.originalId));
+    if (optimized.length > 0) {
+      images = optimized.map(img => ({
         id: img.originalId,
         url: img.url,
         width: img.width,

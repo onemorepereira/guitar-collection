@@ -75,7 +75,7 @@ All run Node.js 22.x (`nodejs22.x`) with a 10 s / 512 MB default. Function names
 
 **Routing pattern.** Each domain has a `handlers/<domain>/index.js` that strips the stage prefix from `rawPath`, matches path + method, and dispatches to one file per operation (`list.js`, `create.js`, …). A new endpoint means a route event in `template.yaml`, a match in `index.js`, and an operation file.
 
-**Shared library** (`backend/src/lib/`): `response.js` (response helpers), `validation.js` (field whitelist and format checks), `sanitization.js` (recursive HTML stripping), `inputLimits.js` (10 MB uploads, 50,000-char text), `fileValidation.js` (magic-number checks), `csrf.js`, `cognito.js` (Cognito calls, JWKS verification, password re-check, deletion tombstone check), `audit.js` (security-event logging), `accountJobs.js` (deletion tombstones and export jobs), `accountQueue.js`, `cdn.js` (CloudFront invalidation), `dynamodb.js`, `s3.js`, `s3Keys.js`, `bedrock.js`, `logger.js`, `errors.js` (incl. `CodedError`, whose `code` always reaches the client). All AWS access uses the modular AWS SDK v3 clients.
+**Shared library** (`backend/src/lib/`): `response.js` (response helpers), `validation.js` (field whitelist and format checks), `sanitization.js` (recursive HTML stripping), `inputLimits.js` (10 MB uploads, 50,000-char text), `fileValidation.js` (magic-number checks), `csrf.js`, `cognito.js` (Cognito calls, JWKS verification, password re-check, deletion tombstone check), `audit.js` (security-event logging), `accountJobs.js` (deletion tombstones and export jobs), `accountQueue.js`, `cdn.js` (CloudFront invalidation), `dynamodb.js`, `s3.js`, `s3Keys.js`, `shareCleanup.js` (shares follow their guitar), `bedrock.js`, `logger.js`, `errors.js` (incl. `CodedError`, whose `code` always reaches the client). All AWS access uses the modular AWS SDK v3 clients.
 
 **Dependencies.** SAM builds each function with `BuildMethod: makefile`, which copies `backend/src/` as-is. Runtime dependencies must be declared in **`backend/src/package.json`** and installed (`make install`) before `sam build`. `backend/package.json` holds only test tooling.
 
@@ -124,6 +124,7 @@ Every item is keyed by `userId`, and every handler scopes queries to the caller'
 **Share links**
 1. `POST /shares` stores which fields are visible and renders resized, watermarked copies of the selected images with `sharp`.
 2. `GET /public/shares/{shareId}` (no auth) looks up the share via `ShareIdIndex`, returns only the fields marked visible, and records the view.
+3. Shares follow their guitar (`lib/shareCleanup.js`): deleting a guitar first deletes its shares (their `shared/` copies and view history), and removing photos from a guitar removes them from its shares. The public view also only lists copies whose photo is still on the guitar.
 
 **Data export**
 1. `POST /user/export` re-checks the password, creates a job in `account-jobs`, and queues it (one at a time; at most one new export per hour after the last one was ready).
