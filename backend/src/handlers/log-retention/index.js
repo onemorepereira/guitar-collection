@@ -47,6 +47,7 @@ function respond(event, status, reason) {
       method: 'PUT',
       headers: { 'content-type': '', 'content-length': Buffer.byteLength(body) },
     }, (res) => { res.resume(); res.on('end', resolve); });
+    req.setTimeout(10000, () => req.destroy(new Error('cfn-response timed out')));
     req.on('error', (error) => { console.error('Failed to send cfn-response', error.message); resolve(); });
     req.end(body);
   });

@@ -127,3 +127,11 @@ test('images bucket keeps old versions 30 days (images/, shared/) and 1 day (upl
   expect(byPrefix['images/'].ExpiredObjectDeleteMarker).toBe(true);
   expect(byPrefix['uploads/'].NoncurrentVersionExpiration).toEqual({ NoncurrentDays: 1 });
 });
+
+test('alarms: failed deletion steps (log metric filter) and API 5xx notify the alarm topic', () => {
+  expect(R.AccountDeletionFailedMetricFilter.Properties.FilterPattern).toBe('{ $.event = "deletion_failed" }');
+  expect(R.AccountDeletionFailedMetricFilter.DependsOn).toBe('LogRetention');
+  expect(R.AccountDeletionFailedAlarm.Properties.AlarmActions).toEqual([{ Ref: 'AlarmTopic' }]);
+  expect(R.ApiServerErrorsAlarm.Properties).toMatchObject({ Namespace: 'AWS/ApiGateway', MetricName: '5xx' });
+  expect(R.ApiServerErrorsAlarm.Properties.Dimensions[0].Value).toEqual({ Ref: 'GuitarCollectionApi' });
+});

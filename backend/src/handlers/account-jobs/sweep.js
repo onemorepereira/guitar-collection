@@ -82,8 +82,14 @@ async function run() {
   const now = Date.now();
   const tally = {};
   for (const item of await scanAll()) {
-    const outcome = item.job === DELETION_SK ? await sweepDeletion(item, now) : await sweepExport(item, now);
-    if (outcome) tally[outcome] = (tally[outcome] || 0) + 1;
+    try {
+      const outcome = item.job === DELETION_SK ? await sweepDeletion(item, now) : await sweepExport(item, now);
+      if (outcome) tally[outcome] = (tally[outcome] || 0) + 1;
+    } catch (error) {
+      // One bad item must not stop the rest of the sweep
+      tally.errors = (tally.errors || 0) + 1;
+      console.error(JSON.stringify({ event: 'account_jobs_sweep_item_failed', job: item.job === DELETION_SK ? 'deletion' : 'export', error: error.name || 'Error' }));
+    }
   }
   console.log(JSON.stringify({ event: 'account_jobs_sweep', ...tally }));
   return tally;

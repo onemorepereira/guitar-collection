@@ -200,6 +200,7 @@ It empties the frontend and images buckets, deletes `<prefix>-frontend`, then ru
 | `make validate` fails | A required `.env.deploy` variable is missing, or `aws`/`sam`/`jq` isn't on `PATH` |
 | `Cannot find module …` in Lambda logs | Dependency missing from `backend/src/package.json`, or `make install` wasn't run before `sam build` |
 | Frontend stack stuck in `CREATE_IN_PROGRESS` | ACM DNS validation is waiting; check that `HOSTED_ZONE_ID` is the zone for `FRONTEND_DOMAIN` |
+| Every authenticated request returns 503 `SERVICE_UNAVAILABLE` (alarm `<stack>-api-5xx`) | The deletion-tombstone lookup (`<stack>-account-jobs` table) is failing; requests fail closed by design. Check the table exists and isn't throttled (`aws dynamodb describe-table --table-name <stack>-account-jobs`), and the functions' IAM read permission on it |
 | Browser CORS errors | `AllowedOrigin` in `samconfig.toml` doesn't exactly match the site origin (scheme + host, no trailing slash) |
 | 403 `Missing required security header` / `Missing Origin header` | Request didn't go through `src/utils/api.ts`, or it came from an origin other than `AllowedOrigin` |
 | 400 on save with an unknown field | Field not in `ALLOWED_GUITAR_FIELDS` (`backend/src/lib/validation.js`) |

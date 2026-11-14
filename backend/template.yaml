@@ -1311,6 +1311,58 @@ Resources:
       AlarmActions:
         - !Ref AlarmTopic
 
+  # Fires within minutes of any failed deletion step (the DLQ alarm only
+  # fires after all retries, ~7.5 h later). The log group is created by the
+  # LogRetention custom resource, hence the DependsOn.
+  AccountDeletionFailedMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    DependsOn: LogRetention
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-account-jobs
+      FilterPattern: '{ $.event = "deletion_failed" }'
+      MetricTransformations:
+        - MetricNamespace: !Sub ${AWS::StackName}/AccountJobs
+          MetricName: DeletionFailed
+          MetricValue: '1'
+          DefaultValue: 0
+
+  AccountDeletionFailedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-account-deletion-failing
+      AlarmDescription: An account deletion step failed (it will retry; see the stuck-deletion runbook in docs/DEPLOYMENT.md)
+      Namespace: !Sub ${AWS::StackName}/AccountJobs
+      MetricName: DeletionFailed
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  # Every authenticated route now reads the AccountJobs table (fail-closed),
+  # so watch API-wide server errors.
+  ApiServerErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${AWS::StackName}-api-5xx
+      AlarmDescription: API server errors (5xx) on the HTTP API; see Troubleshooting in docs/DEPLOYMENT.md
+      Namespace: AWS/ApiGateway
+      MetricName: 5xx
+      Dimensions:
+        - Name: ApiId
+          Value: !Ref GuitarCollectionApi
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
   AccountJobsHandler:
     Type: AWS::Serverless::Function
     Metadata:

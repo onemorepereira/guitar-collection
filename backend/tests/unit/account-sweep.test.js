@@ -104,3 +104,26 @@ describe('sweeper (export rules)', () => {
     ]));
   });
 });
+
+describe('sweeper resilience', () => {
+  const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+  const ddb = mockClient(DynamoDBDocumentClient);
+  const queue = require('../../src/lib/accountQueue');
+  const sweep = require('../../src/handlers/account-jobs/sweep');
+
+  test('one failing item does not stop the rest of the sweep', async () => {
+    ddb.reset();
+    const old = new Date(Date.now() - 30 * 60000).toISOString();
+    ddb.on(ScanCommand).resolves({
+      Items: [
+        { userId: 'bad', job: 'deletion', status: 'requested', requestedAt: old },
+        { userId: 'good', job: 'deletion', status: 'requested', requestedAt: old },
+      ],
+    });
+    queue.enqueue.mockReset();
+    queue.enqueue.mockRejectedValueOnce(new Error('sqs blip')).mockResolvedValueOnce();
+    const tally = await sweep.run();
+    expect(tally).toMatchObject({ errors: 1, reenqueued: 1 });
+    expect(queue.enqueue).toHaveBeenCalledTimes(2);
+  });
+});

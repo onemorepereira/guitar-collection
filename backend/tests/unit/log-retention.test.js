@@ -19,6 +19,7 @@ beforeEach(() => {
   responses = [];
   jest.spyOn(https, 'request').mockImplementation((options, onResponse) => {
     const req = new EventEmitter();
+    req.setTimeout = () => req;
     req.end = (body) => {
       responses.push({ options, body: JSON.parse(body) });
       const res = new EventEmitter();
