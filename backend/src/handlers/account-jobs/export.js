@@ -117,7 +117,9 @@ async function run({ userId, jobId }) {
       queueSize: 4,
     });
     const uploaded = upload.done();
-    uploaded.catch(() => {}); // surfaced below via await
+    // If S3 rejects the upload early, stop producing the archive (otherwise
+    // nothing drains it and the job would hang until the Lambda timeout)
+    uploaded.catch((error) => archive.abort?.() || archive.emit('error', error));
 
     await appendAndWait(archive, Buffer.from(JSON.stringify(manifest, null, 2)), 'data.json');
     for (const file of files) {
@@ -143,7 +145,12 @@ async function run({ userId, jobId }) {
       files: files.length,
       sizeBytes,
     };
-    await transitionExport(userId, jobId, 'processing', 'ready', { completedAt: new Date().toISOString(), sizeBytes });
+    const marked = await transitionExport(userId, jobId, 'processing', 'ready', { completedAt: new Date().toISOString(), sizeBytes });
+    if (!marked) {
+      // Cancelled in the meantime (deletion requested): the deletion removes the ZIP
+      console.log(JSON.stringify({ event: 'export_skipped', reason: 'no_longer_processing' }));
+      return;
+    }
     logAccountEvent(userId, 'EXPORT_COMPLETED', 'SUCCESS', counts);
     console.log(JSON.stringify({ event: 'export_completed', ...counts }));
   } catch (error) {

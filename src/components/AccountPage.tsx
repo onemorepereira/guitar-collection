@@ -101,7 +101,13 @@ const ExportCard = () => {
       // Fetch a fresh link right before downloading (links can expire early)
       const latest = await accountService.getExportStatus();
       setJob(latest);
-      if (latest.downloadUrl) window.location.assign(latest.downloadUrl);
+      if (latest.downloadUrl) {
+        window.location.assign(latest.downloadUrl);
+      } else if (latest.status === 'expired') {
+        setMessage({ kind: 'info', text: 'This export has expired. Start a new one below.' });
+      }
+    } catch {
+      setMessage({ kind: 'error', text: "Couldn't get the download link. Please try again." });
     } finally {
       setBusy(false);
     }
