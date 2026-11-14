@@ -82,7 +82,7 @@ export const PUBLIC_PAGES: PublicPage[] = [
     file: 'features/ai-import/index.html',
     title: 'AI Spec, Receipt and Document Import | GuitarHelp',
     description:
-      'Fill in guitar specs from a model name or a spec sheet, pull purchase details from a receipt, and make scanned manuals and catalogs searchable with AI.',
+      'Get model suggestions and typical specs as you type, import specs from a spec sheet and purchase details from a receipt, and search scanned manuals.',
     sources: ['src/public/pages/features.tsx'],
   },
   {

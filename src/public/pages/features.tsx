@@ -63,8 +63,8 @@ const FEATURES: Record<FeatureSlug, Feature> = {
               <li>the purchase date, price and where you bought it;</li>
               <li>its current value and your insurance details;</li>
               <li>the receipt, as a PDF or a photo;</li>
-              <li>as many photos as you like, from any angle;</li>
-              <li>specs such as body and neck woods, fretboard, pickups, bridge, tuners, finish and modifications;</li>
+              <li>up to 200 photos per guitar, from any angle;</li>
+              <li>specs such as body and neck woods, fretboard, pickups, bridge, tuners and finish;</li>
               <li>notes, and a condition report showing every mark on the body.</li>
             </ul>
             <p className={p}>
@@ -90,8 +90,8 @@ const FEATURES: Record<FeatureSlug, Feature> = {
           <>
             <p className={p}>
               From your Account page you can export your whole collection at any time. You get a ZIP with a data
-              file holding every record you have entered, plus every photo, receipt and document you uploaded. It
-              is usually ready within minutes and stays available to download for 7 days.
+              file holding every record you have entered, plus every photo, receipt and document you uploaded (up
+              to 2 GB of files). It is usually ready within minutes and stays available to download for 7 days.
             </p>
             <p className={p}>
               Keep a copy somewhere safe, away from the guitars themselves, so the records survive whatever
@@ -278,7 +278,7 @@ const FEATURES: Record<FeatureSlug, Feature> = {
     intro:
       'Typing in every spec of every guitar is the part that makes people give up on an inventory. GuitarHelp does as much of it for you as it can, and shows you what it filled in before anything is saved.',
     shots: [
-      { file: 'ai-autofill.webp', alt: 'Model suggestions while typing a guitar name, with specs ready to fill in', caption: 'Suggestions as you type, with typical specs for known models.', after: 0 },
+      { file: 'ai-autofill.webp', alt: 'Model suggestions while typing a guitar name, with specs ready to fill in', caption: 'Model suggestions as you type, and the brand’s typical specs on request.', after: 0 },
       { file: 'ai-receipt-review.webp', alt: 'Purchase details read from a sample receipt, shown for review before applying', caption: 'Receipt details are shown for review before anything is applied (sample receipt).', after: 2 },
     ],
     sections: [
@@ -299,8 +299,8 @@ const FEATURES: Record<FeatureSlug, Feature> = {
         body: (
           <p className={p}>
             Paste text from a manufacturer’s page or upload a PDF or text file, and AI pulls out the
-            specifications. Before you apply them, you review each field next to the place in the source text it
-            came from, and keep only what is right.
+            specifications. Before you apply them, you review each field, can open a view that shows where in
+            the source text each value came from, and keep only what is right.
           </p>
         ),
       },
