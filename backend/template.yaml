@@ -1190,10 +1190,11 @@ Resources:
           Value: !Ref Environment
 
   # Account deletion tombstones (SK 'deletion') and export jobs (SK 'export#<id>').
-  # Retained on stack delete/replace so a rollback never drops a tombstone.
+  # Retained on stack delete/replace so a rollback never drops a tombstone;
+  # deleted only if the deploy that creates it rolls back (RetainExceptOnCreate).
   AccountJobsTable:
     Type: AWS::DynamoDB::Table
-    DeletionPolicy: Retain
+    DeletionPolicy: RetainExceptOnCreate
     UpdateReplacePolicy: Retain
     Properties:
       TableName: !Sub ${AWS::StackName}-account-jobs
@@ -1226,7 +1227,7 @@ Resources:
   # ZIPs are deleted by the app at 7 days; the lifecycle rule is the backstop.
   ExportsBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
+    DeletionPolicy: RetainExceptOnCreate
     UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Sub ${BucketPrefix}-exports-${Environment}-${AWS::AccountId}

@@ -167,6 +167,8 @@ Revert the commit(s) and redeploy with the same `make` target. One exception: **
 
 Account deletion adds a second rule: **only roll back the backend when no deletion is in progress.** Reverting removes the tombstone check, so an account whose deletion is under way would become usable again with half its data gone. Check first that the `<stack>-account-jobs` queue and its dead-letter queue are empty and that no item in the `<stack>-account-jobs` table has `job = deletion` with a status other than `completed`.
 
+**Re-deploying after a backend rollback:** the `<stack>-account-jobs` table and the exports bucket are kept when a rollback removes them from the template (`DeletionPolicy: RetainExceptOnCreate`; they're only deleted automatically if the deploy that *created* them fails). Before deploying account export/deletion again, either delete them (empty the bucket first; the table holds only tombstones and export job records) or import them into the stack, otherwise the deploy fails with "already exists".
+
 ## Stuck account deletion
 
 The `<stack>-account-jobs-stuck` alarm fires when a deletion or export exhausted its 5 retries and landed in the `<stack>-account-jobs-dlq` queue. The user's account stays locked (the tombstone blocks every request), but some of their data may remain until the deletion completes.
@@ -187,7 +189,7 @@ make teardown
 It empties the frontend and images buckets, deletes `<prefix>-frontend`, then runs `sam delete` on the backend stack. These may need manual cleanup:
 
 - **The images bucket**: it is versioned, and `aws s3 rm` leaves old object versions behind, so the stack deletion can fail on it. Delete all object versions, then retry `sam delete`.
-- DynamoDB tables have no retention policy, so **your data is deleted with the stack**. Export anything you want to keep first. Exception: the `<stack>-account-jobs` table and the exports bucket are **retained** (`DeletionPolicy: Retain`, so a rollback never drops a deletion tombstone); delete them by hand after teardown.
+- DynamoDB tables have no retention policy, so **your data is deleted with the stack**. Export anything you want to keep first. Exception: the `<stack>-account-jobs` table and the exports bucket are **retained** (`DeletionPolicy: RetainExceptOnCreate`, so a rollback never drops a deletion tombstone); delete them by hand after teardown.
 - CloudWatch log groups (they expire after 90 days, but are not deleted with the stack)
 - ACM certificates or Route 53 records you created outside the stacks
 

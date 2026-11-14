@@ -11,7 +11,7 @@ const policyJson = (fn) => JSON.stringify(fn.Properties.Policies || []);
 
 test('AccountJobsTable: keys, TTL, encryption, retained', () => {
   const table = R.AccountJobsTable;
-  expect(table.DeletionPolicy).toBe('Retain');
+  expect(table.DeletionPolicy).toBe('RetainExceptOnCreate');
   expect(table.UpdateReplacePolicy).toBe('Retain');
   expect(table.Properties.KeySchema).toEqual([
     { AttributeName: 'userId', KeyType: 'HASH' },
@@ -31,7 +31,8 @@ test('every function can read AccountJobsTable (tombstone check)', () => {
 
 test('ExportsBucket: private, not versioned, 7-day expiry, retained, not a CDN origin', () => {
   const b = R.ExportsBucket;
-  expect(b.DeletionPolicy).toBe('Retain');
+  expect(b.DeletionPolicy).toBe('RetainExceptOnCreate');
+  expect(b.UpdateReplacePolicy).toBe('Retain');
   expect(b.Properties.VersioningConfiguration).toBeUndefined();
   expect(b.Properties.PublicAccessBlockConfiguration).toEqual({
     BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true,
