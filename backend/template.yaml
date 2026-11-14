@@ -1176,6 +1176,11 @@ Resources:
           - Id: DeleteOldUploads
             Status: Enabled
             ExpirationInDays: 1
+            # The bucket is versioned, so expiring or deleting an upload only
+            # adds a delete marker; without this, every processed or rejected
+            # upload is kept forever as a noncurrent version.
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 1
             Prefix: uploads/
       VersioningConfiguration:
         Status: Enabled

@@ -100,7 +100,7 @@ Every item is keyed by `userId`, and every handler scopes queries to the caller'
 1. `POST /images/upload-url` checks the declared content type and returns a presigned S3 PUT URL under `uploads/{userId}/…`.
 2. The browser uploads directly to S3.
 3. `POST /images/upload-complete` checks that the key belongs to the caller, rejects and deletes files over 30 MB, verifies the file's magic number, and moves it to `images/{userId}/…`.
-4. Anything left in `uploads/` expires after 1 day (bucket lifecycle rule).
+4. Anything left in `uploads/` expires after 1 day, and the old versions left behind by expiry or deletion (the bucket is versioned) are removed a day later (bucket lifecycle rule).
 
 **Document content extraction (async)**
 1. `POST /documents` (or `POST /documents/{id}/extract`) enqueues a message on the extraction SQS queue.
