@@ -7,6 +7,7 @@ import { describe, test, expect } from 'vitest';
 import privacy from '../../public/privacy.html?raw';
 import terms from '../../public/terms.html?raw';
 import architecture from '../../docs/ARCHITECTURE.md?raw';
+import { LEGAL_VERSION } from '../components/LegalLinks';
 
 const text = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ');
 const P = text(privacy);
@@ -14,6 +15,7 @@ const T = text(terms);
 const lower = (s: string) => s.toLowerCase();
 
 const REMOVED = [
+  'Google Fonts',
   'Share your collection with anyone else', "won't share your guitar collection", 'Basic usage data',
   'what features you use', 'privacy-focused analytics', 'fight unnecessary', 'notify you via email or in-app',
   'probably an email or a notice in the app', 'anonymized data for analytics', 'important account stuff',
@@ -42,8 +44,12 @@ describe('both pages', () => {
   });
 
   test('cross-links use the versioned URLs', () => {
-    expect(privacy).toContain('href="/terms.html?v=20261114"');
-    expect(terms).toContain('href="/privacy.html?v=20261114"');
+    // The static pages hard-code the version; it must match LEGAL_VERSION
+    expect(privacy).toContain(`href="/terms.html?v=${LEGAL_VERSION}"`);
+    expect(terms).toContain(`href="/privacy.html?v=${LEGAL_VERSION}"`);
+    const versions = [...(privacy + terms).matchAll(/\.html\?v=(\d+)/g)].map((m) => m[1]);
+    expect(versions.length).toBeGreaterThan(0);
+    expect(new Set(versions)).toEqual(new Set([LEGAL_VERSION]));
   });
 });
 
@@ -52,7 +58,7 @@ describe('privacy policy content', () => {
     'share link', 'gallery', '5 minutes', 'may keep working', 'random account ID', 'location',
     'Textract', 'Bedrock', "haven't opted out", 'abuse detection', '2,000 characters', 'condition',
     '90 days', 'IP address', 'user agent', 'revoke a share', 'excerpts', "don't record email addresses",
-    'Account page', 'Google Fonts', 'United States', 'Cognito',
+    'Account page', 'United States', 'Cognito',
   ])('mentions: %s', (phrase) => {
     expect(lower(P)).toContain(lower(phrase));
   });

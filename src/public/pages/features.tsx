@@ -4,6 +4,7 @@ import { PublicLayout } from '../PublicLayout';
 import { FEATURE_LINKS } from '../links';
 import { useDocumentHead } from '../useDocumentHead';
 import type { FeatureSlug } from '../pages';
+import { PRIVACY_URL } from '../../components/LegalLinks';
 
 interface Section {
   heading: string;
@@ -304,7 +305,7 @@ const FEATURES: Record<FeatureSlug, Feature> = {
         body: (
           <p className={p}>
             These features use AI services on Amazon Web Services (Amazon Textract and Amazon Bedrock). The{' '}
-            <a href="/privacy.html?v=20261114#ai" className="text-primary-600 dark:text-primary-400 underline">
+            <a href={`${PRIVACY_URL}#ai`} className="text-primary-600 dark:text-primary-400 underline">
               privacy policy
             </a>{' '}
             explains exactly what is sent and how AWS treats it.

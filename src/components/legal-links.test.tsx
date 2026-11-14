@@ -27,7 +27,7 @@ vi.mock('../services/shareService', () => ({
 import { Register } from './Register';
 import { Home as Landing } from '../public/pages/Home';
 import { SharedGuitarView } from './SharedGuitarView';
-import { PRIVACY_URL, TERMS_URL } from './LegalLinks';
+import { PRIVACY_URL, TERMS_URL, LEGAL_VERSION } from './LegalLinks';
 
 afterEach(cleanup);
 
@@ -38,8 +38,8 @@ function expectNewTab(link: HTMLElement, href: string) {
 }
 
 test('versioned URLs', () => {
-  expect(PRIVACY_URL).toBe('/privacy.html?v=20261114');
-  expect(TERMS_URL).toBe('/terms.html?v=20261114');
+  expect(PRIVACY_URL).toBe(`/privacy.html?v=${LEGAL_VERSION}`);
+  expect(TERMS_URL).toBe(`/terms.html?v=${LEGAL_VERSION}`);
 });
 
 test('Register links the static pages in a new tab', () => {

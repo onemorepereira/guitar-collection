@@ -99,6 +99,20 @@ if (!/^\d{4}-\d{2}-\d{2}$/.test(sitemap.match(/<lastmod>([^<]+)<\/lastmod>/)?.[1
 if (!read('robots.txt').includes('Sitemap: https://guitarhelp.click/sitemap.xml')) fail('robots.txt: sitemap line');
 if (/Disallow:\s*\/\S/.test(read('robots.txt'))) fail('robots.txt must not block pages (noindex must stay visible)');
 
+// Homepage JS budget (AC13): entry + modulepreloads, gzip, at most half of the old 165 KB
+{
+  const { gzipSync } = await import('node:zlib');
+  const html = read('index.html');
+  const refs = [...new Set([...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.js)"/g)].map((m) => m[1]))];
+  const kb = refs.reduce((sum, r) => sum + gzipSync(readFileSync(join(DIST, r))).length, 0) / 1024;
+  console.log(`homepage JS: ${refs.length} file(s), ${kb.toFixed(1)} KB gzip`);
+  if (kb > 82) fail(`homepage JS ${kb.toFixed(1)} KB gzip > 82 KB`);
+  const homepageJs = refs.map((r) => readFileSync(join(DIST, r), 'utf8')).join('\n');
+  if (/Stratocaster.{0,200}Telecaster.{0,200}Jazzmaster/s.test(homepageJs) && homepageJs.includes('"commonSpecs"')) {
+    fail('homepage JS includes the guitar knowledge base');
+  }
+}
+
 if (failures.length) {
   console.error(`\n${failures.length} check(s) failed:\n- ${failures.join('\n- ')}`);
   process.exit(1);

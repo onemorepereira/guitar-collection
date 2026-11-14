@@ -211,7 +211,7 @@ describe('AccountPage: retention link', () => {
     vi.mocked(accountService.getExportStatus).mockResolvedValue({ status: 'none' });
     renderAccount();
     const link = await screen.findByRole('link', { name: 'Full retention schedule', hidden: true });
-    expect(link.getAttribute('href')).toBe('/privacy.html?v=20261114#retention');
+    expect(link.getAttribute('href')).toBe('/privacy.html?v=2026111402#retention');
     expect(link.getAttribute('target')).toBe('_blank');
   });
 });
