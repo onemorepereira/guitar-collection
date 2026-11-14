@@ -9,6 +9,16 @@ const DB_VERSION = 1;
 
 let dbInstance: IDBDatabase | null = null;
 
+/** Close the cached connection so the database can be deleted. */
+export const closeImageDb = (): void => {
+  if (dbInstance) {
+    dbInstance.close();
+    dbInstance = null;
+  }
+};
+
+export const IMAGE_DB_NAME = DB_NAME;
+
 const openDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
     if (dbInstance) {

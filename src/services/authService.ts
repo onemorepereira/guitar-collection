@@ -5,12 +5,21 @@ import {
   PasswordResetRequest,
   AuthResponse,
 } from '../types/auth';
-import { apiRequest, authenticatedRequest, API_URL } from '../utils/api';
+import {
+  apiRequest,
+  authenticatedRequest,
+  API_URL,
+  isAccountDeletingResponse,
+  setOnAccountDeleting,
+} from '../utils/api';
+import { closeImageDb, IMAGE_DB_NAME } from '../utils/imageStorage';
 
 // Local storage keys
 const TOKEN_KEY = 'guitar-collection-token';
 const REFRESH_TOKEN_KEY = 'guitar-collection-refresh-token';
 const USER_KEY = 'guitar-collection-user';
+
+let handlingDeletion = false;
 
 export const authService = {
   // Login
@@ -22,7 +31,7 @@ export const authService = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Login failed');
+      throw Object.assign(new Error(error.error || 'Login failed'), { code: error.code });
     }
 
     const data = await response.json();
@@ -64,6 +73,39 @@ export const authService = {
     });
   },
 
+  /**
+   * Remove everything this app stored locally for the user: tokens, cached
+   * profile, autocomplete history (recent-*), and the cached-image database.
+   */
+  async clearLocalUserData(): Promise<void> {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('recent-')) localStorage.removeItem(key);
+    }
+    closeImageDb();
+    if (typeof indexedDB !== 'undefined') {
+      await new Promise<void>((resolve) => {
+        const request = indexedDB.deleteDatabase(IMAGE_DB_NAME);
+        request.onsuccess = () => resolve();
+        request.onerror = () => resolve();
+        request.onblocked = () => resolve();
+      });
+    }
+  },
+
+  /** Account deletion in progress (this or another device): clean up and leave. */
+  async handleAccountDeleting(): Promise<void> {
+    if (handlingDeletion) return;
+    handlingDeletion = true;
+    await this.clearLocalUserData();
+    this.notifyLoggedOut();
+    if (typeof window !== 'undefined') {
+      window.location.assign('/?account=deleting');
+    }
+  },
+
   // Logout
   async logout(): Promise<void> {
     localStorage.removeItem(TOKEN_KEY);
@@ -82,6 +124,10 @@ export const authService = {
       const response = await authenticatedRequest('/user/profile', token, {
         method: 'GET',
       });
+
+      if (await isAccountDeletingResponse(response)) {
+        return null; // handled app-wide; never fall back to the cached user
+      }
 
       if (!response.ok) {
         // Only attempt a refresh+retry on auth failures, and only a bounded
@@ -210,6 +256,10 @@ export const authService = {
 
     let response = await authenticatedRequest(url, token, options);
 
+    if (await isAccountDeletingResponse(response)) {
+      throw new Error('Your account is being deleted.');
+    }
+
     if (response.status === 401) {
       const refreshed = await this.refreshToken();
       if (!refreshed) {
@@ -268,3 +318,8 @@ export const authService = {
     return user;
   },
 };
+
+// Any authenticated response saying the account is being deleted triggers cleanup
+setOnAccountDeleting(() => {
+  void authService.handleAccountDeleting();
+});
