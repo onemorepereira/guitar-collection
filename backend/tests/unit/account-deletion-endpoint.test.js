@@ -80,6 +80,13 @@ describe('POST /user/deletion', () => {
     expect(queue.enqueue).toHaveBeenCalledTimes(1);
   });
 
+  test('a repeat request for an already-queued deletion does not re-enqueue', async () => {
+    jobs.putTombstoneIfAbsent.mockResolvedValue({ created: false, tombstone: { status: 'processing', enqueuedAt: 't' } });
+    const res = await requestDeletion(ev({ password: 'pw' }));
+    expect(res.statusCode).toBe(202);
+    expect(queue.enqueue).not.toHaveBeenCalled();
+  });
+
   test('enqueue failure → 503, and no enqueuedAt (the sweeper retries)', async () => {
     queue.enqueue.mockRejectedValue(new Error('sqs down'));
     const res = await requestDeletion(ev({ password: 'pw' }));

@@ -74,7 +74,12 @@ async function updateGuitar(event) {
     // something else of the user's still points at the file (another guitar,
     // a document, or a saved provenance/sales report).
     if (data.images !== undefined || data.privateInfo?.receiptUrl !== undefined) {
-      await deleteRemovedFiles(userId, guitarId, existingGuitar, updatedGuitar);
+      try {
+        await deleteRemovedFiles(userId, guitarId, existingGuitar, updatedGuitar);
+      } catch (error) {
+        // The update itself succeeded; a leftover file is cleanup debt, not a failed save
+        console.error('Failed to delete removed files after guitar update', { error: error.name || error.message });
+      }
     }
 
     // Map guitarId to id for frontend compatibility

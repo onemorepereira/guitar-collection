@@ -8,6 +8,7 @@ import { DeleteAccountDialog } from './DeleteAccountDialog';
 import { Footer } from './Footer';
 
 const POLL_MS = 5000;
+const NEW_EXPORT_AFTER_READY_MS = 60 * 60 * 1000;
 const ISSUES_URL = 'https://github.com/onemorepereira/guitar-collection/issues';
 
 function maskEmail(email?: string): string {
@@ -49,7 +50,9 @@ const ExportCard = () => {
         timer.current = setTimeout(load, POLL_MS);
       }
     } catch {
-      if (mounted.current) setJob({ status: 'none' });
+      if (!mounted.current) return;
+      setJob({ status: 'none' });
+      setMessage({ kind: 'error', text: "Couldn't load your export status. Please reload the page." });
     }
   }, []);
 
@@ -80,9 +83,10 @@ const ExportCard = () => {
         setMessage({ kind: 'error', text: 'Too many attempts. Please wait a few minutes and try again.' });
       } else if (err instanceof AccountApiError && err.code === 'EXPORT_RATE_LIMITED') {
         if (err.job) setJob(err.job);
-        if (err.retryAfter) {
-          setMessage({ kind: 'info', text: `You can start a new export after ${formatTime(err.retryAfter)}.` });
-        }
+        setMessage({
+          kind: 'info',
+          text: err.retryAfter ? `You can start a new export after ${formatTime(err.retryAfter)}.` : err.message,
+        });
       } else {
         setMessage({ kind: 'error', text: 'Something went wrong. Please try again.' });
       }
@@ -105,7 +109,11 @@ const ExportCard = () => {
 
   const status = job?.status;
   const inProgress = status === 'pending' || status === 'processing';
-  const canStart = !inProgress && status !== 'ready';
+  const tooLarge = status === 'failed' && job?.reason === 'too_large';
+  // A ready export can be replaced once it's an hour old (backend AC9 limit)
+  const readyAndRecent = status === 'ready' &&
+    (!job?.completedAt || Date.now() - Date.parse(job.completedAt) < NEW_EXPORT_AFTER_READY_MS);
+  const canStart = !inProgress && !tooLarge && !readyAndRecent;
 
   return (
     <section className="card p-6" aria-labelledby="your-data-heading">
@@ -149,6 +157,9 @@ const ExportCard = () => {
         <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">Your last export expired.</p>
       )}
 
+      {job !== null && canStart && status === 'ready' && (
+        <p className="text-sm text-gray-700 dark:text-gray-300 mt-4 mb-2">Need a newer copy?</p>
+      )}
       {job !== null && canStart && (
         <form onSubmit={start} className="flex flex-col sm:flex-row gap-2 sm:items-end">
           <div className="flex-1">

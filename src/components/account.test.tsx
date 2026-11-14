@@ -126,7 +126,6 @@ describe('AccountPage: Your data', () => {
 
   test.each([
     [{ status: 'failed' as const, reason: 'error' }, /Export failed/, 'Try again'],
-    [{ status: 'failed' as const, reason: 'too_large' }, /too large to export automatically/, 'Try again'],
     [{ status: 'expired' as const }, /Your last export expired/, 'Export my data'],
   ])('%o state', async (job, text, buttonName) => {
     vi.mocked(accountService.getExportStatus).mockResolvedValue(job);
@@ -135,11 +134,51 @@ describe('AccountPage: Your data', () => {
     expect(screen.getByRole('button', { name: buttonName })).toBeTruthy();
   });
 
+  test('too large: message and contact link only, no retry form (owner ruling)', async () => {
+    vi.mocked(accountService.getExportStatus).mockResolvedValue({ status: 'failed', reason: 'too_large' });
+    renderAccount();
+    expect(await screen.findByText(/too large to export automatically/)).toBeTruthy();
+    expect(screen.queryByLabelText('Password')).toBeNull();
+  });
+
+  test('ready less than an hour ago: download only, no new-export form', async () => {
+    vi.mocked(accountService.getExportStatus).mockResolvedValue({ ...ready, completedAt: new Date(Date.now() - 10 * 60000).toISOString() });
+    renderAccount();
+    await screen.findByRole('button', { name: 'Download ZIP' });
+    expect(screen.queryByText('Need a newer copy?')).toBeNull();
+    expect(screen.queryByLabelText('Password')).toBeNull();
+  });
+
+  test('ready more than an hour ago: download plus "Need a newer copy?" form (owner ruling)', async () => {
+    vi.mocked(accountService.getExportStatus).mockResolvedValue({ ...ready, completedAt: new Date(Date.now() - 2 * 3600000).toISOString() });
+    renderAccount();
+    await screen.findByRole('button', { name: 'Download ZIP' });
+    expect(screen.getByText('Need a newer copy?')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Export my data' })).toBeTruthy();
+  });
+
+  test('a failure loading the status is shown, not silently treated as no export', async () => {
+    vi.mocked(accountService.getExportStatus).mockRejectedValue(new AccountApiError('down', 503, { code: 'SERVICE_UNAVAILABLE' }));
+    renderAccount();
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Couldn't load your export status/);
+  });
+
   test('too large links to the contact page', async () => {
     vi.mocked(accountService.getExportStatus).mockResolvedValue({ status: 'failed', reason: 'too_large' });
     renderAccount();
     const link = await screen.findByRole('link', { name: 'contact us' });
     expect(link.getAttribute('href')).toMatch(/github\.com\/onemorepereira\/guitar-collection\/issues/);
+  });
+
+  test('rate-limited while one is being prepared: shows the server message', async () => {
+    vi.mocked(accountService.getExportStatus).mockResolvedValue({ status: 'none' });
+    vi.mocked(accountService.startExport).mockRejectedValue(
+      new AccountApiError('An export is already being prepared.', 429, { code: 'EXPORT_RATE_LIMITED', job: { status: 'failed', reason: 'error' } })
+    );
+    renderAccount();
+    fireEvent.change(await screen.findByLabelText('Password'), { target: { value: 'pw' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Export my data' }));
+    expect(await screen.findByText('An export is already being prepared.')).toBeTruthy();
   });
 
   test('rate-limited: shows when a new export can start', async () => {
@@ -183,6 +222,19 @@ describe('Delete account dialog', () => {
     expect(del.disabled).toBe(true);
     fireEvent.click(screen.getByLabelText("I understand this can't be undone"));
     expect(del.disabled).toBe(false);
+  });
+
+  test('focus starts on the password and Tab wraps within the dialog', async () => {
+    const dialog = await openDialog();
+    const password = dialog.querySelector('#delete-password') as HTMLInputElement;
+    expect(document.activeElement).toBe(password);
+    const cancel = screen.getByRole('button', { name: 'Cancel' });
+    cancel.focus();
+    // "Delete forever" is disabled, so Cancel is the last focusable element
+    fireEvent.keyDown(dialog, { key: 'Tab' });
+    expect(document.activeElement).toBe(password);
+    fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(cancel);
   });
 
   test('Escape closes it', async () => {
@@ -262,5 +314,17 @@ describe('Landing banner', () => {
     );
     expect((await screen.findByText(/Your account is being deleted/)).textContent)
       .toBe('Your account is being deleted. This usually takes a few minutes.');
+  });
+});
+
+describe('Login while the account is being deleted', () => {
+  test('shows the server message', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ error: 'Your account is being deleted.', code: 'ACCOUNT_DELETION_IN_PROGRESS' }), { status: 403 })
+    ));
+    await expect(authService.login({ email: 'a@example.com', password: 'pw' })).rejects.toMatchObject({
+      message: 'Your account is being deleted.',
+      code: 'ACCOUNT_DELETION_IN_PROGRESS',
+    });
   });
 });

@@ -58,10 +58,10 @@ describe('s3.deleteImages', () => {
     expect(invalidatedPaths()).toEqual(['/images/u/a.jpg', '/images/u/b.jpg']);
   });
 
-  test('throws when S3 reports per-key errors (and does not invalidate)', async () => {
+  test('throws when S3 reports per-key errors, after invalidating the keys that did delete', async () => {
     s3m.on(DeleteObjectsCommand).resolves({ Errors: [{ Key: 'images/u/a.jpg', Code: 'AccessDenied' }] });
-    await expect(s3.deleteImages(['images/u/a.jpg'])).rejects.toThrow(/AccessDenied/);
-    expect(cf.commandCalls(CreateInvalidationCommand)).toHaveLength(0);
+    await expect(s3.deleteImages(['images/u/a.jpg', 'images/u/b.jpg'])).rejects.toThrow(/AccessDenied/);
+    expect(invalidatedPaths()).toEqual(['/images/u/b.jpg']);
   });
 
   test('a CDN failure does not fail the delete', async () => {
@@ -132,6 +132,13 @@ describe('guitar update removes files', () => {
     });
     await updateGuitar(event({ privateInfo: { receiptUrl: receipt(2) } }));
     expect(s3m.commandCalls(DeleteObjectsCommand)).toHaveLength(0);
+  });
+
+  test('a failure deleting removed files does not fail the saved update', async () => {
+    setup({ before: { images: [img('a'), img('b')] }, after: { images: [img('a')] } });
+    s3m.on(DeleteObjectsCommand).rejects(new Error('s3 down'));
+    const res = await updateGuitar(event({ images: [img('a')] }));
+    expect(res.statusCode).toBe(200);
   });
 
   test('an update that does not touch images deletes nothing', async () => {

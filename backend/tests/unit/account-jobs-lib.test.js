@@ -74,9 +74,12 @@ test('cancelActiveExports cancels only pending/processing jobs', async () => {
   expect(keys).toEqual(['export#1', 'export#2']);
 });
 
-test('newJobId is time-sortable', async () => {
+test('newJobId is time-sortable', () => {
+  const now = jest.spyOn(Date, 'now');
+  now.mockReturnValue(1_700_000_000_000);
   const a = jobs.newJobId();
-  await new Promise((r) => setTimeout(r, 5));
+  now.mockReturnValue(1_700_000_000_001);
   const b = jobs.newJobId();
+  now.mockRestore();
   expect(a < b).toBe(true);
 });

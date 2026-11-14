@@ -41,8 +41,9 @@ async function requestDeletion(event) {
     }
 
     const { tombstone } = await putTombstoneIfAbsent(userId, new Date().toISOString());
-    if (tombstone?.status === 'completed') {
-      // Already deleted; nothing left to do (the account is gone)
+    if (tombstone?.status === 'completed' || tombstone?.enqueuedAt) {
+      // Already deleted, or already queued: a repeat request changes nothing
+      // (retries after a *failed* enqueue have no enqueuedAt and continue below)
       return response.success(202, { status: 'requested' });
     }
 

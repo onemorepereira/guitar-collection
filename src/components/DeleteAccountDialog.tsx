@@ -33,7 +33,7 @@ export const DeleteAccountDialog = ({ onClose }: DeleteAccountDialogProps) => {
     }
     if (e.key === 'Tab' && dialogRef.current) {
       const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
-        'input, button:not([disabled]), a[href]'
+        'input:not([disabled]), button:not([disabled]), a[href]'
       );
       if (focusable.length === 0) return;
       const first = focusable[0];

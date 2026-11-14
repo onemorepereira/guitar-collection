@@ -210,7 +210,9 @@ async function deleteImages(keys) {
 
   // DeleteObjects accepts up to 1,000 keys and reports per-key failures in
   // Errors[] (the call itself still succeeds), so check them explicitly.
-  for (let i = 0; i < keys.length; i += 1000) {
+  const deleted = [];
+  let failure = null;
+  for (let i = 0; i < keys.length && !failure; i += 1000) {
     const chunk = keys.slice(i, i + 1000);
     const result = await s3.send(new DeleteObjectsCommand({
       Bucket: BUCKET_NAME,
@@ -218,13 +220,17 @@ async function deleteImages(keys) {
         Objects: chunk.map(key => ({ Key: key })),
       },
     }));
-    if (result?.Errors?.length) {
-      throw new Error(`Failed to delete ${result.Errors.length} object(s): ${result.Errors[0].Code}`);
+    const failed = new Set((result?.Errors || []).map((e) => e.Key));
+    deleted.push(...chunk.filter((key) => !failed.has(key)));
+    if (failed.size > 0) {
+      failure = new Error(`Failed to delete ${failed.size} object(s): ${result.Errors[0].Code}`);
     }
   }
 
   // Deleted files must stop being served from the CDN edge caches too
-  await invalidate(keys.map(key => `/${key}`));
+  // (including the ones that did delete when another key failed)
+  await invalidate(deleted.map(key => `/${key}`));
+  if (failure) throw failure;
 }
 
 /**
