@@ -10,6 +10,7 @@ jest.mock('../../src/lib/dynamodb', () => ({
   updateItem: jest.fn().mockResolvedValue({}),
   deleteItem: jest.fn().mockResolvedValue({}),
   queryItems: jest.fn().mockResolvedValue([]),
+  queryAll: jest.fn().mockResolvedValue([]),
 }));
 jest.mock('../../src/lib/cognito', () => ({
   getUserIdFromEvent: jest.fn().mockResolvedValue('user-a'),

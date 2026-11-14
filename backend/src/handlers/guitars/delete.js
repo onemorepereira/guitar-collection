@@ -8,6 +8,7 @@ const { validatePathParameter } = require('../../lib/validation');
 const { deleteImages } = require('../../lib/s3');
 const { validateCSRF } = require('../../lib/csrf');
 const { collectGuitarImageKeys } = require('../../lib/s3Keys');
+const { deleteSharesForGuitar } = require('../../lib/shareCleanup');
 const response = require('../../lib/response');
 const { handleError } = require('../../lib/errors');
 const { TABLES } = require('../../config/constants');
@@ -41,6 +42,11 @@ async function deleteGuitar(event) {
       });
       return response.notFound('Guitar not found');
     }
+
+    // Delete the guitar's share links first (their shared/ copies and view
+    // history). A failure stops here, before anything else is gone; retrying
+    // the delete is safe.
+    const shareCount = await deleteSharesForGuitar(userId, guitarId);
 
     // Delete associated images from S3 — only keys under this user's prefix
     const imageKeys = collectGuitarImageKeys(guitar, userId);
@@ -98,6 +104,7 @@ async function deleteGuitar(event) {
       year: guitar.year,
       imageCount: imageKeys.length,
       documentCount: guitar.documentIds?.length || 0,
+      shareCount,
     });
 
     return response.ok({

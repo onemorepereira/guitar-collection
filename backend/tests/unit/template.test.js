@@ -77,7 +77,7 @@ test('functions that delete files can delete under the prefixes they own', () =>
   // DeleteObjects reports AccessDenied per key, not as a thrown error, so a
   // missing grant here fails silently in prod (see guitars/update.js cleanup)
   const owns = {
-    GuitarsHandler: ['images/*'],
+    GuitarsHandler: ['images/*', 'shared/*'],
     DocumentsHandler: ['images/*'],
     SharesHandler: ['shared/*'],
     AccountJobsHandler: ['images/*', 'shared/*', 'uploads/*'],
@@ -174,4 +174,8 @@ test('monthly cost budget: $15, actual and forecast alerts to the alarm email', 
 
 test('DocumentExtractionHandler has no S3 write access (results go to DynamoDB)', () => {
   expect(policyJson(R.DocumentExtractionHandler)).not.toMatch(/s3:PutObject/);
+});
+
+test('GuitarsHandler can delete and prune the shares of a guitar', () => {
+  expect(policyJson(R.GuitarsHandler)).toMatch(/"DynamoDBCrudPolicy":\{"TableName":\{"Ref":"SharesTable"\}\}/);
 });

@@ -9,6 +9,7 @@ const { validateGuitarUpdateFields, validatePathParameter } = require('../../lib
 const { sanitizeGuitarData } = require('../../lib/sanitization');
 const { validateCSRF } = require('../../lib/csrf');
 const { assertUrlOwnership, collectGuitarImageKeys } = require('../../lib/s3Keys');
+const { pruneSharesForRemovedImages, removedImageIds } = require('../../lib/shareCleanup');
 const response = require('../../lib/response');
 const { handleError } = require('../../lib/errors');
 const { TABLES } = require('../../config/constants');
@@ -79,6 +80,15 @@ async function updateGuitar(event) {
       } catch (error) {
         // The update itself succeeded; a leftover file is cleanup debt, not a failed save
         console.error('Failed to delete removed files after guitar update', { error: error.message || error.name });
+      }
+    }
+
+    // Photos removed from the guitar also leave its share links
+    if (data.images !== undefined) {
+      try {
+        await pruneSharesForRemovedImages(userId, guitarId, removedImageIds(existingGuitar, updatedGuitar));
+      } catch (error) {
+        console.error('Failed to remove deleted photos from shares', { error: error.message || error.name });
       }
     }
 
