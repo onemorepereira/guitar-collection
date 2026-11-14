@@ -1381,6 +1381,49 @@ Resources:
                 - cognito-idp:AdminUserGlobalSignOut
               Resource: !GetAtt UserPool.Arn
 
+  # 90-day retention on every function's log group (incl. groups Lambda
+  # auto-created with "never expire"). Re-applied when properties change:
+  # add new functions to FunctionNames (enforced by a template test).
+  LogRetentionHandler:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-log-retention
+      CodeUri: src/
+      Handler: handlers/log-retention/index.handler
+      Description: Custom resource that sets CloudWatch Logs retention for the stack's functions
+      Timeout: 60
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:PutRetentionPolicy
+              Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-*
+
+  LogRetention:
+    Type: Custom::LogRetention
+    Properties:
+      ServiceToken: !GetAtt LogRetentionHandler.Arn
+      RetentionInDays: 90
+      Revision: 1
+      FunctionNames:
+        - !Ref AuthHandler
+        - !Ref GuitarsHandler
+        - !Ref PublicGuitarHandler
+        - !Ref ImagesHandler
+        - !Ref UserHandler
+        - !Ref SpecsHandler
+        - !Ref ReceiptHandler
+        - !Ref DocumentsHandler
+        - !Ref DocumentExtractionHandler
+        - !Ref ProvenanceHandler
+        - !Ref SharesHandler
+        - !Ref AccountJobsHandler
+        - !Ref LogRetentionHandler
+
   # ==================== Cognito ====================
 
   UserPool:
@@ -1468,6 +1511,22 @@ Resources:
             NoncurrentVersionExpiration:
               NoncurrentDays: 1
             Prefix: uploads/
+          # Deleted photos, receipts, documents, and share renders stay
+          # recoverable for 30 days, then are permanently removed (owner-approved
+          # window). On first deploy this also purges every older noncurrent
+          # version (one-time, irreversible; approved at GTR-14 design sign-off).
+          - Id: ExpireOldImageVersions
+            Status: Enabled
+            Prefix: images/
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            ExpiredObjectDeleteMarker: true
+          - Id: ExpireOldShareVersions
+            Status: Enabled
+            Prefix: shared/
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            ExpiredObjectDeleteMarker: true
       VersioningConfiguration:
         Status: Enabled
       BucketEncryption:

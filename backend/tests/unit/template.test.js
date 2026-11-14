@@ -22,7 +22,8 @@ test('AccountJobsTable: keys, TTL, encryption, retained', () => {
 });
 
 test('every function can read AccountJobsTable (tombstone check)', () => {
-  for (const fn of functionsOf(t)) {
+  // LogRetentionHandler is a CloudFormation custom resource, not an API path
+  for (const fn of functionsOf(t).filter((f) => f.name !== 'LogRetentionHandler')) {
     expect({ fn: fn.name, readsAccountJobs: /AccountJobsTable/.test(policyJson(fn)) })
       .toEqual({ fn: fn.name, readsAccountJobs: true });
   }
@@ -108,4 +109,21 @@ test('export routes: POST throttled 1/3, GET status, both JWT-protected; User ca
   expect(ev.ExportStatus.Properties).toMatchObject({ Path: '/user/export', Method: 'GET', Auth: { Authorizer: 'CognitoAuthorizer' } });
   expect(R.GuitarCollectionApi.Properties.RouteSettings['POST /user/export']).toEqual({ ThrottlingBurstLimit: 3, ThrottlingRateLimit: 1 });
   expect(policyJson(R.UserHandler)).toMatch(/ExportsBucket\.Arn}\/exports\/\*/);
+});
+
+test('LogRetention covers every function with 90-day retention', () => {
+  const props = R.LogRetention.Properties;
+  expect(props.RetentionInDays).toBe(90);
+  const listed = props.FunctionNames.map((f) => f.Ref).sort();
+  expect(listed).toEqual(functionsOf(t).map((f) => f.name).sort());
+  expect(policyJson(R.LogRetentionHandler)).toContain('logs:PutRetentionPolicy');
+});
+
+test('images bucket keeps old versions 30 days (images/, shared/) and 1 day (uploads/)', () => {
+  const rules = R.ImagesBucket.Properties.LifecycleConfiguration.Rules;
+  const byPrefix = Object.fromEntries(rules.map((r) => [r.Prefix, r]));
+  expect(byPrefix['images/'].NoncurrentVersionExpiration).toEqual({ NoncurrentDays: 30 });
+  expect(byPrefix['shared/'].NoncurrentVersionExpiration).toEqual({ NoncurrentDays: 30 });
+  expect(byPrefix['images/'].ExpiredObjectDeleteMarker).toBe(true);
+  expect(byPrefix['uploads/'].NoncurrentVersionExpiration).toEqual({ NoncurrentDays: 1 });
 });
