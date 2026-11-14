@@ -34,13 +34,8 @@ async function getUploadUrl(event) {
       });
     }
 
-    // Generate presigned upload URL with server-side file size limit
-    const { uploadUrl, key } = await generateUploadUrl(
-      userId,
-      body.fileName,
-      contentType,
-      IMAGE_CONSTRAINTS.MAX_SIZE_BYTES
-    );
+    // Size is enforced when the upload is processed (images/process.js)
+    const { uploadUrl, key } = await generateUploadUrl(userId, body.fileName, contentType);
 
     return response.ok({
       uploadUrl,

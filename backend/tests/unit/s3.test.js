@@ -37,7 +37,7 @@ describe('s3 wrapper (v3)', () => {
   });
 
   test('moveUploadedFile validates the signature, copies to images/, deletes source', async () => {
-    s3Mock.on(HeadObjectCommand).resolves({ ContentType: 'image/jpeg' });
+    s3Mock.on(HeadObjectCommand).resolves({ ContentType: 'image/jpeg', ContentLength: 2048 });
     s3Mock.on(GetObjectCommand).resolves({
       Body: { transformToByteArray: async () => JPEG_BYTES },
     });
@@ -51,6 +51,51 @@ describe('s3 wrapper (v3)', () => {
     expect(copy.Key).toBe('images/user-a/file.jpg');
     expect(copy.CopySource).toBe('test-bucket/uploads/user-a/file.jpg');
     expect(s3Mock.commandCalls(DeleteObjectCommand)).toHaveLength(1);
+  });
+
+  describe('moveUploadedFile size limit', () => {
+    const { IMAGE_CONSTRAINTS } = require('../../src/config/constants');
+    const MAX = IMAGE_CONSTRAINTS.MAX_SIZE_BYTES;
+
+    function stubValidJpeg(contentLength) {
+      s3Mock.on(HeadObjectCommand).resolves({ ContentType: 'image/jpeg', ContentLength: contentLength });
+      s3Mock.on(GetObjectCommand).resolves({
+        Body: { transformToByteArray: async () => JPEG_BYTES },
+      });
+      s3Mock.on(CopyObjectCommand).resolves({});
+      s3Mock.on(DeleteObjectCommand).resolves({});
+    }
+
+    test('rejects an object larger than the limit, deletes it, and never copies it', async () => {
+      stubValidJpeg(MAX + 1);
+
+      await expect(s3.moveUploadedFile('uploads/user-a/big.jpg', 'user-a'))
+        .rejects.toMatchObject({ name: 'ValidationError', statusCode: 400 });
+
+      expect(s3Mock.commandCalls(CopyObjectCommand)).toHaveLength(0);
+      const deletes = s3Mock.commandCalls(DeleteObjectCommand);
+      expect(deletes).toHaveLength(1);
+      expect(deletes[0].args[0].input.Key).toBe('uploads/user-a/big.jpg');
+    });
+
+    test('accepts an object exactly at the limit', async () => {
+      stubValidJpeg(MAX);
+      await expect(s3.moveUploadedFile('uploads/user-a/ok.jpg', 'user-a'))
+        .resolves.toBe('images/user-a/ok.jpg');
+    });
+
+    test('fails closed when S3 reports no size', async () => {
+      stubValidJpeg(undefined);
+      await expect(s3.moveUploadedFile('uploads/user-a/unknown.jpg', 'user-a'))
+        .rejects.toMatchObject({ name: 'ValidationError' });
+      expect(s3Mock.commandCalls(CopyObjectCommand)).toHaveLength(0);
+    });
+
+    test('does not read the object body when it is oversized', async () => {
+      stubValidJpeg(MAX + 1);
+      await expect(s3.moveUploadedFile('uploads/user-a/big.jpg', 'user-a')).rejects.toThrow();
+      expect(s3Mock.commandCalls(GetObjectCommand)).toHaveLength(0);
+    });
   });
 
   test('objectExists returns false when HeadObject 404s (v3 error.name NotFound)', async () => {
