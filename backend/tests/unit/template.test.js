@@ -101,3 +101,11 @@ test('AccountJobsHandler can delete the Cognito user and every user table', () =
     expect(p).toContain(table);
   }
 });
+
+test('export routes: POST throttled 1/3, GET status, both JWT-protected; User can read export ZIPs to presign', () => {
+  const ev = R.UserHandler.Properties.Events;
+  expect(ev.StartExport.Properties).toMatchObject({ Path: '/user/export', Method: 'POST', Auth: { Authorizer: 'CognitoAuthorizer' } });
+  expect(ev.ExportStatus.Properties).toMatchObject({ Path: '/user/export', Method: 'GET', Auth: { Authorizer: 'CognitoAuthorizer' } });
+  expect(R.GuitarCollectionApi.Properties.RouteSettings['POST /user/export']).toEqual({ ThrottlingBurstLimit: 3, ThrottlingRateLimit: 1 });
+  expect(policyJson(R.UserHandler)).toMatch(/ExportsBucket\.Arn}\/exports\/\*/);
+});

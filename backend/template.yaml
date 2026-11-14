@@ -105,6 +105,9 @@ Resources:
         "POST /user/deletion":
           ThrottlingBurstLimit: 3
           ThrottlingRateLimit: 1      # Password-verified, destructive
+        "POST /user/export":
+          ThrottlingBurstLimit: 3
+          ThrottlingRateLimit: 1      # Password-verified, starts an expensive job
         "POST /specs/extract":
           ThrottlingBurstLimit: 10
           ThrottlingRateLimit: 2      # Limit expensive AI operations
@@ -457,6 +460,11 @@ Resources:
                 - cognito-idp:AdminInitiateAuth
                 - cognito-idp:AdminUserGlobalSignOut
               Resource: !GetAtt UserPool.Arn
+            # Presigned export download links are signed with this role
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: !Sub ${ExportsBucket.Arn}/exports/*
       Events:
         GetProfile:
           Type: HttpApi
@@ -488,6 +496,22 @@ Resources:
             ApiId: !Ref GuitarCollectionApi
             Path: /user/deletion
             Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        StartExport:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /user/export
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        ExportStatus:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref GuitarCollectionApi
+            Path: /user/export
+            Method: GET
             Auth:
               Authorizer: CognitoAuthorizer
 

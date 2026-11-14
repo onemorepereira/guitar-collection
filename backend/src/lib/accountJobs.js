@@ -143,8 +143,95 @@ async function cancelActiveExports(userId) {
   }
 }
 
+const EXPORT_STUB_RETENTION_SECONDS = 30 * 24 * 3600; // job record kept 30 days (owner)
+const EXPORT_AVAILABLE_MS = 7 * 24 * 3600 * 1000; // ZIP kept 7 days
+
+/** Create a pending export job; returns the stored item. */
+async function createExportJob(userId) {
+  const createdAt = new Date().toISOString();
+  const jobId = newJobId();
+  const item = {
+    userId,
+    job: EXPORT_PREFIX + jobId,
+    jobId,
+    status: 'pending',
+    createdAt,
+    expiresAt: epochSeconds(createdAt) + EXPORT_STUB_RETENTION_SECONDS,
+  };
+  await client.send(new PutCommand({ TableName: TABLES.ACCOUNT_JOBS, Item: item }));
+  return item;
+}
+
+/** The caller's most recent export job (time-sortable ids), ignoring expired stubs. */
+async function latestExportJob(userId) {
+  const result = await client.send(new QueryCommand({
+    TableName: TABLES.ACCOUNT_JOBS,
+    KeyConditionExpression: 'userId = :u AND begins_with(job, :p)',
+    ExpressionAttributeValues: { ':u': userId, ':p': EXPORT_PREFIX },
+    ScanIndexForward: false,
+    Limit: 1,
+    ConsistentRead: true,
+  }));
+  const item = result.Items?.[0];
+  if (!item || isExpired(item)) return null;
+  return item;
+}
+
+async function getExportJob(userId, jobId) {
+  const result = await client.send(new GetCommand({
+    TableName: TABLES.ACCOUNT_JOBS,
+    Key: { userId, job: EXPORT_PREFIX + jobId },
+    ConsistentRead: true,
+  }));
+  return result.Item || null;
+}
+
+/**
+ * Move an export job from one status to another (conditional, so duplicate
+ * deliveries can't run a job twice). Returns false if the job wasn't in `from`.
+ */
+async function transitionExport(userId, jobId, from, to, fields = {}) {
+  const { expression, names, values } = buildSet({ ...fields, status: to });
+  try {
+    await client.send(new UpdateCommand({
+      TableName: TABLES.ACCOUNT_JOBS,
+      Key: { userId, job: EXPORT_PREFIX + jobId },
+      UpdateExpression: expression,
+      ConditionExpression: '#from = :from',
+      ExpressionAttributeNames: { ...names, '#from': 'status' },
+      ExpressionAttributeValues: { ...values, ':from': from },
+    }));
+    return true;
+  } catch (error) {
+    if (error.name === 'ConditionalCheckFailedException') return false;
+    throw error;
+  }
+}
+
+/** Client-facing summary of a job (no storage keys). */
+function exportSummary(job) {
+  if (!job) return null;
+  const availableUntil = new Date(Date.parse(job.createdAt) + EXPORT_AVAILABLE_MS).toISOString();
+  return {
+    jobId: job.jobId,
+    status: job.status,
+    createdAt: job.createdAt,
+    ...(job.completedAt ? { completedAt: job.completedAt } : {}),
+    ...(job.sizeBytes !== undefined ? { sizeBytes: job.sizeBytes } : {}),
+    ...(job.status === 'ready' ? { availableUntil } : {}),
+    ...(job.reason ? { reason: job.reason } : {}),
+  };
+}
+
 module.exports = {
   client,
+  createExportJob,
+  latestExportJob,
+  getExportJob,
+  transitionExport,
+  exportSummary,
+  EXPORT_AVAILABLE_MS,
+  EXPORT_STUB_RETENTION_SECONDS,
   DELETION_SK,
   EXPORT_PREFIX,
   epochSeconds,
