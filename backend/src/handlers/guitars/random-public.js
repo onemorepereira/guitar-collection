@@ -39,13 +39,48 @@ function sanitizeGuitar(guitar) {
     numberOfFrets: guitar.numberOfFrets,
     numberOfStrings: guitar.numberOfStrings,
     countryOfOrigin: guitar.countryOfOrigin,
-    images: guitar.images || [],
+    // Only what the Visibility copy promises: photos, no owner-written captions
+    images: (guitar.images || [])
+      .filter((image) => image && typeof image === 'object')
+      .map(({ id, url, isPrimary, order }) => ({ id, url, isPrimary, order })),
     // Explicitly exclude private information:
     // - userId
     // - privateInfo (purchase price, receipt, etc.)
     // - notes
     // - createdAt/updatedAt
   };
+}
+
+/**
+ * Scan for guitars whose owner opted in to the public gallery.
+ * Follows LastEvaluatedKey: a Scan reads at most 1 MB per call and applies
+ * the filter afterwards, so opted-in items can sit on any page.
+ */
+async function scanGalleryGuitars() {
+  const items = [];
+  let exclusiveStartKey;
+  let pages = 0;
+  let scannedCount = 0;
+
+  do {
+    const response = await docClient.send(new ScanCommand({
+      TableName: TABLE_NAME,
+      FilterExpression: 'showInGallery = :t',
+      ExpressionAttributeValues: { ':t': true },
+      ExclusiveStartKey: exclusiveStartKey,
+    }));
+    // Backstop: never trust the filter alone on a privacy-critical path
+    items.push(...(response.Items || []).filter((item) => item.showInGallery === true));
+    scannedCount += response.ScannedCount || 0;
+    pages += 1;
+    exclusiveStartKey = response.LastEvaluatedKey;
+  } while (exclusiveStartKey);
+
+  // No personal data: counts only. Watch scannedCount to decide when a GSI
+  // is worth it (see docs/ARCHITECTURE.md).
+  console.log(JSON.stringify({ event: 'gallery_scan', pages, scannedCount, matched: items.length }));
+
+  return items;
 }
 
 exports.handler = async (event) => {
@@ -57,13 +92,7 @@ exports.handler = async (event) => {
     if (cachedGuitars && now < cacheExpiry) {
       guitars = cachedGuitars;
     } else {
-      // Scan all guitars from DynamoDB
-      const scanCommand = new ScanCommand({
-        TableName: TABLE_NAME,
-      });
-
-      const response = await docClient.send(scanCommand);
-      guitars = response.Items || [];
+      guitars = await scanGalleryGuitars();
 
       // Update cache
       cachedGuitars = guitars;

@@ -228,13 +228,14 @@ export const Landing = () => {
             <div className="text-center py-20">
               <PickIcon className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" gColor="white" />
               <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                No Guitars Yet
+                Your collection, organized
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Be the first to add a guitar to the collection!
+              <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                Track specs, photos, documents and condition for every guitar you own.
+                Collections are private by default.
               </p>
               <Link to="/register" className="btn-primary" title="Create new account">
-                Get Started
+                Get Started Free
               </Link>
             </div>
           )}

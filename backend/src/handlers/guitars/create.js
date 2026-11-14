@@ -71,6 +71,9 @@ async function createGuitar(event) {
     if (data.documentIds !== undefined) guitar.documentIds = data.documentIds;
     if (data.privateInfo !== undefined) guitar.privateInfo = data.privateInfo;
     if (data.notes !== undefined) guitar.notes = data.notes;
+    if (data.conditionShape !== undefined) guitar.conditionShape = data.conditionShape;
+    if (data.conditionMarkers !== undefined) guitar.conditionMarkers = data.conditionMarkers;
+    if (data.showInGallery !== undefined) guitar.showInGallery = data.showInGallery;
 
     await putItem(TABLES.GUITARS, guitar);
 

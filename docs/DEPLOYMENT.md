@@ -160,6 +160,12 @@ Then open your domain, register an account, and add a guitar.
 
 ---
 
+## Rolling back
+
+Revert the commit(s) and redeploy with the same `make` target. One exception: **never redeploy a version of `backend/src/handlers/guitars/random-public.js` that predates the gallery opt-in filter** (`showInGallery = true`). Older versions return any user's guitar on the public landing page. To roll back that endpoint, revert everything else, or replace its handler body with a 404 response.
+
+---
+
 ## Teardown
 
 ```bash
